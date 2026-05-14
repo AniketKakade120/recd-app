@@ -459,21 +459,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      if (state.currentUser) {
-        localStorage.removeItem(`recd_onboarding_done_${state.currentUser.id}`);
-        
-        // Also reset onboarding in DB so re-login goes through onboarding fresh
-        if (isSupabaseConfigured && supabase) {
-          supabase.from('profiles').update({ onboarding_completed: false }).eq('id', state.currentUser.id)
-            .then(({ error }) => { if (error) console.error('Error resetting onboarding in DB:', error); });
-        }
-      }
       if (isSupabaseConfigured && supabase) {
         supabase.auth.signOut(); // Fire and forget
       }
     } catch (err) {
       console.error('Error during logout:', err);
     }
+    // Clear local session state only - do NOT touch DB onboarding flag
     setState(prev => ({ 
       ...prev, 
       currentUser: null, 
