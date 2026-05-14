@@ -18,7 +18,7 @@ export default function TasteScoreRing({ score, size = 'md', label }: TasteScore
   const offset = circumference - (score / 100) * circumference;
   const cx = svg / 2;
 
-  const color = score >= 80 ? '#E02020' : score >= 65 ? '#E02020' : '#A6A19A';
+  const color = score >= 90 ? '#E02020' : score >= 70 ? '#E02020' : score >= 50 ? '#FACC15' : '#A6A19A';
 
   return (
     <div className="flex flex-col items-center gap-1">

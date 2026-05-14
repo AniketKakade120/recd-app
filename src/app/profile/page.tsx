@@ -9,25 +9,46 @@ import Link from 'next/link';
 import { getTasteLabel, ACHIEVEMENT_BADGE_DESCRIPTIONS } from '@/lib/types';
 import StatusBadge from '@/components/StatusBadge';
 
-type TabType = 'overview' | 'given' | 'received' | 'rated' | 'watchlist' | 'badges';
+import ProfileCrewTab from '@/components/ProfileCrewTab';
+import EditProfileModal from '@/components/EditProfileModal';
+import EditPreferencesModal from '@/components/EditPreferencesModal';
+import InviteModal from '@/components/InviteModal';
+import { useRouter } from 'next/navigation';
+import VerdictModal from '@/components/VerdictModal';
+
+type TabType = 'overview' | 'given' | 'received' | 'rated' | 'crew';
 
 export default function ProfilePage() {
   const { 
     currentUser, tasteScore, getUserBadges, watchlist, recommendations, 
-    ratings, groups, groupMembers, getTitle, getUser 
+    ratings, groups, groupMembers, getTitle, getUser, getViewerContext, getActions,
+    userPreferences, openGiveVerdictModal
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [showEditPrefsModal, setShowEditPrefsModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [verdictModalOpen, setVerdictModalOpen] = useState(false);
+  const [selectedRecId, setSelectedRecId] = useState<string | null>(null);
+  const router = useRouter();
 
   if (!currentUser) return null;
 
   // Data processing
   const badges = getUserBadges(currentUser.id);
-  const sent = recommendations.filter(r => r.recommendedBy === currentUser.id);
+  const given = recommendations.filter(r => r.recommendedBy === currentUser.id);
   const received = recommendations.filter(r => r.recommendedToUserIds?.includes(currentUser.id));
-  const myRatings = ratings.filter(r => r.ratedBy === currentUser.id);
+  const pending = received.filter(r => r.verdictState === 'verdict_pending');
+  const givenVerdicts = received.filter(r => r.verdictState === 'verdict_given');
+  const rated = ratings.filter(r => r.ratedBy === currentUser.id);
   const myGroupIds = groupMembers.filter(gm => gm.userId === currentUser.id).map(gm => gm.groupId);
   const myGroups = groups.filter(g => myGroupIds.includes(g.id));
+
+  const openVerdict = (recId: string) => {
+    setSelectedRecId(recId);
+    setVerdictModalOpen(true);
+  };
   
   // Helpers
   const renderStars = (rating: number) => {
@@ -65,17 +86,23 @@ export default function ProfilePage() {
                 {currentUser.tasteArchetype}
               </span>
               <span className="inline-flex items-center px-3 py-1 bg-surface border border-border rounded-lg text-xs font-bold text-bone uppercase tracking-widest">
-                {getTasteLabel(tasteScore.score)}
+                {tasteScore.label}
               </span>
             </div>
           </div>
           
           <div className="flex flex-row md:flex-col gap-3 w-full md:w-auto">
-            <button className="flex-1 md:flex-none px-6 py-2.5 bg-surface border border-border text-bone font-bold rounded-xl btn-press hover:bg-surface-hover text-sm">
+            <button 
+              onClick={() => setShowEditProfileModal(true)}
+              className="flex-1 md:flex-none px-6 py-2.5 bg-surface border border-border text-bone font-bold rounded-xl btn-press hover:bg-surface-hover text-sm"
+            >
               Edit Profile
             </button>
-            <button className="flex-1 md:flex-none px-6 py-2.5 bg-cinema-red text-bone font-bold rounded-xl btn-press hover:bg-cinema-red/90 text-sm">
-              Invite Crew
+            <button 
+              onClick={() => setActiveTab('crew')}
+              className="flex-1 md:flex-none px-6 py-2.5 bg-cinema-red text-bone font-bold rounded-xl btn-press hover:bg-cinema-red/90 text-sm"
+            >
+              My Crew
             </button>
           </div>
         </div>
@@ -83,24 +110,20 @@ export default function ProfilePage() {
 
       {/* STATS STRIP (Mobile only, desktop moves to sidebar) */}
       <div className="md:hidden px-4 mb-8">
-         <div className="grid grid-cols-4 gap-2 bg-surface border border-border rounded-2xl p-4">
-           <div className="text-center">
-             <p className="text-xl font-bold text-bone">{tasteScore.score}</p>
-             <p className="text-[10px] text-muted uppercase tracking-wider">Score</p>
-           </div>
-           <div className="text-center">
-             <p className="text-xl font-bold text-bone">{sent.length}</p>
-             <p className="text-[10px] text-muted uppercase tracking-wider">Given</p>
-           </div>
-           <div className="text-center">
-             <p className="text-xl font-bold text-bone">{myRatings.length}</p>
-             <p className="text-[10px] text-muted uppercase tracking-wider">Rated</p>
-           </div>
-           <div className="text-center">
-             <p className="text-xl font-bold text-bone">{badges.length}</p>
-             <p className="text-[10px] text-muted uppercase tracking-wider">Badges</p>
-           </div>
-         </div>
+          <div className="grid grid-cols-3 gap-2 bg-surface border border-border rounded-2xl p-4">
+            <div className="text-center">
+              <p className="text-xl font-bold text-bone">{tasteScore.score}</p>
+              <p className="text-[10px] text-muted uppercase tracking-wider">Score</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-bone">{given.length}</p>
+              <p className="text-[10px] text-muted uppercase tracking-wider">Picks</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-bone">{givenVerdicts.length}</p>
+              <p className="text-[10px] text-muted uppercase tracking-wider">Verdicts</p>
+            </div>
+          </div>
       </div>
 
       <div className="px-4 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -110,7 +133,7 @@ export default function ProfilePage() {
           
           {/* TABS */}
           <div className="flex overflow-x-auto hide-scrollbar border-b border-border mb-8 pb-px gap-6">
-            {(['overview', 'given', 'received', 'rated', 'watchlist', 'badges'] as TabType[]).map(tab => (
+            {(['overview', 'given', 'received', 'rated', 'crew'] as TabType[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -129,15 +152,14 @@ export default function ProfilePage() {
           {/* TAB CONTENT: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-12 animate-in fade-in duration-300">
-              
-              {/* Recent Given */}
+                            {/* Recent Picks Given */}
               <section>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-muted">Recent Recs Given</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-muted">Recent Picks</h2>
                   <button onClick={() => setActiveTab('given')} className="text-xs font-bold text-cinema-red hover:underline">View all</button>
                 </div>
                 <div className="space-y-3">
-                  {sent.slice(0, 3).map(rec => {
+                  {given.slice(0, 3).map(rec => {
                     const title = getTitle(rec.titleId);
                     const toUser = rec.recommendedToUserIds?.[0] ? getUser(rec.recommendedToUserIds[0]) : null;
                     if (!title) return null;
@@ -149,7 +171,9 @@ export default function ProfilePage() {
                         <div className="flex-1 min-w-0 py-1 flex flex-col">
                            <div className="flex justify-between items-start mb-1">
                              <h3 className="font-bold text-bone truncate pr-4">{title.title}</h3>
-                             <StatusBadge status={rec.status} />
+                             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-white/5 bg-white/5 text-muted">
+                               {rec.verdictState === 'verdict_given' ? 'Verdict Given' : 'Verdict Pending'}
+                             </span>
                            </div>
                            <p className="text-xs text-muted mb-2">Recommended to {toUser?.displayName || 'Group'}</p>
                            <p className="text-sm text-bone/80 italic line-clamp-2 mb-auto">&ldquo;{rec.reason}&rdquo;</p>
@@ -162,7 +186,7 @@ export default function ProfilePage() {
                       </div>
                     );
                   })}
-                  {sent.length === 0 && (
+                  {given.length === 0 && (
                     <div className="p-8 text-center bg-surface border border-border rounded-2xl">
                        <p className="text-muted text-sm mb-3">You haven&apos;t put your taste on the line yet.</p>
                        <Link href="/home" className="text-cinema-red font-bold text-sm">Recommend something</Link>
@@ -171,38 +195,44 @@ export default function ProfilePage() {
                 </div>
               </section>
 
-              {/* Recent Rated */}
+              {/* Recent Verdicts Given */}
               <section>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-muted">Recent Ratings</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-muted">Recent Verdicts</h2>
                   <button onClick={() => setActiveTab('rated')} className="text-xs font-bold text-cinema-red hover:underline">View all</button>
                 </div>
                 <div className="space-y-3">
-                  {myRatings.slice(0, 3).map(rating => {
-                    const rec = recommendations.find(r => r.id === rating.recommendationId);
-                    const title = rec ? getTitle(rec.titleId) : null;
-                    const recommender = rec ? getUser(rec.recommendedBy) : null;
+                  {givenVerdicts.slice(0, 3).map(rec => {
+                    const rating = ratings.find(rat => rat.recommendationId === rec.id);
+                    const title = getTitle(rec.titleId);
+                    const recommender = getUser(rec.recommendedBy);
                     if (!title) return null;
                     return (
-                      <div key={rating.id} className="p-4 rounded-2xl bg-surface border border-border">
+                      <div key={rec.id} className="p-4 rounded-2xl bg-surface border border-border">
                         <div className="flex justify-between items-start mb-3">
                           <div>
                             <h3 className="font-bold text-bone text-sm">{title.title}</h3>
                             <p className="text-xs text-muted">from {recommender?.displayName || 'Unknown'}</p>
                           </div>
-                          {renderStars(rating.contentRating)}
+                          {rating && renderStars(rating.contentRating)}
                         </div>
-                        {rating.comment && (
+                        {rating?.comment && (
                           <p className="text-sm text-bone/80 italic mb-3">&ldquo;{rating.comment}&rdquo;</p>
                         )}
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold px-2 py-1 bg-ink rounded border border-border text-muted">{rating.recommendationResult}</span>
-                          {rating.stamp && <StampBadge stamp={rating.stamp} size="xs" />}
-                        </div>
+                          <span className="text-xs font-bold px-2 py-1 bg-ink rounded border border-border text-muted">{rating?.recommendationResult || 'Rated'}</span>
+                          {rating?.stamp && <StampBadge stamp={rating.stamp} size="xs" />}
+                           <button 
+                             onClick={(e) => { e.preventDefault(); openVerdict(rec.id); }}
+                             className="text-[10px] font-bold text-cinema-red hover:underline uppercase tracking-widest ml-auto"
+                           >
+                             View Verdict
+                           </button>
+                         </div>
                       </div>
                     );
                   })}
-                  {myRatings.length === 0 && (
+                  {givenVerdicts.length === 0 && (
                     <div className="p-8 text-center bg-surface border border-border rounded-2xl">
                        <p className="text-muted text-sm">No verdicts given yet.</p>
                     </div>
@@ -219,44 +249,45 @@ export default function ProfilePage() {
                <div className="flex justify-between items-center mb-6">
                  <div>
                    <h2 className="text-lg font-bold text-bone">Recommendations Given</h2>
-                   <p className="text-sm text-muted">Everything you&apos;ve put your taste on the line for.</p>
-                 </div>
-                 <div className="flex gap-2">
-                   {/* Placeholder for filters */}
-                   <select className="bg-surface border border-border text-bone text-xs rounded-lg px-3 py-2 outline-none focus:border-cinema-red">
-                     <option>All Statuses</option>
-                     <option>Pending</option>
-                     <option>Rated</option>
-                   </select>
+                   <p className="text-sm text-muted">Everything you&apos;ve recommended to your crew.</p>
                  </div>
                </div>
                
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 {sent.map(rec => {
-                    const title = getTitle(rec.titleId);
-                    const toUser = rec.recommendedToUserIds?.[0] ? getUser(rec.recommendedToUserIds[0]) : null;
-                    if (!title) return null;
-                    return (
-                      <Link href={`/recommend/${rec.id}`} key={rec.id} className="flex flex-col p-4 rounded-2xl bg-surface border border-border hover:border-border-strong transition-colors group">
-                        <div className="flex gap-4 mb-3">
-                          <div className={`w-12 h-16 shrink-0 rounded overflow-hidden border border-border/50 ${!title.posterUrl ? `poster-gradient-${title.posterGradient}` : ''}`}>
-                            {title.posterUrl && <img src={title.posterUrl} alt={title.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                             <h3 className="font-bold text-bone truncate text-sm mb-1">{title.title}</h3>
-                             <p className="text-xs text-muted truncate mb-1">{title.releaseYear} · {title.format}</p>
-                             <p className="text-[10px] font-bold text-cinema-red">TO {toUser?.displayName?.toUpperCase() || 'GROUP'}</p>
-                          </div>
-                        </div>
-                        <p className="text-xs text-bone/80 italic line-clamp-2 mb-3 flex-1">&ldquo;{rec.reason}&rdquo;</p>
-                        <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
-                           <StatusBadge status={rec.status} />
-                           {rec.primaryStamp && <StampBadge stamp={rec.primaryStamp} size="xs" variant="filled" />}
-                        </div>
-                      </Link>
-                    );
-                 })}
-               </div>
+                  {given.map(rec => {
+                     const title = getTitle(rec.titleId);
+                     const toUser = rec.recommendedToUserIds?.[0] ? getUser(rec.recommendedToUserIds[0]) : null;
+                     const viewerContext = getViewerContext(rec);
+                     if (!title) return null;
+
+                     return (
+                       <div key={rec.id} className="flex flex-col p-4 rounded-2xl bg-surface border border-border group relative">
+                         <Link href={`/title/${rec.titleId}?recId=${rec.id}`} className="flex gap-4 mb-3">
+                           <div className={`w-12 h-16 shrink-0 rounded overflow-hidden border border-border/50 ${!title.posterUrl ? `poster-gradient-${title.posterGradient}` : ''}`}>
+                             {title.posterUrl && <img src={title.posterUrl} alt={title.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />}
+                           </div>
+                           <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-bone truncate text-sm mb-1">{title.title}</h3>
+                              <p className="text-xs text-muted truncate mb-1">{title.releaseYear} · {title.format}</p>
+                              <p className="text-[10px] font-bold text-cinema-red">TO {toUser?.displayName?.toUpperCase() || 'GROUP'}</p>
+                           </div>
+                         </Link>
+                         <p className="text-xs text-bone/80 italic line-clamp-2 mb-3 flex-1">&ldquo;{rec.reason}&rdquo;</p>
+                         <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
+                             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-white/5 bg-white/5 text-muted">
+                               {viewerContext.verdictState === 'verdict_given' ? 'Verdict Given' : 'Verdict Pending'}
+                             </span>
+                             <button 
+                               onClick={() => openVerdict(rec.id)}
+                               className="px-3 py-1.5 bg-white/5 border border-white/10 text-bone text-[10px] font-bold uppercase tracking-wider rounded-md hover:bg-white/10 transition-all"
+                             >
+                               View Verdict
+                             </button>
+                         </div>
+                       </div>
+                     );
+                  })}
+                </div>
             </div>
           )}
 
@@ -269,40 +300,60 @@ export default function ProfilePage() {
                </div>
                
                <div className="space-y-3">
-                 {received.map(rec => {
-                    const title = getTitle(rec.titleId);
-                    const fromUser = getUser(rec.recommendedBy);
-                    if (!title) return null;
-                    return (
-                      <div key={rec.id} className="flex gap-4 p-4 rounded-2xl bg-surface border border-border">
-                        <div className={`w-16 h-24 shrink-0 rounded-lg overflow-hidden border border-border/50 ${!title.posterUrl ? `poster-gradient-${title.posterGradient}` : ''}`}>
-                          {title.posterUrl && <img src={title.posterUrl} alt={title.title} className="w-full h-full object-cover" />}
-                        </div>
-                        <div className="flex-1 min-w-0 py-1 flex flex-col">
-                           <div className="flex justify-between items-start mb-1">
-                             <div>
-                               <h3 className="font-bold text-bone truncate pr-4">{title.title}</h3>
-                               <p className="text-xs text-muted mb-2">from {fromUser?.displayName}</p>
-                             </div>
-                             <StatusBadge status={rec.status} />
-                           </div>
-                           <p className="text-sm text-bone/80 italic line-clamp-1 mb-auto">&ldquo;{rec.reason}&rdquo;</p>
-                           <div className="mt-3 flex gap-2">
-                             {rec.status === 'pending' && (
-                               <Link href={`/recommend/${rec.id}`} className="px-4 py-1.5 bg-cinema-red text-bone text-xs font-bold rounded-lg hover:bg-cinema-red/90">View Rec</Link>
-                             )}
-                             {rec.status === 'watched' && (
-                               <Link href={`/recommend/${rec.id}`} className="px-4 py-1.5 bg-cinema-red text-bone text-xs font-bold rounded-lg hover:bg-cinema-red/90">Rate It</Link>
-                             )}
-                             {rec.status === 'rated' && rec.primaryStamp && (
-                               <StampBadge stamp={rec.primaryStamp} size="xs" />
-                             )}
-                           </div>
-                        </div>
-                      </div>
-                    );
-                 })}
-               </div>
+                  {received.map(rec => {
+                     const title = getTitle(rec.titleId);
+                     const fromUser = getUser(rec.recommendedBy);
+                     const actions = getActions(rec);
+                     if (!title) return null;
+
+                     return (
+                       <div key={rec.id} className="flex gap-4 p-4 rounded-2xl bg-surface border border-border group">
+                         <Link href={`/title/${rec.titleId}?recId=${rec.id}`} className="w-16 h-24 shrink-0 rounded-lg overflow-hidden border border-border/50 bg-ink">
+                           {title.posterUrl && <img src={title.posterUrl} alt={title.title} className="w-full h-full object-cover" />}
+                         </Link>
+                         <div className="flex-1 min-w-0 py-1 flex flex-col">
+                            <div className="flex justify-between items-start mb-1">
+                              <div>
+                                <Link href={`/title/${rec.titleId}?recId=${rec.id}`} className="font-bold text-bone truncate pr-4 hover:text-cinema-red transition-colors block">
+                                  {title.title}
+                                </Link>
+                                <p className="text-xs text-muted mb-2">from {fromUser?.displayName}</p>
+                              </div>
+                               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-white/5 bg-white/5 text-muted">
+                                 {rec.verdictState === 'verdict_given' ? 'Verdict Given' : 'Verdict Pending'}
+                               </span>
+                            </div>
+                            <p className="text-sm text-bone/80 italic line-clamp-1 mb-auto leading-relaxed">&ldquo;{rec.reason}&rdquo;</p>
+                            <div className="mt-4 flex flex-wrap items-center gap-3">
+                               {actions.primary && (
+                                 <button 
+                                   onClick={() => {
+                                     if (actions.primary?.action === 'view_verdict') openVerdict(rec.id);
+                                     else openGiveVerdictModal(rec.id);
+                                   }} 
+                                   className="px-4 py-2 bg-cinema-red text-bone text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-cinema-red/90 transition-all btn-press shadow-lg shadow-cinema-red/10"
+                                 >
+                                   {actions.primary.label}
+                                 </button>
+                               )}
+                               {actions.secondary && (
+                                 <button 
+                                   onClick={() => {
+                                     if (actions.secondary?.action === 'view_verdict') openVerdict(rec.id);
+                                     else if (actions.secondary?.action === 'edit_verdict') openGiveVerdictModal(rec.id, true);
+                                     else router.push(`/title/${rec.titleId}?recId=${rec.id}`);
+                                   }}
+                                   className="px-4 py-2 bg-white/5 border border-white/10 text-bone/70 text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-white/10 transition-all"
+                                 >
+                                   {actions.secondary.label}
+                                 </button>
+                               )}
+                            </div>
+                         </div>
+                       </div>
+                     );
+                  })}
+                </div>
             </div>
           )}
 
@@ -311,44 +362,57 @@ export default function ProfilePage() {
             <div className="space-y-4 animate-in fade-in duration-300">
                <div className="mb-6">
                  <h2 className="text-lg font-bold text-bone">Ratings Given</h2>
-                 <p className="text-sm text-muted">The verdicts you&apos;ve handed out.</p>
+                 <p className="text-sm text-muted">The social feedback you&apos;ve given to your crew.</p>
                </div>
                
                <div className="grid grid-cols-1 gap-4">
-                 {myRatings.map(rating => {
-                    const rec = recommendations.find(r => r.id === rating.recommendationId);
-                    const title = rec ? getTitle(rec.titleId) : null;
-                    const fromUser = rec ? getUser(rec.recommendedBy) : null;
-                    if (!title) return null;
-                    return (
-                      <div key={rating.id} className="p-5 rounded-2xl bg-surface border border-border flex flex-col sm:flex-row gap-5">
-                         <div className={`w-12 h-16 sm:w-20 sm:h-28 shrink-0 rounded-lg overflow-hidden border border-border/50 ${!title.posterUrl ? `poster-gradient-${title.posterGradient}` : ''}`}>
-                            {title.posterUrl && <img src={title.posterUrl} alt={title.title} className="w-full h-full object-cover" />}
-                         </div>
-                         <div className="flex-1">
-                           <div className="flex justify-between items-start mb-2">
-                             <div>
-                               <h3 className="font-bold text-bone text-base">{title.title}</h3>
-                               <p className="text-xs text-muted mb-2">Rec&apos;d by {fromUser?.displayName}</p>
-                             </div>
-                             {renderStars(rating.contentRating)}
-                           </div>
-                           <div className="flex flex-wrap items-center gap-2 mb-3">
-                             <span className="text-xs font-bold px-2 py-1 bg-ink rounded border border-border text-muted">{rating.recommendationResult}</span>
-                             {rating.stamp && <StampBadge stamp={rating.stamp} size="xs" />}
-                           </div>
-                           {rating.comment && (
-                             <div className="bg-ink p-3 rounded-xl border border-border/50 relative">
-                               <span className="text-cinema-red text-xl absolute top-2 left-2 font-serif opacity-30">"</span>
-                               <p className="text-sm text-bone/90 italic relative z-10 pl-4">&nbsp;{rating.comment}</p>
-                             </div>
-                           )}
-                         </div>
-                      </div>
-                    );
-                 })}
-               </div>
+                  {rated.map(rating => {
+                     const rec = recommendations.find(r => r.id === rating.recommendationId);
+                     const title = rec ? getTitle(rec.titleId) : null;
+                     const fromUser = rec ? getUser(rec.recommendedBy) : null;
+                     if (!title) return null;
+                     return (
+                       <div key={rating.id} className="p-5 rounded-2xl bg-surface border border-border flex flex-col sm:flex-row gap-5">
+                          <Link href={`/title/${title.id}?recId=${rec?.id}`} className="w-12 h-16 sm:w-20 sm:h-28 shrink-0 rounded-lg overflow-hidden border border-border/50 bg-ink">
+                             {title.posterUrl && <img src={title.posterUrl} alt={title.title} className="w-full h-full object-cover" />}
+                          </Link>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <h3 className="font-bold text-bone text-base">{title.title}</h3>
+                                <p className="text-xs text-muted mb-2">Rec&apos;d by {fromUser?.displayName}</p>
+                              </div>
+                              <div className="flex flex-col items-end gap-2">
+                                {renderStars(rating.contentRating)}
+                                 <button 
+                                   onClick={() => openVerdict(rec!.id)}
+                                   className="px-3 py-1 bg-white/5 border border-white/10 text-bone/60 text-[10px] font-bold uppercase tracking-wider rounded hover:bg-white/10 transition-all"
+                                 >
+                                   View Verdict
+                                 </button>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 mb-3">
+                              <span className="text-xs font-bold px-2 py-1 bg-ink rounded border border-border text-muted">{rating.recommendationResult}</span>
+                              {rating.stamp && <StampBadge stamp={rating.stamp} size="xs" />}
+                            </div>
+                            {rating.comment && (
+                              <div className="bg-ink p-3 rounded-xl border border-border/50 relative">
+                                <span className="text-cinema-red text-xl absolute top-2 left-2 font-serif opacity-30">"</span>
+                                <p className="text-sm text-bone/90 italic relative z-10 pl-4">&nbsp;{rating.comment}</p>
+                              </div>
+                            )}
+                          </div>
+                       </div>
+                     );
+                  })}
+                </div>
             </div>
+          )}
+
+          {/* TAB CONTENT: CREW */}
+          {activeTab === 'crew' && (
+            <ProfileCrewTab />
           )}
 
           {/* TAB CONTENT: WATCHLIST */}
@@ -416,25 +480,50 @@ export default function ProfilePage() {
         <div className="hidden lg:block lg:col-span-4 space-y-8">
           
           {/* TASTE SCORE CARD */}
-          <div className="rounded-3xl bg-surface border border-border overflow-hidden">
-            <div className="p-6 border-b border-border text-center flex flex-col items-center">
+          <div className="rounded-3xl bg-surface border border-border overflow-hidden shadow-2xl">
+            <div className="p-8 border-b border-border text-center flex flex-col items-center bg-gradient-to-b from-white/[0.02] to-transparent">
               <TasteScoreRing score={tasteScore.score} size="lg" />
-              <h2 className="text-xl font-bold font-editorial text-bone mt-4">{getTasteLabel(tasteScore.score)}</h2>
-              <p className="text-sm text-muted mt-1">Your recommendations usually land.</p>
+              <h2 className="text-2xl font-bold font-editorial text-bone mt-4">{getTasteLabel(tasteScore.score)}</h2>
+              <p className="text-sm text-muted mt-2 max-w-[240px]">
+                Your recommendations usually land well with your crew.
+              </p>
             </div>
-            <div className="p-6 bg-ink/50 space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted uppercase tracking-widest font-semibold">Best Category</span>
-                <span className="text-sm font-bold text-bone">Psychological Thrillers</span>
+            <div className="p-6 bg-ink/30 space-y-5">
+              <div className="flex justify-between items-center group/stat">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted uppercase tracking-widest font-bold">Response Rate</span>
+                  <div className="group relative">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted/40 cursor-help"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-surface border border-border rounded-lg text-[10px] text-muted invisible group-hover:visible shadow-xl">
+                      Percentage of your recommendations that actually received a verdict.
+                    </div>
+                  </div>
+                </div>
+                <span className="text-sm font-bold text-bone">{tasteScore.responseRate}%</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted uppercase tracking-widest font-semibold">Most Trusted By</span>
-                <span className="text-sm font-bold text-cinema-red">{tasteScore.mostTrustedBy}</span>
+              
+              <div className="flex justify-between items-center group/stat">
+                <span className="text-xs text-muted uppercase tracking-widest font-bold">Avg. Impact</span>
+                <span className="text-sm font-bold text-bone">{tasteScore.averageImpactScore}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted uppercase tracking-widest font-semibold">Recent Trend</span>
-                <span className="text-sm font-bold text-green-500">+8 this month</span>
+
+              <div className="flex justify-between items-center group/stat">
+                <span className="text-xs text-muted uppercase tracking-widest font-bold">Most Trusted By</span>
+                <span className="text-sm font-bold text-cinema-red">{tasteScore.mostTrustedBy || 'New Crew'}</span>
               </div>
+
+              <div className="flex justify-between items-center group/stat">
+                <span className="text-xs text-muted uppercase tracking-widest font-bold">Trend</span>
+                <div className="flex items-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-green-500"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+                  <span className="text-sm font-bold text-green-500">Up</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 bg-cinema-red/5 border-t border-cinema-red/10">
+               <p className="text-[10px] text-cinema-red/70 font-bold uppercase tracking-widest text-center">
+                 Based on {tasteScore.totalRecommendationsRated} rated recommendations
+               </p>
             </div>
           </div>
 
@@ -442,32 +531,44 @@ export default function ProfilePage() {
           <div className="rounded-2xl bg-surface border border-border p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Favorite Categories</h3>
-              <button className="text-[10px] font-bold text-cinema-red">EDIT</button>
+              <button onClick={() => setShowEditPrefsModal(true)} className="text-[10px] font-bold text-cinema-red hover:underline">EDIT</button>
             </div>
             
             <div className="space-y-4">
               <div>
-                <p className="text-[10px] text-muted mb-2 uppercase">Genres</p>
+                <p className="text-[10px] text-muted mb-2 uppercase tracking-tighter">Genres</p>
                 <div className="flex flex-wrap gap-2">
-                  {['Mystery', 'Thriller', 'Drama', 'Sci-fi'].map(g => (
-                    <span key={g} className="px-2.5 py-1 bg-ink border border-border rounded text-xs text-bone/80">{g}</span>
-                  ))}
+                  {userPreferences.genres.length > 0 ? (
+                    userPreferences.genres.map(g => (
+                      <span key={g} className="px-2.5 py-1 bg-ink border border-border rounded text-[11px] font-medium text-bone/80">{g}</span>
+                    ))
+                  ) : (
+                    <p className="text-[10px] text-muted italic">No genres selected</p>
+                  )}
                 </div>
               </div>
               <div>
-                <p className="text-[10px] text-muted mb-2 uppercase">Moods</p>
+                <p className="text-[10px] text-muted mb-2 uppercase tracking-tighter">Moods</p>
                 <div className="flex flex-wrap gap-2">
-                  {['Slow burn', 'Emotional', 'Mind-bending'].map(g => (
-                    <span key={g} className="px-2.5 py-1 bg-ink border border-border rounded text-xs text-bone/80">{g}</span>
-                  ))}
+                  {userPreferences.moods.length > 0 ? (
+                    userPreferences.moods.map(m => (
+                      <span key={m} className="px-2.5 py-1 bg-ink border border-border rounded text-[11px] font-medium text-bone/80">{m}</span>
+                    ))
+                  ) : (
+                    <p className="text-[10px] text-muted italic">No moods selected</p>
+                  )}
                 </div>
               </div>
               <div>
-                <p className="text-[10px] text-muted mb-2 uppercase">Platforms</p>
+                <p className="text-[10px] text-muted mb-2 uppercase tracking-tighter">Platforms</p>
                 <div className="flex flex-wrap gap-2">
-                  {['Netflix', 'MUBI', 'Prime Video'].map(g => (
-                    <span key={g} className="px-2.5 py-1 bg-ink border border-border rounded text-xs text-bone/80">{g}</span>
-                  ))}
+                  {userPreferences.platforms.length > 0 ? (
+                    userPreferences.platforms.map(p => (
+                      <span key={p} className="px-2.5 py-1 bg-ink border border-border rounded text-[11px] font-medium text-bone/80">{p}</span>
+                    ))
+                  ) : (
+                    <p className="text-[10px] text-muted italic">No platforms selected</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -500,9 +601,9 @@ export default function ProfilePage() {
                 </Link>
               ))}
             </div>
-            <button className="w-full mt-4 py-2.5 bg-surface-hover border border-border text-bone text-xs font-bold rounded-xl btn-press">
+            <Link href="/groups" className="block w-full mt-4 py-2.5 bg-surface-hover border border-border text-bone text-xs font-bold rounded-xl btn-press text-center hover:bg-warm-grey transition-colors">
               Explore Crews
-            </button>
+            </Link>
           </div>
 
           {/* INVITE CTA */}
@@ -511,13 +612,39 @@ export default function ProfilePage() {
             <p className="text-xs text-muted mb-4 leading-relaxed">
               Rec&apos;d gets better when your friends start recommending too.
             </p>
-            <button className="w-full py-3 bg-cinema-red text-bone font-bold rounded-xl text-sm hover:bg-cinema-red/90 transition-colors btn-press">
+            <button 
+              onClick={() => setShowInviteModal(true)}
+              className="w-full py-3 bg-cinema-red text-bone font-bold rounded-xl text-sm hover:bg-cinema-red/90 transition-colors btn-press"
+            >
               Invite friends
             </button>
           </div>
 
         </div>
       </div>
+
+      <EditProfileModal 
+        isOpen={showEditProfileModal} 
+        onClose={() => setShowEditProfileModal(false)} 
+      />
+      
+      <EditPreferencesModal 
+        isOpen={showEditPrefsModal} 
+        onClose={() => setShowEditPrefsModal(false)} 
+      />
+      
+      <InviteModal 
+        isOpen={showInviteModal} 
+        onClose={() => setShowInviteModal(false)} 
+      />
+
+       {selectedRecId && (
+         <VerdictModal 
+           recommendationId={selectedRecId}
+           isOpen={verdictModalOpen}
+           onClose={() => setVerdictModalOpen(false)}
+         />
+       )}
     </div>
   );
 }

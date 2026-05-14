@@ -11,37 +11,99 @@ export interface User {
   avatarUrl: string;
   bio: string;
   tasteArchetype: TasteArchetype;
+  tasteScore?: number;
+  reputationLabel?: string;
+  favoriteGenres?: Genre[];
+  favoriteMoods?: Mood[];
+  profileVisibility?: 'public' | 'crew_only' | 'private';
   createdAt: string;
+}
+
+export interface UserConnection {
+  id: string;
+  userId: string;
+  connectedUserId: string;
+  status: 'connected' | 'removed';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PublicUserProfile extends User {
+  publicListIds: string[];
+  publicRecommendationIds: string[];
+  badgeIds: string[];
+  mutualGroupIds: string[];
+  isConnectedToCurrentUser: boolean;
+}
+
+export interface CrewMember {
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  tasteScore: number;
+  reputationLabel: string;
+  tasteArchetype: TasteArchetype;
+  mutualGroupCount: number;
+  favoriteGenres: Genre[];
+  addedAt: string;
+}
+
+export interface PeopleSearchResult {
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  tasteScore: number;
+  reputationLabel: string;
+  mutualGroupCount: number;
+  isConnectedToCurrentUser: boolean;
 }
 
 export type TasteArchetype =
   | 'Emotional Damage Dealer'
   | 'Plot Twist Addict'
-  | 'Comfort Watch Specialist'
+  | 'Comfort Watch Expert'
   | 'Horror Sicko'
-  | 'Rom-Com Apologist'
+  | 'Rom-Com Defender'
   | 'Prestige TV Snob'
   | 'Anime Evangelist'
-  | 'Slow-Burn Criminal'
+  | 'Slow-Burn Believer'
   | 'Franchise Defender'
-  | 'Documentary Goblin'
+  | 'Documentary Deep Diver'
   | 'Sitcom Loyalist'
-  | 'Thriller Merchant';
+  | 'Thriller Dealer';
 
 export const TASTE_ARCHETYPES: TasteArchetype[] = [
   'Emotional Damage Dealer',
   'Plot Twist Addict',
-  'Comfort Watch Specialist',
+  'Comfort Watch Expert',
   'Horror Sicko',
-  'Rom-Com Apologist',
+  'Rom-Com Defender',
   'Prestige TV Snob',
   'Anime Evangelist',
-  'Slow-Burn Criminal',
+  'Slow-Burn Believer',
   'Franchise Defender',
-  'Documentary Goblin',
+  'Documentary Deep Diver',
   'Sitcom Loyalist',
-  'Thriller Merchant',
+  'Thriller Dealer',
 ];
+
+export const TASTE_ARCHETYPE_DESCRIPTIONS: Record<TasteArchetype, string> = {
+  'Emotional Damage Dealer': 'Stories that hurt beautifully.',
+  'Plot Twist Addict': 'You live for the reveal.',
+  'Comfort Watch Expert': 'Safe picks. Good vibes.',
+  'Horror Sicko': 'Fear is part of the fun.',
+  'Rom-Com Defender': 'Love clichés, proudly.',
+  'Prestige TV Snob': 'Only the serious stuff.',
+  'Anime Evangelist': 'You will convert people.',
+  'Slow-Burn Believer': 'Patience. Payoff. Pain.',
+  'Franchise Defender': 'Sequels deserve rights.',
+  'Documentary Deep Diver': 'Real stories hit harder.',
+  'Sitcom Loyalist': 'Low stakes. High comfort.',
+  'Thriller Dealer': 'Stress, but make it fun.',
+};
+
 
 // User preferences (set during onboarding)
 export interface UserPreferences {
@@ -64,7 +126,9 @@ export type StampType =
   | 'Crew Pick'
   | 'Risky But Worth It'
   | 'Not For Everyone'
-  | 'Missed The Mark';
+  | 'Missed The Mark'
+  | 'Good Call'
+  | 'Mixed Response';
 
 // Achievement badges (shown on profile, separate from stamps)
 export type AchievementBadgeType =
@@ -83,7 +147,7 @@ export type BadgeType = StampType | AchievementBadgeType;
 export type BadgeCategory = 'recommendation' | 'achievement' | 'group' | 'warning';
 
 export const CORE_STAMPS: StampType[] = [
-  'Certified Good Call', 'Worth It', 'Crew Pick', 'Risky But Worth It', 'Not For Everyone', 'Missed The Mark'
+  'Certified Good Call', 'Worth It', 'Crew Pick', 'Risky But Worth It', 'Not For Everyone', 'Missed The Mark', 'Good Call', 'Mixed Response'
 ];
 
 export const ACHIEVEMENT_BADGES: AchievementBadgeType[] = [
@@ -171,6 +235,28 @@ export interface GroupMember {
 // TITLES
 // ============================================
 
+export interface PlatformAvailability {
+  platformName: string;
+  logoUrl?: string;
+  url?: string;
+  region?: string;
+}
+
+export interface DirectorOrCreator {
+  id: string;
+  name: string;
+  role: 'Director' | 'Creator';
+  profileImageUrl?: string;
+}
+
+export interface CastMember {
+  id: string;
+  name: string;
+  characterName: string;
+  profileImageUrl?: string;
+  order: number;
+}
+
 export interface Title {
   id: string;
   tmdbId?: number;
@@ -190,10 +276,11 @@ export interface Title {
     critics?: number;
   };
   platforms?: string[];
+  platformAvailability?: PlatformAvailability[];
   format?: ContentFormat;
   language?: string;
-  cast?: string[];
-  creatorOrDirector?: string;
+  cast: CastMember[];
+  directorOrCreatorProfile: DirectorOrCreator;
 }
 
 export type TitleType = 'movie' | 'series' | 'limited_series' | 'documentary' | 'anime' | 'short_film';
@@ -204,14 +291,11 @@ export type ContentFormat = 'Movie' | 'Series' | 'Limited series' | 'Documentary
 // RECOMMENDATIONS
 // ============================================
 
-export type RecommendationStatus =
-  | 'pending'
-  | 'accepted'
-  | 'maybe_later'
-  | 'not_my_vibe'
-  | 'watching'
-  | 'watched'
-  | 'rated';
+export type VerdictState =
+  | 'verdict_pending'
+  | 'verdict_given'
+  | 'dismissed'
+  | 'none';
 
 export interface Recommendation {
   id: string;
@@ -225,28 +309,52 @@ export interface Recommendation {
   moodTags: MoodTag[];
   tasteMatchScore?: number;
   primaryStamp?: StampType;
-  status: RecommendationStatus;
-  savedToWatchlist?: boolean;
+  verdictState: VerdictState;
   createdAt: string;
 }
 
+export interface ReceiverRecommendationState {
+  recommendationId: string;
+  receiverId: string;
+  verdictState: VerdictState;
+  watchlistStatus?: 'saved' | 'none';
+  hasRated: boolean;
+  ratingId?: string;
+  updatedAt: string;
+}
+
+export type ViewerRole = 'recommender' | 'receiver' | 'ratedReceiver' | 'groupMember' | 'outsider';
+
+export interface ViewerContext {
+  viewerRole: ViewerRole;
+  isRecommender: boolean;
+  isReceiver: boolean;
+  hasRated: boolean;
+  verdictState: VerdictState;
+  canGiveVerdict: boolean;
+  canViewVerdict: boolean;
+  canEditVerdict: boolean;
+  canSave: boolean;
+}
+
 export type MoodTag =
-  | 'Comfort watch'
+  | 'Comfort Watch'
+  | 'Feel-good'
   | 'Intense'
   | 'Emotional'
   | 'Funny'
   | 'Dark'
   | 'Weird'
-  | 'Inspiring'
   | 'Mind-bending'
-  | 'Slow burn'
+  | 'Slow Burn'
   | 'Prestige'
   | 'Cult pick';
 
 export const MOOD_TAGS: MoodTag[] = [
-  'Comfort watch', 'Intense', 'Emotional', 'Funny', 'Dark',
-  'Weird', 'Inspiring', 'Mind-bending', 'Slow burn', 'Prestige', 'Cult pick',
+  'Comfort Watch', 'Feel-good', 'Intense', 'Emotional', 'Funny', 'Dark',
+  'Weird', 'Mind-bending', 'Slow Burn', 'Prestige', 'Cult pick',
 ];
+
 
 // ============================================
 // RATING (3-step flow)
@@ -279,10 +387,25 @@ export interface WatchlistItem {
   titleId: string;
   addedFromRecommendationId?: string;
   recommendedBy?: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'saved' | 'recommended' | 'watching' | 'watched' | 'rated';
+  addedBy: 'self' | 'recommendation' | 'group';
+  listIds: string[];
+  verdictState: VerdictState;
   stamp?: StampType;
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface WatchlistList {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  privacy: 'private' | 'shared' | 'group';
+  coverStyle: 'collage' | 'gradient' | 'poster_stack';
+  coverImage?: string;
+  titleIds: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ============================================
@@ -360,20 +483,80 @@ export interface GroupComment {
 
 export interface TasteScore {
   score: number;
-  totalSent: number;
-  totalRated: number;
-  avgAccuracy: number;
-  goodCallPct: number;
-  mostTrustedBy: string;
-  bestCategories?: string[];
+  label: string;
+  totalRecommendationsSent: number;
+  totalRecommendationsRated: number;
+  responseRate: number;
+  averageImpactScore: number;
+  bestCategory?: string;
+  mostTrustedBy?: string;
   recentTrend?: 'up' | 'down' | 'stable';
+  calculatedAt: string;
+}
+
+export interface TasteScoreBreakdown extends TasteScore {
+  userId: string;
+  scope: 'global' | 'group';
+  groupId?: string;
+}
+
+export interface RecommendationImpact {
+  id: string;
+  recommendationId: string;
+  recommenderId: string;
+  receiverId: string;
+  groupId?: string;
+  contentRating: number;
+  contentRatingScore: number;
+  recommendationResult: RecAccuracy;
+  recommendationResultScore: number;
+  impactScore: number;
+  stamp?: StampType;
+  createdAt: string;
+}
+
+export interface TasteMatchBreakdown {
+  recommendationId?: string;
+  titleId: string;
+  receiverId: string;
+  recommenderId?: string;
+  groupId?: string;
+  tasteMatchScore: number;
+  contentPreferenceMatch: number;
+  recommenderAffinity: number;
+  crewSignal: number;
+  recommenderConfidence: number;
+  signalConfidence: 'strong' | 'some' | 'new';
+  explanationBullets: string[];
+  calculatedAt: string;
+}
+
+export interface RecommenderAffinity {
+  recommenderId: string;
+  receiverId: string;
+  totalPastRecommendations: number;
+  averageResultScore: number;
+  signalConfidence: 'strong' | 'some' | 'new';
+  affinityScore: number;
+}
+
+export interface CrewSignal {
+  titleId: string;
+  receiverId: string;
+  groupId?: string;
+  savedByCrewCount: number;
+  positiveRatingsCount: number;
+  positiveStampCount: number;
+  groupVerdict?: string;
+  crewSignalScore: number;
 }
 
 export function getTasteLabel(score: number): string {
   if (score >= 90) return 'Certified Taste';
   if (score >= 80) return 'Great Taste';
-  if (score >= 65) return 'Trusted Enough';
-  if (score >= 50) return 'Mixed Taste';
+  if (score >= 70) return 'Trusted Taste';
+  if (score >= 60) return 'Mixed Taste';
+  if (score >= 50) return 'Risky Taste';
   return 'Under Review';
 }
 
@@ -396,17 +579,18 @@ export interface LeaderboardEntry {
 export type Genre = 'Drama' | 'Comedy' | 'Thriller' | 'Horror' | 'Romance' | 'Sci-fi' | 'Documentary' | 'Anime' | 'Crime' | 'Fantasy';
 export const GENRES: Genre[] = ['Drama', 'Comedy', 'Thriller', 'Horror', 'Romance', 'Sci-fi', 'Documentary', 'Anime', 'Crime', 'Fantasy'];
 
-export type Mood = 'Comfort watch' | 'Intense' | 'Emotional' | 'Funny' | 'Dark' | 'Weird' | 'Inspiring' | 'Mind-bending' | 'Slow burn';
-export const MOODS: Mood[] = ['Comfort watch', 'Intense', 'Emotional', 'Funny', 'Dark', 'Weird', 'Inspiring', 'Mind-bending', 'Slow burn'];
+export type Mood = 'Comfort Watch' | 'Feel-good' | 'Intense' | 'Emotional' | 'Funny' | 'Dark' | 'Weird' | 'Mind-bending' | 'Slow Burn';
+export const MOODS: Mood[] = ['Comfort Watch', 'Feel-good', 'Intense', 'Emotional', 'Funny', 'Dark', 'Weird', 'Mind-bending', 'Slow Burn'];
 
-export type Format = 'Movie' | 'Series' | 'Limited series' | 'Documentary' | 'Anime' | 'Short film';
-export const FORMATS: Format[] = ['Movie', 'Series', 'Limited series', 'Documentary', 'Anime', 'Short film'];
+export type Format = 'Movie' | 'Series' | 'Mini Series' | 'Documentary' | 'Anime' | 'Short Film';
+export const FORMATS: Format[] = ['Movie', 'Series', 'Mini Series', 'Documentary', 'Anime', 'Short Film'];
 
-export type Language = 'English' | 'Hindi' | 'Korean' | 'Japanese' | 'Indian regional' | 'Global cinema';
-export const LANGUAGES: Language[] = ['English', 'Hindi', 'Korean', 'Japanese', 'Indian regional', 'Global cinema'];
+export type Language = 'English' | 'Hindi' | 'Tamil' | 'Telugu' | 'Malayalam' | 'Kannada' | 'Bengali' | 'Marathi' | 'Gujarati' | 'Punjabi' | 'Korean' | 'Japanese' | 'Global Cinema';
+export const LANGUAGES: Language[] = ['English', 'Hindi', 'Tamil', 'Telugu', 'Malayalam', 'Kannada', 'Bengali', 'Marathi', 'Gujarati', 'Punjabi', 'Korean', 'Japanese', 'Global Cinema'];
 
-export type StreamingPlatform = 'Netflix' | 'Prime Video' | 'Disney+' | 'Apple TV' | 'YouTube' | 'MUBI' | 'Theatre';
-export const PLATFORMS: StreamingPlatform[] = ['Netflix', 'Prime Video', 'Disney+', 'Apple TV', 'YouTube', 'MUBI', 'Theatre'];
+
+export type StreamingPlatform = 'Netflix' | 'Prime Video' | 'JioHotstar' | 'SonyLIV' | 'ZEE5' | 'AHA' | 'Apple TV' | 'YouTube' | 'MUBI' | 'Theatre';
+export const PLATFORMS: StreamingPlatform[] = ['Netflix', 'Prime Video', 'JioHotstar', 'SonyLIV', 'ZEE5', 'AHA', 'Apple TV', 'YouTube', 'MUBI', 'Theatre'];
 
 // ============================================
 // HELPERS
@@ -433,13 +617,16 @@ export const RECOMMENDATION_REASONS = [
   "Good story. Better damage.",
 ];
 
-// Stamps to show based on rating tier
-export function getContextualStamps(contentRating: number, recAccuracy: RecAccuracy): StampType[] {
-  if (contentRating >= 4 && recAccuracy === 'Nailed it') {
-    return ['Certified Good Call', 'Crew Pick', 'Worth It'];
+// Stamps to show based on rating result
+export function getContextualStamps(recAccuracy: RecAccuracy): StampType[] {
+  switch (recAccuracy) {
+    case 'Nailed it':
+      return ['Certified Good Call', 'Worth It', 'Good Call' as any, 'Cult Pick'];
+    case 'Pretty close':
+      return ['Risky But Worth It', 'Mixed Response' as any, 'Not For Everyone', 'Worth It'];
+    case 'Not for me':
+      return ['Missed The Mark', 'Not For Everyone', 'Questionable Taste' as any];
+    default:
+      return CORE_STAMPS;
   }
-  if (contentRating >= 3 || recAccuracy === 'Pretty close') {
-    return ['Worth It', 'Risky But Worth It', 'Not For Everyone'];
-  }
-  return ['Not For Everyone', 'Missed The Mark'];
 }

@@ -10,10 +10,20 @@ interface InviteModalProps {
   inviterName?: string;
 }
 
-export default function InviteModal({ isOpen, onClose, groupName, inviterName = 'Aniket' }: InviteModalProps) {
+export default function InviteModal({ 
+  isOpen, 
+  onClose, 
+  groupName, 
+  inviterName = 'Aniket',
+  inviteCode,
+  inviteId 
+}: InviteModalProps & { inviteCode?: string, inviteId?: string }) {
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState('');
-  const inviteLink = 'https://recd.app/invite/ABC123';
+  
+  const inviteLink = inviteCode 
+    ? `https://recd.app/join/${inviteCode}` 
+    : `https://recd.app/invite/${inviteId || 'ABC123'}`;
 
   const previewMsg = groupName
     ? `${inviterName} invited you to join ${groupName} on Rec'd — recommend movies, stamp good picks, and settle who actually has taste.`

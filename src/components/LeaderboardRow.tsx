@@ -38,7 +38,8 @@ export default function LeaderboardRow({ entry, isCurrentUser = false }: Leaderb
       </div>
       
       <div className="flex flex-col items-end shrink-0">
-        <div className="font-bold text-xl text-cinema-red">{entry.tasteScore}%</div>
+        <div className="font-bold text-xl text-cinema-red leading-none">{entry.tasteScore}%</div>
+        <div className="text-[10px] font-bold text-muted uppercase tracking-widest mt-1">Taste Score</div>
         {entry.badge && (
           <div className="hidden sm:block mt-1">
             <StampBadge stamp={entry.badge} size="sm" />

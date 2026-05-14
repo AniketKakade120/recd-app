@@ -24,9 +24,10 @@ const SIZES = {
   xl: 'w-16 h-16 text-xl',
 };
 
-export default function UserAvatar({ name, avatarUrl, size = 'md', className = '' }: UserAvatarProps) {
-  const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-  const colorClass = AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+export default function UserAvatar({ name = 'User', avatarUrl, size = 'md', className = '' }: UserAvatarProps) {
+  const safeName = name || 'User';
+  const initials = safeName.split(' ').map(n => n && n[0]).filter(Boolean).join('').slice(0, 2).toUpperCase();
+  const colorClass = AVATAR_COLORS[safeName.charCodeAt(0) % AVATAR_COLORS.length];
 
   if (avatarUrl) {
     return (

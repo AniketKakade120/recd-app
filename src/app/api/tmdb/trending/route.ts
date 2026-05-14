@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getTrendingTmdb } from '@/lib/tmdb';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const region = searchParams.get('region') || 'IN';
   try {
-    const results = await getTrendingTmdb();
+    const results = await getTrendingTmdb(region);
     return NextResponse.json(results);
   } catch (error) {
     console.error('TMDB Trending Error:', error);

@@ -6,7 +6,8 @@ export function cn(...classes: (string | boolean | undefined | null)[]): string 
 
 export function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  // Force en-US locale to avoid hydration mismatches between server and client
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 export function formatRelativeTime(dateStr: string): string {

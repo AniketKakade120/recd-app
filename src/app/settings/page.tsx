@@ -16,15 +16,28 @@ function SettingsSection({ title, children }: { title: string; children: React.R
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { currentUser, logout } = useApp();
+  const { currentUser, logout, updateUser } = useApp();
   const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
   const [bio, setBio] = useState(currentUser?.bio || '');
   const [archetype, setArchetype] = useState<TasteArchetype>(currentUser?.tasteArchetype || 'Emotional Damage Dealer');
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await updateUser({
+        displayName,
+        bio,
+        tasteArchetype: archetype
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleLogout = () => {
@@ -118,11 +131,14 @@ export default function SettingsPage() {
         <button onClick={handleLogout} className="px-4 py-2 text-xs text-muted hover:text-cinema-red transition-colors">
           Sign out
         </button>
-        <button onClick={handleSave}
+        <button 
+          onClick={handleSave}
+          disabled={isSaving}
           className={`px-6 py-2.5 rounded-xl text-sm font-semibold btn-press transition-all ${
             saved ? 'bg-cinema-red/20 text-cinema-red border border-cinema-red/30' : 'bg-cinema-red text-bone hover:bg-cinema-red/90'
-          }`}>
-          {saved ? 'Saved ✓' : 'Save Changes'}
+          }`}
+        >
+          {isSaving ? 'Saving...' : saved ? 'Saved ✓' : 'Save Changes'}
         </button>
       </div>
     </div>

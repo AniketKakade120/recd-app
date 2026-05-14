@@ -40,6 +40,10 @@ create table public.titles (
   external_rating numeric,
   platforms text[] default '{}',
   format text,
+  language text,
+  cast_data jsonb default '[]',
+  director_data jsonb default '{}',
+  watch_providers jsonb default '{}',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

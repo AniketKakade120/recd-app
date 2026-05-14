@@ -5,6 +5,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/lib/context';
 import { useState, useEffect } from 'react';
 import InviteModal from './InviteModal';
+import RecommendModal from './RecommendModal';
+import GiveVerdictModal from './GiveVerdictModal';
+import ToastOverlay from './ToastOverlay';
 
 const navItems = [
   { name: 'Home', path: '/home', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
@@ -15,15 +18,38 @@ const navItems = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { isAuthenticated, currentUser, loading } = useApp();
+  const { isAuthenticated, currentUser, loading, openRecommendModal, isOnboarded, logout } = useApp();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !isAuthenticated && !['/', '/login', '/signup', '/onboarding'].includes(pathname)) {
-      router.push('/onboarding');
+    const isPublicRoute = ['/', '/login', '/signup', '/onboarding'].includes(pathname) || pathname.startsWith('/list/');
+    
+    if (!loading) {
+      console.log(`[Rec'd Shell] Path: ${pathname}, Auth: ${isAuthenticated}, Onboarded: ${isOnboarded}`);
+      
+      // 1. If not authenticated and not on a public route, send to landing
+      if (!isAuthenticated && !isPublicRoute) {
+        router.push('/');
+        return;
+      }
+      
+      // 2. If authenticated but NOT onboarded, and not already on onboarding, send to onboarding
+      //    BUT only if we are NOT currently on /home (to avoid fighting with completeOnboarding's router.push)
+      if (isAuthenticated && !isOnboarded && pathname !== '/onboarding' && !pathname.startsWith('/list/')) {
+        console.log('[Rec\'d Shell] Redirecting to onboarding...');
+        router.push('/onboarding');
+        return;
+      }
+
+      // 3. If authenticated AND onboarded, and on a landing/login/onboarding page, send to home
+      if (isAuthenticated && isOnboarded && ['/', '/login', '/signup', '/onboarding'].includes(pathname)) {
+        console.log('[Rec\'d Shell] Redirecting to home...');
+        router.push('/home');
+      }
     }
-  }, [loading, isAuthenticated, pathname, router]);
+  }, [loading, isAuthenticated, isOnboarded, pathname, router]);
 
   if (loading) {
     return (
@@ -37,15 +63,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const noShell = !isAuthenticated || ['/', '/login', '/signup', '/onboarding'].includes(pathname);
-  if (noShell) return <main className="min-h-full flex flex-col">{children}</main>;
+  const noShell = !isAuthenticated || ['/', '/login', '/signup', '/onboarding'].includes(pathname) || pathname.startsWith('/list/');
+  if (noShell) {
+    return <main className="min-h-screen flex flex-col">{children}</main>;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Desktop Top Nav */}
-      <header className="hidden md:flex flex-col border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-40 px-6 pt-5 pb-0">
+      <header className="hidden md:flex flex-col border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-40 px-6 pt-3 pb-0">
         {/* Logo Centered on Top */}
-        <div className="flex justify-center mb-3">
+        <div className="flex justify-center mb-1">
           <Link href="/home" className="flex items-center gap-1.5 shrink-0">
             <span className="text-2xl font-bold text-bone font-editorial tracking-tight">
               Rec<span className="text-cinema-red">&apos;</span>d
@@ -82,17 +110,57 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               Invite
             </button>
             
-            <Link href="/recommend"
+            <button onClick={() => openRecommendModal()}
               className="px-4 py-1.5 rounded-lg font-semibold text-xs bg-cinema-red text-bone hover:bg-cinema-red/90 transition-colors btn-press">
               + Recommend
-            </Link>
+            </button>
 
-            <Link href="/profile" className="ml-2 w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center overflow-hidden hover:border-border-strong transition-colors btn-press">
+            <button onClick={() => setShowLogoutConfirm(true)}
+              className="ml-2 px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-cinema-red transition-colors btn-press">
+              Logout
+            </button>
+
+            <Link href="/profile" className="ml-1 w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center overflow-hidden hover:border-border-strong transition-colors btn-press">
                {currentUser?.displayName.charAt(0) || 'U'}
             </Link>
           </div>
         </div>
       </header>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-ink/80 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowLogoutConfirm(false)} />
+          <div className="relative w-full max-w-sm bg-surface border border-border rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-cinema-red/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg viewBox="0 0 24 24" width="24" height="24" className="text-cinema-red"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/></svg>
+              </div>
+              <h3 className="text-xl font-bold text-bone mb-2">Ready to head out?</h3>
+              <p className="text-muted text-sm mb-8">You&apos;ll need to sign back in to recommend or stamp your crew&apos;s taste.</p>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 py-3 bg-surface-hover border border-border text-bone font-semibold rounded-xl hover:bg-surface transition-colors btn-press"
+                >
+                  Stay
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowLogoutConfirm(false);
+                    logout();
+                    router.push('/');
+                  }}
+                  className="flex-1 py-3 bg-cinema-red text-bone font-bold rounded-xl hover:bg-cinema-red/90 transition-colors shadow-lg shadow-cinema-red/20 btn-press"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Top Nav (Logo only) */}
       <header className="md:hidden flex items-center justify-center border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-40 py-3.5">
@@ -111,7 +179,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-ink/95 backdrop-blur-xl z-50 flex justify-around items-center px-2 pt-3 pb-4 safe-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-ink/95 backdrop-blur-xl z-50 flex justify-around items-center px-2 pt-4 pb-8 safe-bottom">
         {[...navItems, { name: 'Profile', path: '/profile', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> }].map(item => {
           const isActive = pathname.startsWith(item.path);
           return (
@@ -127,13 +195,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
 
       {/* Mobile FAB */}
-      <Link href="/recommend"
+      <button onClick={() => openRecommendModal()}
         className="md:hidden fixed bottom-[90px] right-4 z-50 w-14 h-14 rounded-full bg-cinema-red shadow-lg flex items-center justify-center btn-press hover:bg-cinema-red/90 transition-colors"
         style={{ boxShadow: '0 4px 24px rgba(234,51,51,0.4)' }}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </Link>
+      </button>
 
+      <RecommendModal />
+      <GiveVerdictModal />
       <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} />
+      <ToastOverlay />
     </div>
   );
 }

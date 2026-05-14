@@ -21,16 +21,17 @@ export async function GET() {
   try {
     console.log('Starting seed...');
 
-    // 1. Seed Users
+    // 1. Seed Profiles (formerly users)
     const { error: userError } = await supabase
-      .from('users')
+      .from('profiles')
       .upsert(mockUsers.map(u => ({
         id: u.id,
         username: u.username,
         display_name: u.displayName,
         avatar_url: u.avatarUrl,
         bio: u.bio,
-        taste_archetype: u.tasteArchetype
+        taste_archetype: u.tasteArchetype,
+        onboarding_completed: true
       })));
     if (userError) throw userError;
 
@@ -39,6 +40,7 @@ export async function GET() {
       .from('titles')
       .upsert(mockTitles.map(t => ({
         id: t.id,
+        tmdb_id: t.tmdbId,
         title: t.title,
         type: t.type,
         poster_url: t.posterUrl,
@@ -48,7 +50,9 @@ export async function GET() {
         genres: t.genres,
         runtime: t.runtime,
         overview: t.overview,
-        external_rating: t.externalRating
+        external_rating: t.externalRating,
+        format: t.format,
+        language: t.language
       })));
     if (titleError) throw titleError;
 
@@ -62,7 +66,8 @@ export async function GET() {
         description: g.description,
         invite_code: g.inviteCode,
         created_by: g.createdBy,
-        avatar_gradient: g.avatarGradient
+        avatar_gradient: g.avatarGradient,
+        privacy: 'public'
       })));
     if (groupError) throw groupError;
 
@@ -88,7 +93,7 @@ export async function GET() {
         reason: r.reason,
         confidence_score: r.confidenceScore,
         mood_tags: r.moodTags,
-        status: r.status,
+        verdict_state: r.verdictState,
         primary_stamp: r.primaryStamp
       })));
     if (recError) throw recError;
@@ -123,7 +128,7 @@ export async function GET() {
       })));
     if (activityError) throw activityError;
 
-    return NextResponse.json({ success: true, message: 'Database seeded successfully with mock data!' });
+    return NextResponse.json({ success: true, message: 'Database seeded successfully with LIVE schema!' });
   } catch (err: any) {
     console.error('Seeding error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

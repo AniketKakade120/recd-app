@@ -7,12 +7,23 @@ import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useApp();
+  const { login, enterDemoMode } = useApp();
   const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    setLoading(true);
+    try {
+      await login();
+    } catch (err) {
+      console.error('Login failed:', err);
+      setLoading(false);
+    }
+  };
 
   const handleDemo = () => {
     setLoading(true);
-    setTimeout(() => { login(); router.push('/onboarding'); }, 800);
+    enterDemoMode();
+    setTimeout(() => { router.push('/onboarding'); }, 800);
   };
 
   return (
@@ -32,7 +43,7 @@ export default function LoginPage() {
         </div>
 
         <div className="rounded-2xl bg-surface border border-border p-6 space-y-3">
-          <button disabled={loading} onClick={handleDemo}
+          <button disabled={loading} onClick={handleLogin}
             className="w-full py-3 bg-bone text-ink font-semibold rounded-xl flex items-center justify-center gap-2.5 hover:bg-bone/90 transition-colors btn-press disabled:opacity-60 text-sm">
             {loading
               ? <div className="w-4 h-4 border-2 border-ink/30 border-t-ink rounded-full animate-spin" />

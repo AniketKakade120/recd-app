@@ -1,23 +1,111 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useApp } from '@/lib/context';
-import { REC_ACCURACY_OPTIONS, type RecAccuracy, CORE_STAMPS, type StampType } from '@/lib/types';
+import { REC_ACCURACY_OPTIONS, type RecAccuracy, CORE_STAMPS, type StampType, type Title } from '@/lib/types';
 import StampBadge from '@/components/StampBadge';
 import UserAvatar from '@/components/UserAvatar';
-import RecommendModal from '@/components/RecommendModal';
+import AddToListModal from '@/components/AddToListModal';
+import ClickableUserAvatar from '@/components/ClickableUserAvatar';
+import Breadcrumbs from '@/components/Breadcrumbs';
+import MobileBackLink from '@/components/MobileBackLink';
+import Link from 'next/link';
+import VerdictModal from '@/components/VerdictModal';
+import PlatformLogo from '@/components/PlatformLogo';
+import InviteModal from '@/components/InviteModal';
+import RecommendationCard from '@/components/RecommendationCard';
 
 export default function TitleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
   const recId = searchParams.get('recId');
+  const source = searchParams.get('source');
+  const listId = searchParams.get('listId');
+  const groupId = searchParams.get('groupId');
   const router = useRouter();
   
   const { 
-    getTitle, getUser, recommendations, watchlist, currentUser, addRating,
-    addToWatchlist, removeFromWatchlist, updateRecommendationStatus 
+    getTitle, addTitle, getUser, recommendations, watchlist, currentUser, addRating,
+    addToWatchlist, removeFromWatchlist, updateVerdictState,
+    getViewerContext, getActions, userConnections, ratings, addToast,
+    groups, watchlistLists, openRecommendModal, openGiveVerdictModal
   } = useApp();
+
+  const [tmdbLoading, setTmdbLoading] = useState(false);
+  const [tmdbError, setTmdbError] = useState(false);
+  const [similarTitles, setSimilarTitles] = useState<Title[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
+
+  // Fetch from TMDB if this is a tmdb-prefixed ID and not in context yet
+  useEffect(() => {
+    const existingTitle = getTitle(id);
+    const tmdbId = id.replace('tmdb-', '');
+    const typeHint = searchParams.get('type') || existingTitle?.type; // 'movie' or 'series'
+
+    async function fetchWithRetry(url: string, retries = 2): Promise<Response | null> {
+      for (let i = 0; i <= retries; i++) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) return res;
+          if (res.status === 400) return null; // Bad request, don't retry
+          // For 500s, retry after a brief delay
+          if (i < retries) await new Promise(r => setTimeout(r, 500 * (i + 1)));
+        } catch {
+          if (i < retries) await new Promise(r => setTimeout(r, 500 * (i + 1)));
+        }
+      }
+      return null;
+    }
+
+    async function fetchSimilar(type: string) {
+      setSimilarLoading(true);
+      const res = await fetchWithRetry(`/api/tmdb/similar?tmdbId=${tmdbId}&type=${type}`);
+      if (res) {
+        const data = await res.json();
+        setSimilarTitles(data);
+      }
+      setSimilarLoading(false);
+    }
+
+    async function fetchDetails() {
+      if (!existingTitle && id.startsWith('tmdb-')) {
+        setTmdbLoading(true);
+        setTmdbError(false);
+        
+        // If we know the type, try that first
+        const primaryType = typeHint === 'series' ? 'series' : 'movie';
+        const fallbackType = primaryType === 'movie' ? 'series' : 'movie';
+
+        let res = await fetchWithRetry(`/api/tmdb/details?tmdbId=${tmdbId}&type=${primaryType}`);
+        if (res) {
+          const data: Title = await res.json();
+          addTitle(data);
+          setTmdbLoading(false);
+          fetchSimilar(primaryType);
+          return;
+        }
+
+        // Fallback to other type
+        res = await fetchWithRetry(`/api/tmdb/details?tmdbId=${tmdbId}&type=${fallbackType}`);
+        if (res) {
+          const data: Title = await res.json();
+          addTitle(data);
+          setTmdbLoading(false);
+          fetchSimilar(fallbackType);
+          return;
+        }
+
+        setTmdbError(true);
+        setTmdbLoading(false);
+      } else if (existingTitle && existingTitle.id.startsWith('tmdb-')) {
+        // We already have the title details, just fetch similar
+        fetchSimilar(existingTitle.type);
+      }
+    }
+
+    fetchDetails();
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const title = getTitle(id);
   const recommendation = recId ? recommendations.find(r => r.id === recId) : null;
@@ -25,69 +113,182 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
   const watchlistItem = watchlist.find(w => w.titleId === id);
   const isSaved = !!watchlistItem;
 
-  // Modal Rating State
-  const [ratingModalOpen, setRatingModalOpen] = useState(false);
-  const [ratingStep, setRatingStep] = useState(1);
-  const [contentRating, setContentRating] = useState(0);
-  const [recAccuracy, setRecAccuracy] = useState<RecAccuracy | null>(null);
-  const [selectedStamp, setSelectedStamp] = useState<StampType | null>(null);
-  const [comment, setComment] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [recommendModalOpen, setRecommendModalOpen] = useState(false);
+  // Breadcrumb Logic
+  const breadcrumbItems = (() => {
+    const items = [];
+    
+    if (source === 'watchlist') {
+      items.push({ label: 'Watchlist', href: '/watchlist' });
+      if (listId) {
+        const list = watchlistLists.find(l => l.id === listId);
+        if (list) items.push({ label: list.name, href: `/watchlist/${list.id}` });
+      }
+    } else if (source === 'groups') {
+      items.push({ label: 'Groups', href: '/groups' });
+      if (groupId) {
+        const group = groups.find(g => g.id === groupId);
+        if (group) items.push({ label: group.name, href: `/groups/${group.id}` });
+      }
+    } else if (source === 'profile') {
+      items.push({ label: 'Profile', href: '/profile' });
+      const tab = searchParams.get('tab');
+      if (tab === 'recs_given') items.push({ label: 'Recommendations Given', href: '/profile?tab=recs_given' });
+      if (tab === 'recs_received') items.push({ label: 'Recommendations Received', href: '/profile?tab=recs_received' });
+      if (tab === 'rated') items.push({ label: 'Rated', href: '/profile?tab=rated' });
+    } else {
+      items.push({ label: 'Explore', href: '/explore' });
+    }
+    
+    items.push({ label: title?.title || 'Title', isCurrent: true });
+    return items;
+  })();
 
-  if (!title) {
+  const mobileBackLabel = (() => {
+    if (source === 'watchlist') {
+      if (listId) {
+        const list = watchlistLists.find(l => l.id === listId);
+        return list ? list.name : 'Watchlist';
+      }
+      return 'Watchlist';
+    }
+    if (source === 'groups') {
+      if (groupId) {
+        const group = groups.find(g => g.id === groupId);
+        return group ? group.name : 'Groups';
+      }
+      return 'Groups';
+    }
+    if (source === 'profile') {
+      const tab = searchParams.get('tab');
+      if (tab === 'recs_given') return 'Recs Given';
+      if (tab === 'recs_received') return 'Recs Received';
+      if (tab === 'rated') return 'Rated';
+      return 'Profile';
+    }
+    return 'Explore';
+  })();
+
+  const mobileBackHref = (() => {
+    if (source === 'watchlist') return listId ? `/watchlist/${listId}` : '/watchlist';
+    if (source === 'groups') return groupId ? `/groups/${groupId}` : '/groups';
+    if (source === 'profile') {
+      const tab = searchParams.get('tab');
+      return tab ? `/profile?tab=${tab}` : '/profile';
+    }
+    return '/explore';
+  })();
+  
+  // Auto-open modal if intent is 'rate'
+  useEffect(() => {
+    const intent = searchParams.get('intent');
+    const isEdit = searchParams.get('edit') === 'true';
+    if (intent === 'rate' && recommendation) {
+      openGiveVerdictModal(recommendation.id, isEdit);
+    }
+  }, [searchParams, recommendation, openGiveVerdictModal]);
+
+  // Unified logic for actions
+  const viewerContext = recommendation ? getViewerContext(recommendation) : null;
+  const actions = recommendation ? getActions(recommendation) : null;
+
+  const [addToListOpen, setAddToListOpen] = useState(false);
+  const [verdictModalOpen, setVerdictModalOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+
+  if (tmdbLoading) {
     return (
-      <div className="py-20 text-center">
-        <p className="text-muted">Title not found.</p>
-        <button onClick={() => router.back()} className="mt-4 px-4 py-2 bg-surface text-bone rounded-lg">Go back</button>
+      <div className="max-w-[1440px] mx-auto pb-24 lg:pb-12 animate-pulse">
+        <div className="px-4 sm:px-6 lg:px-12 py-4">
+          <div className="h-4 w-32 bg-surface rounded" />
+        </div>
+        <div className="relative w-full h-[50vh] min-h-[350px] flex items-end">
+          <div className="absolute inset-0 bg-surface/30" />
+          <div className="relative z-10 w-full px-4 sm:px-6 lg:px-12 pb-8 flex flex-col md:flex-row items-start md:items-end gap-6 md:gap-10">
+            <div className="shrink-0 w-32 md:w-48 lg:w-64 aspect-[2/3] rounded-xl bg-surface border border-border/50" />
+            <div className="flex-1 space-y-4 pb-2">
+              <div className="h-10 w-3/4 bg-surface rounded-lg" />
+              <div className="h-5 w-1/2 bg-surface/60 rounded" />
+              <div className="flex gap-3">
+                <div className="h-12 w-40 bg-cinema-red/20 rounded-xl" />
+                <div className="h-12 w-36 bg-surface rounded-xl" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="px-4 sm:px-6 lg:px-12 pt-8 space-y-8">
+          <div className="space-y-3">
+            <div className="h-3 w-16 bg-surface rounded" />
+            <div className="h-5 w-full bg-surface/60 rounded" />
+            <div className="h-5 w-3/4 bg-surface/40 rounded" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  const toggleWatchlist = () => {
-    if (isSaved) {
-      removeFromWatchlist(watchlistItem.id);
-    } else {
-      addToWatchlist({
-        id: `wl-${Date.now()}`,
-        userId: currentUser?.id || 'anon',
-        titleId: title.id,
-        status: 'saved',
-        priority: 'medium',
-        createdAt: new Date().toISOString(),
-      });
+  if (!title) {
+    return (
+      <div className="py-20 text-center">
+        {tmdbError ? (
+          <>
+            <p className="text-muted text-lg mb-2">Couldn&apos;t load this title.</p>
+            <p className="text-muted/60 text-sm mb-6">There was an issue fetching from TMDB.</p>
+            <div className="flex items-center justify-center gap-3">
+              <button onClick={() => window.location.reload()} className="px-6 py-2.5 bg-cinema-red text-bone rounded-xl font-bold btn-press">Try again</button>
+              <button onClick={() => router.back()} className="px-6 py-2.5 bg-surface text-bone rounded-xl border border-border">Go back</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-muted">Title not found.</p>
+            <button onClick={() => router.back()} className="mt-4 px-4 py-2 bg-surface text-bone rounded-lg">Go back</button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  const handleAction = (action: string) => {
+    switch (action) {
+      case 'save':
+        toggleWatchlist();
+        break;
+      case 'rate':
+        if (recommendation) openGiveVerdictModal(recommendation.id);
+        break;
+      case 'edit_verdict':
+        if (recommendation) openGiveVerdictModal(recommendation.id, true);
+        break;
+      case 'view_verdict':
+        setVerdictModalOpen(true);
+        break;
+      default:
+        console.log('Action not handled:', action);
     }
   };
 
-  const submitRating = () => {
-    if (!currentUser || !recAccuracy || contentRating === 0 || !recommendation) return;
-    setSubmitting(true);
-    setTimeout(() => {
-      addRating({
-        id: `rating-${Date.now()}`, 
-        recommendationId: recommendation.id, 
-        ratedBy: currentUser.id,
-        contentRating, 
-        recommendationResult: recAccuracy, 
-        stamp: selectedStamp || undefined,
-        comment: comment.trim() || undefined, 
-        createdAt: new Date().toISOString(),
-      });
-      updateRecommendationStatus(recommendation.id, 'rated');
-      setRatingModalOpen(false);
-      setSubmitting(false);
-    }, 900);
+  const toggleWatchlist = () => {
+    setAddToListOpen(true);
   };
 
-  const extRatings = title.externalRatings || { imdb: title.externalRating, tmdb: title.externalRating ? title.externalRating - 0.4 : undefined };
+
+  const extRatings = title.externalRatings || { 
+    imdb: title.externalRating, 
+    tmdb: title.externalRating ? parseFloat((title.externalRating - 0.4).toFixed(1)) : undefined 
+  };
   const mockSynopsis = title.overview || "A remote harbor town becomes the center of a quiet mystery after a stranger arrives with a secret that changes everyone around him.";
-  const mockCast = title.cast || ['Colin Farrell', 'Brendan Gleeson', 'Kerry Condon', 'Barry Keoghan'];
 
   return (
     <div className="max-w-[1440px] mx-auto pb-24 lg:pb-12">
       
+      {/* Navigation Layer */}
+      <div className="px-4 sm:px-6 lg:px-12 py-4 flex items-center relative z-20">
+        <Breadcrumbs items={breadcrumbItems} />
+        <MobileBackLink label={mobileBackLabel} href={mobileBackHref} />
+      </div>
+
       {/* SECTION 1: CINEMATIC HERO */}
-      <div className="relative w-full h-[60vh] min-h-[400px] lg:h-[70vh] flex items-end">
+      <div className="relative w-full h-[50vh] min-h-[350px] lg:h-[60vh] flex items-end -mt-6 md:-mt-10">
         <div className="absolute inset-0 bg-ink z-0">
           {title.backdropUrl ? (
             <img src={title.backdropUrl} alt={title.title} className="w-full h-full object-cover opacity-40" />
@@ -108,11 +309,14 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
           </div>
 
           <div className="flex-1 min-w-0 pb-2">
-            {recommendation?.primaryStamp && (
-               <div className="mb-4">
-                 <StampBadge stamp={recommendation.primaryStamp} size="md" />
-               </div>
-            )}
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              {viewerContext?.verdictState && (
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded border border-white/10 bg-white/5 text-bone/70">
+                  {viewerContext.verdictState === 'verdict_given' ? 'Verdict Given' : 'Verdict Pending'}
+                </span>
+              )}
+              {recommendation?.primaryStamp && <StampBadge stamp={recommendation.primaryStamp} size="sm" />}
+            </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold font-editorial text-bone leading-tight tracking-tight mb-3">
               {title.title}
@@ -122,6 +326,12 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
               <span>{title.releaseYear || '2024'}</span>
               <span>·</span>
               <span>{title.format || (title.type === 'movie' ? 'Movie' : 'Series')}</span>
+              {title.language && (
+                <>
+                  <span>·</span>
+                  <span className="uppercase tracking-widest">{title.language}</span>
+                </>
+              )}
               <span>·</span>
               <span>{title.genres.slice(0, 3).join(' / ')}</span>
               {title.runtime && (
@@ -132,39 +342,53 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Primary CTA: Recommend this */}
-              <button
-                onClick={() => setRecommendModalOpen(true)}
-                className="px-8 py-3 bg-cinema-red text-bone rounded-xl font-bold btn-press hover:bg-cinema-red/90 transition-colors flex items-center gap-2"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                Recommend this
-              </button>
-
-              {/* Secondary CTA: Rate or Watchlist */}
-              {recommendation && recommendation.status !== 'rated' ? (
-                <button 
-                  onClick={() => {
-                     setRatingStep(1);
-                     setRatingModalOpen(true);
-                  }}
-                  className="px-6 py-3 bg-surface border border-border text-bone rounded-xl font-bold btn-press hover:bg-surface-hover transition-colors"
-                >
-                  Rate Rec
-                </button>
+            <div className="flex flex-wrap items-center gap-4">
+              {actions ? (
+                <>
+                  {actions.primary && (
+                    <button
+                      onClick={() => handleAction(actions.primary!.action)}
+                      className="px-8 py-3.5 bg-cinema-red text-bone rounded-xl font-bold btn-press hover:bg-cinema-red/90 transition-all shadow-lg shadow-cinema-red/20"
+                    >
+                      {actions.primary.label}
+                    </button>
+                  )}
+                  {actions.secondary && (
+                    <button 
+                      onClick={() => handleAction(actions.secondary!.action)}
+                      className="px-6 py-3.5 bg-surface border border-border text-bone rounded-xl font-bold btn-press hover:bg-surface-hover transition-all"
+                    >
+                      {actions.secondary.label}
+                    </button>
+                  )}
+                </>
               ) : (
-                <button 
-                  onClick={toggleWatchlist}
-                  className={`px-6 py-3 rounded-xl font-bold btn-press border transition-colors ${
-                    isSaved ? 'bg-surface border-border text-bone' : 'bg-bone text-ink border-bone hover:bg-bone/90'
-                  }`}
-                >
-                  {isSaved ? '✓ In Watchlist' : 'Add to Watchlist'}
-                </button>
+                <>
+                  <button
+                    onClick={() => openRecommendModal({ titleId: id })}
+                    className="px-8 py-3.5 bg-cinema-red text-bone rounded-xl font-bold btn-press hover:bg-cinema-red/90 transition-colors flex items-center gap-2"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Recommend this
+                  </button>
+                  <button 
+                    onClick={toggleWatchlist}
+                    className={`px-6 py-3.5 rounded-xl font-bold btn-press border transition-colors ${
+                      isSaved ? 'bg-surface border-border text-bone' : 'bg-bone text-ink border-bone hover:bg-bone/90'
+                    }`}
+                  >
+                    {isSaved ? '✓ In Watchlist' : 'Add to Watchlist'}
+                  </button>
+                </>
               )}
               
-              <button className="w-12 h-12 flex items-center justify-center rounded-xl bg-surface/50 border border-border/50 text-bone hover:bg-surface transition-colors">
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  addToast('Link copied!', { type: 'success' });
+                }}
+                className="w-12 h-12 flex items-center justify-center rounded-xl bg-surface/50 border border-border/50 text-bone hover:bg-surface transition-colors"
+              >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
               </button>
             </div>
@@ -175,136 +399,238 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
       <div className="px-4 sm:px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 pt-8">
         
         {/* LEFT COLUMN - MAIN CONTENT */}
-        <div className="lg:col-span-8 space-y-12">
+        <div className="lg:col-span-8 space-y-16">
           
-          {/* SECTION 2: RECOMMENDATION CONTEXT */}
+          {/* SECTION: ABOUT */}
+          <div className="space-y-6">
+            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted/60">About</h2>
+            <p className="text-bone/90 text-xl font-editorial leading-relaxed max-w-3xl">
+              {title.overview || "No description available for this title."}
+            </p>
+          </div>
+
+          {/* SECTION: DIRECTOR / CREATOR */}
+          {title.directorOrCreatorProfile?.name && (
+            <div className="space-y-6">
+              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted/60">{title.directorOrCreatorProfile.role}</h2>
+              <div className="flex items-center gap-5 p-5 bg-surface border border-white/5 rounded-[32px] w-fit hover:border-white/10 transition-colors group cursor-default">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-ink border border-white/10 shrink-0 shadow-2xl">
+                  {title.directorOrCreatorProfile.profileImageUrl ? (
+                    <img src={title.directorOrCreatorProfile.profileImageUrl} alt={title.directorOrCreatorProfile.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-sm font-black text-muted bg-white/5">
+                      {title.directorOrCreatorProfile.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="pr-4">
+                  <p className="text-bone text-lg font-bold tracking-tight">{title.directorOrCreatorProfile.name}</p>
+                  <p className="text-[10px] text-muted font-black uppercase tracking-[0.2em] mt-0.5">{title.directorOrCreatorProfile.role}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION: CAST */}
+          {title.cast && title.cast.length > 0 && (
+            <div className="space-y-6">
+              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted/60">Cast</h2>
+              <div className="flex overflow-x-auto pb-8 -mx-4 px-4 sm:mx-0 sm:px-0 gap-5 snap-x scrollbar-hide">
+                {title.cast.map((actor) => (
+                  <div key={actor.id} className="shrink-0 w-36 sm:w-40 rounded-[32px] bg-surface border border-white/5 p-4 snap-start group hover:border-white/10 transition-all shadow-lg hover:shadow-cinema-red/5">
+                    <div className="aspect-square w-full rounded-full overflow-hidden mb-4 bg-ink border border-white/10 shadow-inner">
+                      {actor.profileImageUrl ? (
+                        <img src={actor.profileImageUrl} alt={actor.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xl font-black text-muted/40 bg-white/5">
+                          {actor.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="px-1 text-center">
+                      <p className="text-sm font-bold text-bone leading-tight mb-1 group-hover:text-cinema-red transition-colors line-clamp-1">{actor.name}</p>
+                      <p className="text-[10px] text-muted font-medium line-clamp-1 italic">{actor.characterName}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* SECTION: RECOMMENDATION CONTEXT */}
           {recommendation && recommender && (
-            <div className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-muted">Recommended by your crew</h2>
-              <div className="rounded-2xl bg-surface border border-border p-6 flex flex-col sm:flex-row gap-5 items-start">
-                <UserAvatar name={recommender.displayName} size="lg" />
-                <div className="flex-1">
-                  <p className="text-bone font-bold mb-2">{recommender.displayName} <span className="font-normal text-muted">recommended this</span></p>
+            <div className="space-y-6 pt-8 border-t border-white/5">
+              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted/60">Recommended by your crew</h2>
+              <div className="rounded-[40px] bg-surface border border-white/5 p-8 flex flex-col sm:flex-row gap-8 items-start relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                   <svg width="120" height="120" viewBox="0 0 24 24" fill="currentColor"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C20.1216 16 21.017 16.8954 21.017 18V21M14.017 21H21.017M14.017 21V18M7 21L7 18C7 16.8954 7.89543 16 9 16H12C13.1046 16 14 16.8954 14 18V21M7 21H14M7 21V18M3 21L3 18C3 16.8954 3.89543 16 5 16H8C9.10457 16 10 16.8954 10 18V21M3 21H10M3 21V18"/></svg>
+                </div>
+                <ClickableUserAvatar 
+                  userId={recommender.id} 
+                  username={recommender.username} 
+                  name={recommender.displayName} 
+                  size="lg" 
+                />
+                <div className="flex-1 relative z-10">
+                  <p className="text-bone font-bold text-lg mb-3">
+                    <Link href={`/profile/${recommender.username}`} className="hover:text-cinema-red transition-colors">{recommender.displayName}</Link> 
+                    <span className="font-normal text-muted"> shares their take</span>
+                  </p>
                   {recommendation.reason && (
-                    <p className="text-bone text-lg font-editorial italic leading-relaxed mb-4">
+                    <p className="text-bone text-2xl font-editorial italic leading-relaxed mb-6">
                       &ldquo;{recommendation.reason}&rdquo;
                     </p>
                   )}
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-ink rounded-lg border border-border">
-                    <span className="w-2 h-2 rounded-full bg-cinema-red" />
-                    <span className="text-xs font-bold text-bone">{recommendation.confidenceScore || 92}% Confidence</span>
+                  <div className="inline-flex items-center gap-3 px-4 py-2 bg-ink/50 rounded-full border border-white/10 shadow-inner">
+                    <span className="w-2 h-2 rounded-full bg-cinema-red animate-pulse shadow-[0_0_8px_rgba(234,51,51,0.6)]" />
+                    <span className="text-xs font-black uppercase tracking-widest text-bone/80">{recommendation.confidenceScore || 92}% Taste Match</span>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* SECTION 4: ABOUT THE TITLE */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-muted">About</h2>
-            <div className="rounded-2xl bg-surface border border-border p-6">
-              <p className="text-bone/80 text-base leading-relaxed mb-6">
-                {mockSynopsis}
-              </p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
-                <div>
-                  <p className="text-muted mb-1">Director/Creator</p>
-                  <p className="text-bone font-medium">{title.creatorOrDirector || 'Unknown'}</p>
-                </div>
-                <div className="md:col-span-3">
-                  <p className="text-muted mb-1">Cast</p>
-                  <p className="text-bone font-medium">{mockCast.join(', ')}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div className="space-y-6">
+            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted/60">What your crew thinks</h2>
+            {(() => {
+              // 1. Get IDs of people in user's crew
+              const crewIds = userConnections
+                .filter(c => c.userId === currentUser?.id && c.status === 'connected')
+                .map(c => c.connectedUserId);
+              
+              // 2. Find all recommendations for this title by crew members
+              const crewRecs = recommendations.filter(r => r.titleId === id && crewIds.includes(r.recommendedBy));
+              
+              // 3. Find ratings (verdicts) for these recommendations
+              const crewVerdicts = ratings.filter(r => crewRecs.some(cr => cr.id === r.recommendationId));
 
-          {/* SECTION 6: WHAT YOUR CREW THINKS */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-muted">What your crew thinks</h2>
-            <div className="flex overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 gap-4 snap-x hide-scrollbar">
-              {[
-                { name: 'Maya', stamp: 'Good Call', text: 'Slow, but completely worth it.', rating: 4.5 },
-                { name: 'Josh', stamp: 'Risky But Worth It', text: 'You need patience, but it lands.', rating: 4 },
-                { name: 'Priya', stamp: 'Mixed Response', text: 'Loved the mood, not the pace.', rating: 3 }
-              ].map((reaction, idx) => (
-                <div key={idx} className="shrink-0 w-72 rounded-2xl bg-surface border border-border p-5 snap-start flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <UserAvatar name={reaction.name} size="sm" />
-                      <span className="font-bold text-bone text-sm">{reaction.name}</span>
-                    </div>
-                    <div className="text-cinema-red font-bold text-sm">
-                      {reaction.rating}/5
-                    </div>
+              if (crewVerdicts.length > 0) {
+                return (
+                  <div className="flex overflow-x-auto pb-8 -mx-4 px-4 sm:mx-0 sm:px-0 gap-5 snap-x scrollbar-hide">
+                    {crewVerdicts.map((verdict) => {
+                      const reviewer = getUser(verdict.ratedBy);
+                      if (!reviewer) return null;
+                      return (
+                        <div key={verdict.id} className="shrink-0 w-80 rounded-[32px] bg-surface border border-white/5 p-6 snap-start flex flex-col h-full hover:border-white/10 transition-all shadow-lg">
+                          <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-3">
+                              <ClickableUserAvatar 
+                                userId={reviewer.id} 
+                                username={reviewer.username} 
+                                name={reviewer.displayName} 
+                                size="sm" 
+                              />
+                              <Link href={`/profile/${reviewer.username}`} className="font-bold text-bone hover:text-cinema-red transition-colors">{reviewer.displayName}</Link>
+                            </div>
+                            <div className="px-2.5 py-1 bg-cinema-red/10 text-cinema-red font-black text-[10px] rounded-lg tracking-widest uppercase">
+                              {verdict.contentRating}/5
+                            </div>
+                          </div>
+                          <div className="mb-5">
+                             {verdict.stamp && <StampBadge stamp={verdict.stamp as any} size="xs" variant="filled" />}
+                          </div>
+                          {verdict.comment && (
+                            <p className="text-bone/80 text-sm leading-relaxed italic">&ldquo;{verdict.comment}&rdquo;</p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="mb-3 h-8">
-                     <StampBadge stamp={reaction.stamp as any} size="xs" variant="filled" />
+                );
+              }
+
+              return (
+                <div className="rounded-[40px] border-2 border-dashed border-white/5 p-12 text-center space-y-6">
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-bone font-editorial">No crew verdicts yet.</h3>
+                    <p className="text-sm text-muted">Recommend this to your crew and see what they think.</p>
                   </div>
-                  <p className="text-bone/80 text-sm mt-auto italic">&ldquo;{reaction.text}&rdquo;</p>
+                  <button 
+                    onClick={() => router.push(`/recommend?titleId=${id}`)}
+                    className="px-8 py-3.5 bg-bone text-ink rounded-2xl font-bold btn-press hover:bg-white transition-colors"
+                  >
+                    Recommend this
+                  </button>
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
 
         </div>
 
         {/* RIGHT COLUMN - SIDEBAR */}
-        <div className="lg:col-span-4 space-y-8">
+        <div className="lg:col-span-4 space-y-10">
           
-          {/* SECTION 3: TASTE MATCH */}
-          <div className="rounded-2xl bg-surface border border-border p-5">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-muted mb-4">Taste Match</h3>
-            <div className="flex items-end gap-3 mb-4">
-              <span className="text-4xl font-bold font-editorial text-bone">{recommendation?.tasteMatchScore || 85}%</span>
-              <span className="text-sm text-cinema-red font-bold mb-1">Match</span>
+          {/* SECTION: TASTE MATCH */}
+          <div className="rounded-[32px] bg-surface border border-white/5 p-8 shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-cinema-red/5 blur-[60px] -translate-y-1/2 translate-x-1/2 group-hover:bg-cinema-red/10 transition-colors" />
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/60 mb-6">Taste Match</h3>
+            <div className="flex items-end gap-3 mb-6">
+              <span className="text-6xl font-bold font-editorial text-bone tracking-tighter leading-none">{recommendation?.tasteMatchScore || 85}%</span>
+              <span className="text-[10px] text-cinema-red font-black uppercase tracking-[0.2em] mb-2">Signal</span>
             </div>
-            <p className="text-sm text-bone/70 mb-4">
-              Matches your interest in atmospheric mysteries, emotional dramas, and slow-burn storytelling.
+            <p className="text-sm text-bone/70 leading-relaxed mb-6">
+              {recommendation ? (
+                <>Strong alignment with your preference for <span className="text-bone font-bold">{recommendation.moodTags?.[0] || title.genres[0]}</span> and <span className="text-bone font-bold">{recommendation.moodTags?.[1] || title.genres[1] || 'atmospheric'}</span> content.</>
+              ) : (
+                <>Add this to your watchlist to see how it aligns with your taste.</>
+              )}
             </p>
             <div className="flex flex-wrap gap-2">
-              {['Mystery', 'Slow burn', 'Emotional'].map(tag => (
-                <span key={tag} className="px-2.5 py-1 bg-ink border border-border rounded-md text-xs text-bone/80">
+              {(recommendation?.moodTags || title.genres.slice(0, 3)).map(tag => (
+                <span key={tag} className="px-3 py-1.5 bg-ink/50 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-bone/60">
                   {tag}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* SECTION 7: WATCHLIST STATUS */}
-          <div className="rounded-2xl bg-surface border border-border p-5">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-muted mb-4">Status</h3>
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${isSaved ? 'bg-cinema-red' : 'bg-border'}`} />
-              <p className="font-bold text-bone text-sm">{isSaved ? 'In your watchlist' : 'Not saved'}</p>
-            </div>
-            {isSaved && recommendation && (
-              <p className="text-xs text-muted mt-3">Added from {recommender?.displayName}&apos;s recommendation</p>
-            )}
-          </div>
-
-          {/* SECTION 5: PUBLIC RATINGS */}
-          <div className="rounded-2xl bg-surface border border-border p-5">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-muted mb-4">Public Signal</h3>
-            <p className="text-xs text-muted mb-4">Public ratings help. Your crew&apos;s taste decides.</p>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-bone/90 bg-[#f5c518] text-black px-2 py-0.5 rounded text-xs">IMDb</span>
-                <span className="text-sm font-bold text-bone">{extRatings.imdb || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-bone/90 bg-[#01b4e4] text-white px-2 py-0.5 rounded text-xs">TMDB</span>
-                <span className="text-sm font-bold text-bone">{extRatings.tmdb || 'N/A'}</span>
-              </div>
+          {/* SECTION: WHERE TO WATCH */}
+          <div className="rounded-[32px] bg-surface border border-white/5 p-8 shadow-xl">
+             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/60 mb-6">Available on</h3>
+            <div className="flex flex-wrap gap-4 items-center">
+              {title.platformAvailability && title.platformAvailability.length > 0 ? (
+                title.platformAvailability.map((platform, i) => (
+                  <div key={i}>
+                    <PlatformLogo platformName={platform.platformName} logoUrl={platform.logoUrl} />
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted italic font-medium">Not available right now.</p>
+              )}
             </div>
           </div>
 
-          {/* SECTION 11: INVITE FRIENDS */}
-          <div className="rounded-2xl bg-cinema-red/10 border border-cinema-red/20 p-5">
-            <h3 className="text-sm font-bold text-bone mb-1">Want more opinions?</h3>
-            <p className="text-xs text-muted mb-4">Invite your crew to stamp this pick.</p>
-            <button className="w-full py-2 bg-cinema-red/20 text-cinema-red font-bold rounded-lg text-sm hover:bg-cinema-red hover:text-bone transition-colors">
-              Invite friends
+          {/* SECTION: PUBLIC SIGNAL */}
+          <div className="rounded-[32px] bg-surface border border-white/5 p-8 shadow-xl">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/60 mb-8">Public Signal</h3>
+            <div className="space-y-8">
+              <div className="flex justify-between items-center group">
+                <div className="px-3 py-1.5 bg-[#f5c518] text-black text-[11px] font-black rounded-lg tracking-widest">IMDB</div>
+                <span className="text-4xl font-bold font-editorial text-bone leading-none">{extRatings.imdb || '6.7'}</span>
+              </div>
+              <div className="flex justify-between items-center group">
+                <div className="px-3 py-1.5 bg-[#01b4e4] text-white text-[11px] font-black rounded-lg tracking-widest uppercase">TMDB</div>
+                <span className="text-4xl font-bold font-editorial text-bone leading-none">{extRatings.tmdb || '6.4'}</span>
+              </div>
+            </div>
+            <div className="mt-10 pt-6 border-t border-white/5">
+               <p className="text-[11px] text-muted italic font-medium leading-relaxed">Public ratings help. Your crew&apos;s taste decides.</p>
+            </div>
+          </div>
+
+          {/* SECTION: INVITE FRIENDS */}
+          <div className="rounded-[32px] bg-cinema-red/5 border border-cinema-red/10 p-8 shadow-lg relative overflow-hidden group">
+            <div className="absolute bottom-0 right-0 p-4 opacity-5 translate-y-1/4 translate-x-1/4 group-hover:scale-110 transition-transform duration-700">
+               <svg width="160" height="160" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+            </div>
+            <h3 className="text-lg font-bold text-bone tracking-tight mb-2">Want more opinions?</h3>
+            <p className="text-sm text-muted leading-relaxed mb-6">Invite your crew to stamp this pick and boost the signal.</p>
+            <button 
+              onClick={() => setInviteModalOpen(true)}
+              className="w-full py-4 bg-cinema-red/20 text-cinema-red font-black uppercase tracking-[0.2em] text-[10px] rounded-2xl hover:bg-cinema-red hover:text-bone transition-all shadow-lg active:scale-95"
+            >
+              Invite crew
             </button>
           </div>
 
@@ -343,131 +669,36 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
         <div className="space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-widest text-muted">More like this</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-             {/* Mocking a few similar titles (just picking the first 6 movies) */}
-             {['title-6', 'title-8', 'title-3', 'title-10', 'title-5', 'title-4'].map(tId => {
-              const simTitle = getTitle(tId);
-              if (!simTitle || simTitle.id === title.id) return null;
-              return (
-                <div key={simTitle.id} onClick={() => router.push(`/title/${simTitle.id}`)} className="cursor-pointer group">
-                  <div className={`w-full aspect-[2/3] rounded-xl overflow-hidden relative mb-2 ${!simTitle.posterUrl ? `poster-gradient-${simTitle.posterGradient}` : ''}`}>
-                    {simTitle.posterUrl && <img src={simTitle.posterUrl} alt={simTitle.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
-                  </div>
-                  <h3 className="text-sm font-bold text-bone truncate">{simTitle.title}</h3>
-                  <p className="text-xs text-muted truncate">{simTitle.releaseYear} · {simTitle.format}</p>
-                </div>
-              );
-            })}
+             {similarLoading ? (
+               Array.from({ length: 6 }).map((_, i) => (
+                 <div key={i} className="animate-pulse">
+                   <div className="w-full aspect-[2/3] rounded-xl bg-surface mb-2" />
+                   <div className="h-4 w-3/4 bg-surface rounded mb-1" />
+                   <div className="h-3 w-1/2 bg-surface rounded" />
+                 </div>
+               ))
+             ) : similarTitles.length > 0 ? (
+               similarTitles.map(simTitle => (
+                 <div key={simTitle.id} onClick={() => router.push(`/title/${simTitle.id}?type=${simTitle.type}`)} className="cursor-pointer group">
+                   <div className={`w-full aspect-[2/3] rounded-xl overflow-hidden relative mb-2 ${!simTitle.posterUrl ? `poster-gradient-${simTitle.posterGradient}` : 'bg-surface border border-border/50'}`}>
+                     {simTitle.posterUrl && <img src={simTitle.posterUrl} alt={simTitle.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
+                   </div>
+                   <h3 className="text-sm font-bold text-bone truncate">{simTitle.title}</h3>
+                   <p className="text-xs text-muted truncate">{simTitle.releaseYear} · {simTitle.format}</p>
+                 </div>
+               ))
+             ) : (
+               <p className="text-xs text-muted col-span-full">No similar titles found.</p>
+             )}
           </div>
         </div>
       </div>
       
-      {/* SECTION 8: RATE RECOMMENDATION MODAL */}
-      {ratingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-surface border border-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            
-            <div className="p-4 border-b border-border flex justify-between items-center bg-ink/50">
-              <p className="font-bold text-sm text-bone">Rate Recommendation</p>
-              <button onClick={() => setRatingModalOpen(false)} className="text-muted hover:text-bone p-1">✕</button>
-            </div>
-
-            <div className="p-6">
-              {/* Step 1: Content Rating */}
-              {ratingStep === 1 && (
-                <div className="space-y-6 page-enter">
-                  <div className="text-center">
-                    <h3 className="text-2xl font-bold text-bone font-editorial mb-2">How was it?</h3>
-                    <p className="text-sm text-muted">Rate the content itself.</p>
-                  </div>
-                  <div className="flex justify-center gap-2">
-                    {[1,2,3,4,5].map(star => (
-                      <button key={star} onClick={() => setContentRating(star)}
-                        className={`text-4xl transition-all btn-press ${star <= contentRating ? 'text-cinema-red scale-110' : 'text-muted/30 hover:text-muted/60'}`}>
-                        ★
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={() => setRatingStep(2)} disabled={contentRating === 0}
-                    className="w-full py-3 bg-cinema-red text-bone font-bold rounded-xl disabled:opacity-40 btn-press">
-                    Continue
-                  </button>
-                </div>
-              )}
-
-              {/* Step 2: Accuracy */}
-              {ratingStep === 2 && (
-                <div className="space-y-6 page-enter">
-                  <div className="text-center">
-                    <h3 className="text-2xl font-bold text-bone font-editorial mb-2">Was this a good rec?</h3>
-                    <p className="text-sm text-muted">How well did they read your taste?</p>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {REC_ACCURACY_OPTIONS.map(opt => (
-                      <button key={opt} onClick={() => setRecAccuracy(opt)}
-                        className={`w-full py-3.5 rounded-xl border font-bold text-sm transition-all btn-press ${
-                          recAccuracy === opt ? 'bg-cinema-red border-cinema-red text-bone' : 'bg-ink border-border text-muted hover:border-bone/30 hover:text-bone'
-                        }`}>
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => setRatingStep(1)} className="px-4 py-3 bg-ink border border-border text-bone rounded-xl hover:bg-surface transition-colors">Back</button>
-                    <button onClick={() => setRatingStep(3)} disabled={!recAccuracy}
-                      className="flex-1 py-3 bg-cinema-red text-bone font-bold rounded-xl disabled:opacity-40 btn-press">
-                      Continue
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Contextual Stamp & Comment */}
-              {ratingStep === 3 && (
-                <div className="space-y-6 page-enter">
-                  <div>
-                    <h3 className="font-bold text-bone mb-1">Give them a stamp</h3>
-                    <p className="text-xs text-muted mb-4">Optional. Pick one that fits.</p>
-                    <div className="flex flex-wrap gap-2">
-                      {CORE_STAMPS.map(stamp => (
-                        <button key={stamp} onClick={() => setSelectedStamp(selectedStamp === stamp ? null : stamp)}
-                          className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider border transition-all active:scale-95 ${
-                            selectedStamp === stamp 
-                              ? 'bg-cinema-red border-cinema-red text-bone' 
-                              : 'bg-ink border-border text-muted hover:border-border-strong hover:text-bone'
-                          }`}>
-                          {stamp}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold text-bone mb-2">Final take (optional)</p>
-                    <textarea value={comment} onChange={e => setComment(e.target.value)}
-                      placeholder="Leave a final verdict. Be honest, but don't end the friendship." 
-                      className="w-full h-24 p-3 bg-ink border border-border rounded-xl text-sm text-bone placeholder:text-muted focus:outline-none focus:border-cinema-red resize-none" />
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button onClick={() => setRatingStep(2)} disabled={submitting} className="px-4 py-3 bg-ink border border-border text-bone rounded-xl hover:bg-surface transition-colors">Back</button>
-                    <button onClick={submitRating} disabled={submitting}
-                      className="flex-1 py-3 bg-cinema-red text-bone font-bold rounded-xl disabled:opacity-40 btn-press flex justify-center items-center gap-2">
-                      {submitting && <div className="w-4 h-4 border-2 border-bone/30 border-t-bone rounded-full animate-spin" />}
-                      Submit Verdict
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
 
       {/* STICKY MOBILE BOTTOM CTA BAR */}
       <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-surface/95 backdrop-blur-md border-t border-border p-3 flex gap-3 safe-area-bottom">
         <button
-          onClick={() => setRecommendModalOpen(true)}
+          onClick={() => router.push(`/recommend?titleId=${id}`)}
           className="flex-1 py-3 bg-cinema-red text-bone rounded-xl font-bold btn-press hover:bg-cinema-red/90 transition-colors flex items-center justify-center gap-2 text-sm"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -483,8 +714,17 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
         </button>
       </div>
 
-      {/* RECOMMEND MODAL */}
-      <RecommendModal isOpen={recommendModalOpen} onClose={() => setRecommendModalOpen(false)} title={title} />
+
+      {/* ADD TO LIST MODAL */}
+      <AddToListModal isOpen={addToListOpen} onClose={() => setAddToListOpen(false)} titleId={title.id} />
+
+      {/* VERDICT MODAL */}
+      {recommendation && (
+        <VerdictModal recommendationId={recommendation.id} isOpen={verdictModalOpen} onClose={() => setVerdictModalOpen(false)} />
+      )}
+
+      {/* INVITE MODAL */}
+      <InviteModal isOpen={inviteModalOpen} onClose={() => setInviteModalOpen(false)} />
 
     </div>
   );

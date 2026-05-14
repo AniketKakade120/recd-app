@@ -9,10 +9,11 @@ import UserAvatar from '@/components/UserAvatar';
 import EmptyState from '@/components/EmptyState';
 import InviteModal from '@/components/InviteModal';
 import StampBadge from '@/components/StampBadge';
+import ClickableUserAvatar from '@/components/ClickableUserAvatar';
 
 export default function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const { getGroup, getGroupMembers, getGroupRecommendations } = useApp();
+  const { getGroup, getGroupMembers, getGroupRecommendations, openRecommendModal } = useApp();
   const [filter, setFilter] = useState<'all' | 'pending' | 'watched'>('all');
   const [inviteOpen, setInviteOpen] = useState(false);
 
@@ -32,12 +33,22 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="space-y-6">
-      <PageHeader title={group.name} subtitle={group.vibe} backButton action={
-        <div className="flex gap-2">
-          <button onClick={() => setInviteOpen(true)} className="px-3 py-1.5 bg-surface border border-border text-bone/70 rounded-lg text-xs font-medium hover:bg-surface-hover btn-press">Invite</button>
-          <Link href={`/recommend?groupId=${group.id}`} className="px-3 py-1.5 bg-cinema-red text-bone rounded-lg text-xs font-semibold hover:bg-cinema-red/90 btn-press inline-block">Rec to Group</Link>
-        </div>
-      } />
+      <PageHeader 
+        title={group.name} 
+        subtitle={group.vibe} 
+        breadcrumbItems={[
+          { label: 'Groups', href: '/groups' },
+          { label: group.name, isCurrent: true }
+        ]}
+        mobileBackLabel="Groups"
+        mobileBackHref="/groups"
+        action={
+          <div className="flex gap-2">
+            <button onClick={() => setInviteOpen(true)} className="px-3 py-1.5 bg-surface border border-border text-bone/70 rounded-lg text-xs font-medium hover:bg-surface-hover btn-press">Invite</button>
+            <button onClick={() => openRecommendModal({ groupId: group.id })} className="px-3 py-1.5 bg-cinema-red text-bone rounded-lg text-xs font-semibold hover:bg-cinema-red/90 btn-press inline-block">Rec to Group</button>
+          </div>
+        } 
+      />
 
       {/* Group badge */}
       <div className="flex items-center gap-3">
@@ -53,9 +64,19 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
           {members.map(member => (
-            <div key={member.id} className="flex flex-col items-center gap-1 shrink-0 w-14">
-              <UserAvatar name={member.displayName} size="lg" />
-              <span className="text-sm text-muted truncate w-full text-center">{member.displayName}</span>
+            <div key={member.id} className="flex flex-col items-center gap-1 shrink-0 w-16">
+              <ClickableUserAvatar 
+                userId={member.id} 
+                username={member.username} 
+                name={member.displayName} 
+                size="lg" 
+              />
+              <Link 
+                href={`/profile/${member.username}`}
+                className="text-[10px] font-bold text-muted truncate w-full text-center hover:text-bone transition-colors"
+              >
+                {member.displayName}
+              </Link>
             </div>
           ))}
           <button onClick={() => setInviteOpen(true)} className="flex flex-col items-center gap-1 shrink-0 w-14 group">
@@ -66,11 +87,19 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
       </section>
 
       {/* Filters */}
-      <div className="flex gap-1.5 border-b border-border pb-2">
+      <div className="flex gap-6 border-b border-border pb-px mb-4">
         {(['all', 'pending', 'watched'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors capitalize ${filter === f ? 'bg-surface text-bone' : 'text-muted hover:text-bone'}`}>
+          <button 
+            key={f} 
+            onClick={() => setFilter(f)}
+            className={`pb-3 text-xs font-bold uppercase tracking-widest transition-all relative ${
+              filter === f ? 'text-bone' : 'text-muted hover:text-bone/80'
+            }`}
+          >
             {f === 'all' ? 'All' : f === 'pending' ? 'Pending' : 'Watched'}
+            {filter === f && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cinema-red rounded-t-full shadow-[0_-2px_10px_rgba(234,51,51,0.5)]" />
+            )}
           </button>
         ))}
       </div>
@@ -82,7 +111,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         </div>
       ) : (
         <EmptyState title="No recs yet" description="Be the first to recommend something." inviteCta action={
-          <Link href={`/recommend?groupId=${group.id}`} className="text-cinema-red font-medium hover:text-cinema-red/80 text-sm">Recommend something →</Link>
+          <button onClick={() => openRecommendModal({ groupId: group.id })} className="text-cinema-red font-medium hover:text-cinema-red/80 text-sm">Recommend something →</button>
         } />
       )}
 

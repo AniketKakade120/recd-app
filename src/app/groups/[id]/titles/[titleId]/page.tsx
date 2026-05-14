@@ -9,6 +9,9 @@ import type { StampType, RecAccuracy } from '@/lib/types';
 import StampBadge from '@/components/StampBadge';
 import UserAvatar from '@/components/UserAvatar';
 import { formatRelativeTime } from '@/lib/utils';
+import VerdictModal from '@/components/VerdictModal';
+import Breadcrumbs from '@/components/Breadcrumbs';
+import MobileBackLink from '@/components/MobileBackLink';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -34,7 +37,7 @@ function Stars({ rating }: { rating: number }) {
 export default function GroupTitleDetailPage({ params }: { params: Promise<{ id: string; titleId: string }> }) {
   const { id: groupId, titleId } = use(params);
   const router = useRouter();
-  const { getTitle, getGroup, getGroupMembers, getGroupRecommendations, getUser, currentUser, recommendations, titles } = useApp();
+  const { getTitle, getGroup, getGroupMembers, getGroupRecommendations, getUser, currentUser, recommendations, titles, openGiveVerdictModal } = useApp();
 
   const title = getTitle(titleId);
   const group = getGroup(groupId);
@@ -62,6 +65,7 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
 
   // Comment input
   const [newComment, setNewComment] = useState('');
+  const [verdictModalOpen, setVerdictModalOpen] = useState(false);
 
   // User state for CTA
   const userVerdict = verdicts.find(v => v.ratedBy === currentUser?.id);
@@ -97,11 +101,14 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
           </div>
 
           <div className="flex-1 min-w-0">
-            {/* Back + Group breadcrumb */}
-            <div className="flex items-center gap-2 mb-3">
-              <button onClick={() => router.back()} className="text-muted hover:text-bone text-xs transition-colors">← Back</button>
-              <span className="text-border">·</span>
-              <Link href={`/groups/${groupId}`} className="text-xs text-cinema-red hover:text-cinema-red/80 transition-colors font-medium">{group.name}</Link>
+            {/* Navigation Layer */}
+            <div className="mb-3">
+              <Breadcrumbs items={[
+                { label: 'Groups', href: '/groups' },
+                { label: group.name, href: `/groups/${groupId}` },
+                { label: title.title, isCurrent: true }
+              ]} />
+              <MobileBackLink label={group.name} href={`/groups/${groupId}`} />
             </div>
 
             <h1 className="text-3xl lg:text-4xl font-bold text-bone font-editorial tracking-tight mb-2">{title.title}</h1>
@@ -133,7 +140,7 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
                 <UserAvatar name={recommender.displayName} size="lg" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-bone">{recommender.displayName}</p>
-                  <p className="text-xs text-muted mb-2">{recommender.tasteArchetype} · {formatRelativeTime(rec.createdAt)}</p>
+                  <p className="text-xs text-muted mb-2" suppressHydrationWarning>{recommender.tasteArchetype} · {formatRelativeTime(rec.createdAt)}</p>
                   <p className="text-sm text-bone/80 italic mb-3">&ldquo;{rec.reason}&rdquo;</p>
                   <div className="flex flex-wrap gap-3 text-xs text-muted">
                     <span>Confidence: <span className="text-cinema-red font-semibold">{rec.confidenceScore}%</span></span>
@@ -159,7 +166,7 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <p className="text-sm font-bold text-bone">{user.displayName}</p>
-                          <span className="text-xs text-muted">{formatRelativeTime(v.createdAt)}</span>
+                          <span className="text-xs text-muted" suppressHydrationWarning>{formatRelativeTime(v.createdAt)}</span>
                         </div>
                         <div className="flex items-center gap-3 mb-2">
                           <Stars rating={v.contentRating} />
@@ -197,7 +204,7 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
                     <div className="flex-1 min-w-0 rounded-xl bg-surface border border-border p-3">
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-xs font-bold text-bone">{user.displayName}</p>
-                        <span className="text-xs text-muted">{formatRelativeTime(c.createdAt)}</span>
+                        <span className="text-xs text-muted" suppressHydrationWarning>{formatRelativeTime(c.createdAt)}</span>
                       </div>
                       <p className="text-sm text-bone/70">{c.comment}</p>
                     </div>
@@ -292,8 +299,7 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
               <p className="text-xs text-muted uppercase tracking-widest font-semibold mb-3">Still Pending</p>
               <div className="space-y-3">
                 {pendingMembers.map(m => {
-                  const statuses = ['Not started', 'Saved', 'Watching', 'Maybe later'];
-                  const mockStatus = statuses[Math.floor(Math.random() * 1000) % statuses.length];
+                  const mockStatus = 'Verdict Pending';
                   return (
                     <div key={m.id} className="flex items-center gap-3">
                       <UserAvatar name={m.displayName} size="sm" />
@@ -314,19 +320,19 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
             <p className="text-xs text-muted uppercase tracking-widest font-semibold mb-2">Your Actions</p>
             {isRecommender ? (
               <>
-                <button className="w-full py-3 bg-cinema-red text-bone font-bold rounded-xl text-sm hover:bg-cinema-red/90 transition-colors btn-press">View Verdicts</button>
+                <button onClick={() => setVerdictModalOpen(true)} className="w-full py-3 bg-cinema-red text-bone font-bold rounded-xl text-sm hover:bg-cinema-red/90 transition-colors btn-press">View Verdicts</button>
                 {pendingMembers.length > 0 && (
                   <button className="w-full py-3 bg-surface border border-border text-bone font-semibold rounded-xl text-sm hover:bg-surface-hover transition-colors btn-press">Nudge Pending ({pendingMembers.length})</button>
                 )}
               </>
             ) : userVerdict ? (
               <>
-                <button className="w-full py-3 bg-cinema-red text-bone font-bold rounded-xl text-sm hover:bg-cinema-red/90 transition-colors btn-press">Edit Verdict</button>
-                <button className="w-full py-3 bg-surface border border-border text-bone font-semibold rounded-xl text-sm hover:bg-surface-hover transition-colors btn-press">View Group Verdict</button>
+                <button onClick={() => rec && openGiveVerdictModal(rec.id, true)} className="w-full py-3 bg-cinema-red text-bone font-bold rounded-xl text-sm hover:bg-cinema-red/90 transition-colors btn-press text-center block">Edit Verdict</button>
+                <button onClick={() => setVerdictModalOpen(true)} className="w-full py-3 bg-surface border border-border text-bone font-semibold rounded-xl text-sm hover:bg-surface-hover transition-colors btn-press">View Group Verdict</button>
               </>
             ) : (
               <>
-                <Link href={`/title/${titleId}${rec ? `?recId=${rec.id}` : ''}`} className="w-full py-3 bg-cinema-red text-bone font-bold rounded-xl text-sm hover:bg-cinema-red/90 transition-colors btn-press text-center block">Rate Rec</Link>
+                <button onClick={() => rec && openGiveVerdictModal(rec.id)} className="w-full py-3 bg-cinema-red text-bone font-bold rounded-xl text-sm hover:bg-cinema-red/90 transition-colors btn-press text-center block">Rate Rec</button>
                 <button className="w-full py-3 bg-surface border border-border text-bone font-semibold rounded-xl text-sm hover:bg-surface-hover transition-colors btn-press">Add to Watchlist</button>
                 <button className="w-full py-3 bg-surface border border-border text-muted font-medium rounded-xl text-sm hover:bg-surface-hover transition-colors btn-press">Not my vibe</button>
               </>
@@ -334,6 +340,14 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
           </div>
         </div>
       </div>
+
+      {rec && (
+        <VerdictModal 
+          recommendationId={rec.id}
+          isOpen={verdictModalOpen}
+          onClose={() => setVerdictModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
