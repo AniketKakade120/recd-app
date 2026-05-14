@@ -295,15 +295,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Optimistic Update: Set authenticated immediately so UI can respond
-      // CRITICAL: Never downgrade isOnboarded here — if completeOnboarding already set it true, preserve that
-      const localOnboarded = localStorage.getItem(`recd_onboarding_done_${session.user.id}`) === 'true';
+      // Optimistic Update: Set authenticated and user immediately
+      // Keep loading=true until profile fetch confirms onboarding status
       setState(prev => ({
         ...prev,
         isAuthenticated: true,
-        isOnboarded: prev.isOnboarded || localOnboarded,
-        loading: false, 
-        // Provide a temporary user object so protected pages don't render null
+        // Do NOT set isOnboarded here — wait for DB profile fetch
+        // Do NOT set loading: false — wait for profile fetch
         currentUser: prev.currentUser || {
           id: session.user.id,
           username: session.user.email?.split('@')[0] || 'user',
@@ -316,14 +314,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }));
 
       try {
-        // Fetch real profile details in background
+        // Fetch real profile details — this determines onboarding status
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
 
-        const { data: prefs, error: prefsError } = await supabase
+        const { data: prefs } = await supabase
           .from('user_preferences')
           .select('*')
           .eq('user_id', session.user.id)
@@ -336,12 +334,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (profile) {
           console.log(`[Rec'd Auth] Profile found. Onboarded: ${profile.onboarding_completed}`);
           const dbOnboarded = !!profile.onboarding_completed;
-          const localOnboarded2 = localStorage.getItem(`recd_onboarding_done_${session.user.id}`) === 'true';
-          setState(prev => {
-            // CRITICAL: Never downgrade isOnboarded from true→false.
-            // If prev.isOnboarded is already true (set by completeOnboarding), keep it.
-            const resolvedOnboarded = prev.isOnboarded || dbOnboarded || localOnboarded2;
-            return {
+          setState(prev => ({
             ...prev,
             currentUser: {
               id: profile.id,
@@ -352,7 +345,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               tasteArchetype: profile.taste_archetype as any || 'Thriller Dealer',
               createdAt: profile.created_at,
             },
-            isOnboarded: resolvedOnboarded,
+            // Only upgrade isOnboarded, never downgrade (protects against re-fires after completeOnboarding)
+            isOnboarded: prev.isOnboarded || dbOnboarded,
             userPreferences: prefs ? {
               genres: prefs.genres || [],
               moods: prefs.moods || [],
@@ -361,13 +355,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
               platforms: prefs.platforms || [],
             } : prev.userPreferences,
             loading: false,
-          };
-          });
+          }));
         } else {
-          console.log('[Rec\'d Auth] No profile record found.');
-          // Even without a profile, check localStorage
-          const localOnboarded3 = localStorage.getItem(`recd_onboarding_done_${session.user.id}`) === 'true';
-          setState(prev => ({ ...prev, isOnboarded: prev.isOnboarded || localOnboarded3, loading: false }));
+          console.log('[Rec\'d Auth] No profile record found — new user.');
+          setState(prev => ({ ...prev, isOnboarded: false, loading: false }));
         }
       } catch (err) {
         console.error('Background profile fetch error:', err);
@@ -476,19 +467,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const completeOnboarding = useCallback(async () => {
-    // STEP 1: Set React state IMMEDIATELY — this is the source of truth for the UI
+    // STEP 1: Set React state IMMEDIATELY — instant UI transition to /home
     setState(prev => ({ ...prev, isOnboarded: true }));
-    
-    // STEP 2: Persist to localStorage IMMEDIATELY — this survives page refreshes & auth re-fires
-    try {
-      if (state.currentUser) {
-        localStorage.setItem(`recd_onboarding_done_${state.currentUser.id}`, 'true');
-      }
-    } catch (err) {
-      console.error('Error setting localStorage:', err);
-    }
 
-    // STEP 3: Fire-and-forget DB update — do NOT await, do NOT let failure affect the UI
+    // STEP 2: Fire-and-forget DB update — persists across sessions
     if (isSupabaseConfigured && supabase && state.currentUser) {
       supabase.from('profiles').update({ onboarding_completed: true }).eq('id', state.currentUser.id)
         .then(({ error }) => { if (error) console.error('Error completing onboarding in Supabase:', error); });
