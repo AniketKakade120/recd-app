@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useApp } from '@/lib/context';
 import CrewMemberCard from './CrewMemberCard';
 import UserAvatar from './UserAvatar';
+import InviteModal from './InviteModal';
 import { UserCheck, Clock, Send, Check, X, UserPlus } from 'lucide-react';
 
 export default function ProfileCrewTab() {
@@ -19,6 +20,7 @@ export default function ProfileCrewTab() {
   } = useApp();
   
   const [activeSubTab, setActiveSubTab] = useState<'crew' | 'requests'>('crew');
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   if (!currentUser) return null;
 
@@ -82,7 +84,10 @@ export default function ProfileCrewTab() {
             ) : (
               <div className="col-span-full py-20 text-center bg-surface border border-border border-dashed rounded-3xl">
                 <p className="text-muted text-sm mb-4">Your crew is empty.</p>
-                <button className="px-6 py-2 bg-cinema-red text-bone text-xs font-bold rounded-xl shadow-lg shadow-cinema-red/20">
+                <button 
+                  onClick={() => setInviteOpen(true)}
+                  className="px-6 py-2 bg-cinema-red text-bone text-xs font-bold rounded-xl shadow-lg shadow-cinema-red/20 btn-press"
+                >
                   Invite Friends
                 </button>
               </div>
@@ -169,6 +174,7 @@ export default function ProfileCrewTab() {
         </div>
       )}
 
+      <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} />
     </div>
   );
 }
