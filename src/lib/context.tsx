@@ -103,7 +103,7 @@ interface AppContextType extends AppState {
     errorCode?: string;
   }>;
   isUserInCrew: (targetUserId: string) => boolean;
-  getConnectionState: (targetUserId: string) => 'none' | 'pending_sent' | 'pending_received' | 'connected' | 'rejected';
+  getConnectionState: (targetUserId: string) => 'none' | 'self' | 'connected' | 'pending_sent' | 'pending_received' | 'rejected';
   updateUser: (data: Partial<User>) => void;
   getTitle: (id: string) => Title | undefined;
   addTitle: (title: Title) => void;
