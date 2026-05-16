@@ -482,8 +482,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }));
         } else {
           console.log('[Rec\'d Auth] No profile record found — trigger might be slow or failed.');
-          // If profile is missing, we still need to show onboarding
-          setState(prev => ({ ...prev, isOnboarded: false, loading: false }));
+          // Create a placeholder user to unstick the shell and allow onboarding
+          setState(prev => ({ 
+            ...prev, 
+            currentUser: {
+              id: session.user.id,
+              username: 'newuser',
+              displayName: session.user.user_metadata?.full_name || 'New User',
+              avatarUrl: session.user.user_metadata?.avatar_url || '',
+              bio: '',
+              tasteArchetype: 'Thriller Dealer',
+              createdAt: new Date().toISOString(),
+            },
+            isOnboarded: false, 
+            loading: false 
+          }));
         }
       } catch (err) {
         console.error('Background profile fetch error:', err);
@@ -496,13 +509,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Safety timeout to ensure loading doesn't stay true forever (e.g. network issues)
     const safetyTimeout = setTimeout(() => {
       setState(prev => {
-        if (prev.loading) {
-          console.warn('[Rec\'d] Auth state took too long to resolve, forcing loading to false.');
-          return { ...prev, loading: false };
+        if (prev.loading || (prev.isAuthenticated && !prev.currentUser)) {
+          console.warn('[Rec\'d] Auth/Profile took too long, forcing recovery state.');
+          return { 
+            ...prev, 
+            loading: false, 
+            isAuthenticated: !!prev.currentUser || prev.isAuthenticated,
+            isOnboarded: !!prev.currentUser?.username
+          };
         }
         return prev;
       });
-    }, 6000);
+    }, 5000);
 
     return () => {
       subscription.unsubscribe();
