@@ -508,14 +508,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         if (profile) {
           console.log(`[Rec'd Auth] Profile found. Onboarded: ${profile.onboarding_completed}`);
+          
+          // AUTO-SYNC: If the profile has placeholder info, sync it with Google metadata
+          const googleName = session.user.user_metadata?.full_name;
+          const googleAvatar = session.user.user_metadata?.avatar_url;
+          let needsUpdate = false;
+          const updates: any = {};
+
+          if ((!profile.display_name || profile.display_name === 'User') && googleName) {
+            updates.display_name = googleName;
+            profile.display_name = googleName; // Update local ref
+            needsUpdate = true;
+          }
+          if (!profile.avatar_url && googleAvatar) {
+            updates.avatar_url = googleAvatar;
+            profile.avatar_url = googleAvatar; // Update local ref
+            needsUpdate = true;
+          }
+
+          if (needsUpdate) {
+            console.log('[Rec\'d Auth] Syncing Google metadata to profile...', updates);
+            await supabase.from('profiles').update(updates).eq('id', profile.id);
+          }
+
           const dbOnboarded = !!profile.onboarding_completed;
           setState(prev => ({
             ...prev,
             currentUser: {
               id: profile.id,
               username: profile.username || session.user.email?.split('@')[0] || 'user',
-              displayName: profile.display_name || session.user.user_metadata?.full_name || 'User',
-              avatarUrl: profile.avatar_url || session.user.user_metadata?.avatar_url || '',
+              displayName: profile.display_name || 'User',
+              avatarUrl: profile.avatar_url || '',
               bio: profile.bio || '',
               tasteArchetype: profile.taste_archetype as any || 'Thriller Dealer',
               createdAt: profile.created_at,
