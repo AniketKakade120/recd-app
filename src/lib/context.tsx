@@ -96,7 +96,12 @@ interface AppContextType extends AppState {
   cancelCrewRequest: (requestId: string) => Promise<void>;
   removeCrewMember: (memberId: string) => Promise<void>;
   createInvite: () => Promise<string | null>;
-  acceptInvite: (inviteCode: string) => Promise<boolean>;
+  acceptInvite: (inviteCode: string) => Promise<{
+    success: boolean;
+    requiresAuth?: boolean;
+    alreadyConnected?: boolean;
+    errorCode?: string;
+  }>;
   isUserInCrew: (targetUserId: string) => boolean;
   getConnectionState: (targetUserId: string) => 'none' | 'pending_sent' | 'pending_received' | 'connected' | 'rejected';
   updateUser: (data: Partial<User>) => void;
