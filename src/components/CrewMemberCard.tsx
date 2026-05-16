@@ -11,7 +11,7 @@ interface CrewMemberCardProps {
 }
 
 export default function CrewMemberCard({ user }: CrewMemberCardProps) {
-  const { removeFromCrew } = useApp();
+  const { removeCrewMember } = useApp();
   const [showOptions, setShowOptions] = useState(false);
 
   return (
@@ -46,7 +46,7 @@ export default function CrewMemberCard({ user }: CrewMemberCardProps) {
             <div className="absolute right-0 mt-2 w-48 bg-surface-hover border border-border rounded-2xl shadow-2xl z-20 overflow-hidden py-1">
               <button 
                 onClick={() => {
-                  removeFromCrew(user.id);
+                  removeCrewMember(user.id);
                   setShowOptions(false);
                 }}
                 className="w-full text-left px-4 py-2 text-xs text-cinema-red hover:bg-white/5 transition-colors font-bold"

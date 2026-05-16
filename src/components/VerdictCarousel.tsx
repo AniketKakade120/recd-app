@@ -18,6 +18,7 @@ export default function VerdictCarousel({ recommendations: recs }: VerdictCarous
   const [showStep0, setShowStep0] = useState(false);
   const [notYetView, setNotYetView] = useState(false);
   const [verdictModalOpen, setVerdictModalOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   if (recs.length === 0) return null;
 
@@ -50,13 +51,15 @@ export default function VerdictCarousel({ recommendations: recs }: VerdictCarous
         if (title) {
           addToWatchlist({
             id: `wl-${Date.now()}`,
-            userId: 'user-1',
+            userId: currentUser?.id || 'user-1',
             titleId: title.id,
             addedFromRecommendationId: currentRec.id,
             recommendedBy: currentRec.recommendedBy,
-            priority: 'medium',
+            addedBy: 'recommendation',
+            listIds: [],
             verdictState: 'verdict_pending',
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
           });
           nextSlide();
         }
@@ -100,10 +103,16 @@ export default function VerdictCarousel({ recommendations: recs }: VerdictCarous
           
           {/* Background Image with Key for smooth switching */}
           <div key={title.id} className="absolute inset-0 transition-opacity duration-700 animate-in fade-in">
-            {title.backdropUrl ? (
-              <img src={title.backdropUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
-            ) : (
-              <div className={`absolute inset-0 opacity-20 poster-gradient-${title.posterGradient}`} />
+            {/* Always show gradient as base */}
+            <div className={`absolute inset-0 opacity-40 poster-gradient-${title.posterGradient || '1'}`} />
+            
+            {title.backdropUrl && !imageError && (
+              <img 
+                src={title.backdropUrl} 
+                alt="" 
+                className="absolute inset-0 w-full h-full object-cover opacity-40" 
+                onError={() => setImageError(true)}
+              />
             )}
           </div>
 

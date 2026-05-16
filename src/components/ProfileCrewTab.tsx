@@ -3,130 +3,172 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/context';
 import CrewMemberCard from './CrewMemberCard';
-import InviteModal from './InviteModal';
+import UserAvatar from './UserAvatar';
+import { UserCheck, Clock, Send, Check, X, UserPlus } from 'lucide-react';
 
 export default function ProfileCrewTab() {
-  const { userConnections, currentUser, getUser, addToast } = useApp();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [filter, setFilter] = useState('All');
+  const { 
+    crewConnections, 
+    crewRequests, 
+    currentUser, 
+    getUser, 
+    acceptCrewRequest, 
+    rejectCrewRequest,
+    cancelCrewRequest,
+    removeCrewMember 
+  } = useApp();
+  
+  const [activeSubTab, setActiveSubTab] = useState<'crew' | 'requests'>('crew');
 
   if (!currentUser) return null;
 
-  const myCrew = userConnections
-    .filter(c => c.userId === currentUser.id && c.status === 'connected')
-    .map(c => getUser(c.connectedUserId))
+  // 1. My Crew (Accepted Connections)
+  const myCrew = crewConnections
+    .map(c => getUser(c.crewMemberId))
     .filter(Boolean);
 
-  const filteredCrew = myCrew.filter(member => {
-    const matchesSearch = member!.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         member!.username.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
+  // 2. Pending Received
+  const pendingReceived = crewRequests
+    .filter(r => r.receiverId === currentUser.id && r.status === 'pending')
+    .map(r => ({ ...r, user: getUser(r.senderId) }))
+    .filter(r => r.user);
 
-  const isEmpty = myCrew.length === 0;
+  // 3. Pending Sent
+  const pendingSent = crewRequests
+    .filter(r => r.senderId === currentUser.id && r.status === 'pending')
+    .map(r => ({ ...r, user: getUser(r.receiverId) }))
+    .filter(r => r.user);
+
+  const totalRequests = pendingReceived.length + pendingSent.length;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold text-bone font-editorial">My Crew</h2>
-          <p className="text-muted text-sm mt-1">People whose taste you trust enough to risk your watchlist.</p>
-        </div>
-        
-        {!isEmpty && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="relative group w-full sm:max-w-md flex-1">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-muted z-10 group-focus-within:text-cinema-red transition-colors">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-                </svg>
-              </div>
-              <input 
-                type="text" 
-                placeholder="Search your crew..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-3 !pl-12 !pr-10 bg-ink border border-border rounded-xl text-bone text-sm placeholder:text-muted/60 focus:outline-none focus:border-cinema-red/50 focus:ring-1 focus:ring-cinema-red/20 transition-all relative"
-              />
-              {searchQuery.length > 0 && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted hover:text-bone transition-colors z-10"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              )}
-            </div>
-            <button 
-              onClick={() => setShowInviteModal(true)}
-              className="w-full sm:w-auto px-6 py-3 bg-cinema-red text-bone text-xs font-bold rounded-xl hover:bg-cinema-red/90 transition-all active:scale-95 shadow-lg shadow-cinema-red/20"
-            >
-              Add Someone
-            </button>
-          </div>
-        )}
+      
+      {/* Sub-Tabs */}
+      <div className="flex gap-4 border-b border-border mb-6">
+        <button 
+          onClick={() => setActiveSubTab('crew')}
+          className={`pb-3 text-xs font-bold uppercase tracking-widest relative transition-colors ${activeSubTab === 'crew' ? 'text-bone' : 'text-muted'}`}
+        >
+          My Crew ({myCrew.length})
+          {activeSubTab === 'crew' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cinema-red" />}
+        </button>
+        <button 
+          onClick={() => setActiveSubTab('requests')}
+          className={`pb-3 text-xs font-bold uppercase tracking-widest relative transition-colors ${activeSubTab === 'requests' ? 'text-bone' : 'text-muted'}`}
+        >
+          Requests {totalRequests > 0 && <span className="ml-1 px-1.5 py-0.5 bg-cinema-red text-bone text-[8px] rounded-full">{totalRequests}</span>}
+          {activeSubTab === 'requests' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cinema-red" />}
+        </button>
       </div>
 
-      {isEmpty ? (
-        <div className="bg-surface border border-border border-dashed rounded-[32px] p-12 text-center max-w-lg mx-auto mt-12">
-          <div className="w-20 h-20 bg-ink border border-border rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-            🤝
+      {activeSubTab === 'crew' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-bone font-editorial">Your Crew</h2>
+              <p className="text-muted text-xs mt-1">People whose taste you trust.</p>
+            </div>
+            <button className="px-4 py-2 bg-white/5 border border-border rounded-lg text-[10px] font-bold text-muted hover:text-bone transition-colors uppercase tracking-widest">
+              Manage
+            </button>
           </div>
-          <h3 className="text-xl font-bold text-bone mb-2">Your crew is empty.</h3>
-          <p className="text-muted text-sm mb-8 leading-relaxed">
-            Add people whose taste you trust. Rec’d gets better when your people start recommending too.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button 
-              onClick={() => addToast('Search is focused on people.', { type: 'info' })}
-              className="px-8 py-3 bg-bone text-ink font-bold rounded-xl hover:bg-white transition-all active:scale-95"
-            >
-              Find people
-            </button>
-            <button 
-              onClick={() => setShowInviteModal(true)}
-              className="px-8 py-3 bg-ink border border-border text-bone font-bold rounded-xl hover:bg-surface transition-all active:scale-95"
-            >
-              Invite friends
-            </button>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {myCrew.length > 0 ? (
+              myCrew.map(member => (
+                <CrewMemberCard key={member!.id} user={member!} />
+              ))
+            ) : (
+              <div className="col-span-full py-20 text-center bg-surface border border-border border-dashed rounded-3xl">
+                <p className="text-muted text-sm mb-4">Your crew is empty.</p>
+                <button className="px-6 py-2 bg-cinema-red text-bone text-xs font-bold rounded-xl shadow-lg shadow-cinema-red/20">
+                  Invite Friends
+                </button>
+              </div>
+            )}
           </div>
         </div>
-      ) : (
-        <>
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {['All', 'Recently Added', 'High Taste Score', 'Mutual Groups'].map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
-                  filter === f 
-                    ? 'bg-cinema-red border-cinema-red text-bone shadow-[0_0_15px_rgba(234,51,51,0.2)]' 
-                    : 'bg-surface border-border text-muted hover:text-bone hover:border-border-strong'
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+      )}
 
-          <div className="flex flex-col gap-3">
-            {filteredCrew.map(member => (
-              <CrewMemberCard key={member!.id} user={member!} />
-            ))}
-          </div>
+      {activeSubTab === 'requests' && (
+        <div className="space-y-12">
           
-          {filteredCrew.length === 0 && (
-            <div className="py-20 text-center">
-              <p className="text-muted italic">No crew members found matching &quot;{searchQuery}&quot;</p>
+          {/* Incoming */}
+          <section>
+            <div className="flex items-center gap-2 mb-6">
+              <div className="p-1.5 bg-cinema-red/10 text-cinema-red rounded-lg">
+                <UserPlus size={16} />
+              </div>
+              <h3 className="text-sm font-bold text-bone uppercase tracking-widest">Requests Received</h3>
             </div>
-          )}
-        </>
+            
+            <div className="space-y-3">
+              {pendingReceived.length > 0 ? (
+                pendingReceived.map(req => (
+                  <div key={req.id} className="flex items-center gap-4 p-4 bg-surface border border-border rounded-2xl">
+                    <UserAvatar name={req.user!.displayName} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-bone truncate">{req.user!.displayName}</p>
+                      <p className="text-[10px] text-muted uppercase">@{req.user!.username}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => acceptCrewRequest(req.id)}
+                        className="px-4 py-2 bg-cinema-red text-bone text-[10px] font-bold rounded-lg hover:bg-cinema-red/90 transition-all uppercase tracking-widest"
+                      >
+                        Accept
+                      </button>
+                      <button 
+                        onClick={() => rejectCrewRequest(req.id)}
+                        className="p-2 bg-ink border border-border text-muted hover:text-bone rounded-lg transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted italic pl-1">No incoming requests.</p>
+              )}
+            </div>
+          </section>
+
+          {/* Outgoing */}
+          <section>
+            <div className="flex items-center gap-2 mb-6">
+              <div className="p-1.5 bg-ink text-muted rounded-lg border border-border">
+                <Send size={14} />
+              </div>
+              <h3 className="text-sm font-bold text-bone uppercase tracking-widest">Requests Sent</h3>
+            </div>
+            
+            <div className="space-y-3">
+              {pendingSent.length > 0 ? (
+                pendingSent.map(req => (
+                  <div key={req.id} className="flex items-center gap-4 p-4 bg-ink/40 border border-border rounded-2xl opacity-80">
+                    <UserAvatar name={req.user!.displayName} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-bone truncate">{req.user!.displayName}</p>
+                      <p className="text-[10px] text-muted">Awaiting response...</p>
+                    </div>
+                    <button 
+                      onClick={() => cancelCrewRequest(req.id)}
+                      className="text-[10px] font-bold text-muted hover:text-cinema-red uppercase tracking-widest px-3 py-2"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted italic pl-1">No pending outgoing requests.</p>
+              )}
+            </div>
+          </section>
+
+        </div>
       )}
 
-      {showInviteModal && (
-        <InviteModal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} />
-      )}
     </div>
   );
 }

@@ -4,11 +4,25 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/context';
 import Link from 'next/link';
+import Logo from '@/components/Logo';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, enterDemoMode } = useApp();
   const [loading, setLoading] = useState(false);
+  
+  // Get error from URL if it exists
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const error = searchParams?.get('error');
+
+  const getErrorMessage = (code: string | null) => {
+    if (!code) return null;
+    switch (code) {
+      case 'auth_callback_failed': return 'Authentication failed. Please try again.';
+      case 'supabase_not_configured': return 'Server configuration error. Please contact support.';
+      default: return 'An unexpected error occurred during login.';
+    }
+  };
 
   const handleLogin = async () => {
     setLoading(true);
@@ -16,6 +30,7 @@ export default function LoginPage() {
       await login();
     } catch (err) {
       console.error('Login failed:', err);
+    } finally {
       setLoading(false);
     }
   };
@@ -34,13 +49,20 @@ export default function LoginPage() {
       <div className="w-full max-w-sm z-10">
         <div className="text-center mb-10">
           <Link href="/" className="inline-block">
-            <span className="text-4xl font-bold text-bone font-editorial tracking-tight">
-              Rec<span className="text-cinema-red">&apos;</span>d
-            </span>
+            <Logo variant="square" size="xl" />
           </Link>
           <h1 className="text-xl font-bold text-bone mt-4 mb-1">Your taste is waiting.</h1>
           <p className="text-sm text-muted">Sign in to recommend, save, stamp, and get judged by your crew.</p>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-cinema-red/10 border border-cinema-red/30 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+            <div className="w-5 h-5 rounded-full bg-cinema-red flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 24 24" width="12" height="12" className="text-white"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="3" fill="none" /></svg>
+            </div>
+            <p className="text-sm text-cinema-red font-medium">{getErrorMessage(error)}</p>
+          </div>
+        )}
 
         <div className="rounded-2xl bg-surface border border-border p-6 space-y-3">
           <button disabled={loading} onClick={handleLogin}

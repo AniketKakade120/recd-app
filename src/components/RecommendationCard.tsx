@@ -26,6 +26,7 @@ export default function RecommendationCard({ recommendation: rec, compact = fals
   const { getTitle, getUser, getViewerContext, getActions, updateVerdictState, addToWatchlist, openGiveVerdictModal } = useApp();
   const [addToListOpen, setAddToListOpen] = useState(false);
   const [verdictModalOpen, setVerdictModalOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const title = getTitle(rec.titleId);
   const recommender = getUser(rec.recommendedBy);
   
@@ -89,9 +90,16 @@ export default function RecommendationCard({ recommendation: rec, compact = fals
   return (
     <div className="rounded-xl bg-surface border border-border p-4 card-hover flex gap-4 group relative overflow-hidden">
       <Link href={linkHref} className="shrink-0 relative z-10">
-        <div className={`w-[100px] sm:w-[120px] ${!title.posterUrl ? `poster-gradient-${title.posterGradient}` : 'bg-surface'} relative aspect-[2/3] rounded-lg overflow-hidden`}>
-          {title.posterUrl && (
-            <img src={title.posterUrl} alt={title.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        <div className={`w-[100px] sm:w-[120px] aspect-[2/3] rounded-lg overflow-hidden bg-surface relative`}>
+          <div className={`absolute inset-0 poster-gradient-${title.posterGradient || '1'} opacity-60`} />
+          {title.posterUrl && !imageError && (
+            <img 
+              src={title.posterUrl} 
+              alt={title.title} 
+              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300" 
+              loading="lazy" 
+              onError={() => setImageError(true)}
+            />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>

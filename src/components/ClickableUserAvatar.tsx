@@ -32,7 +32,6 @@ export default function ClickableUserAvatar({
         name={name} 
         avatarUrl={avatarUrl} 
         size={size} 
-        showBadge={showBadge} 
       />
     </Link>
   );

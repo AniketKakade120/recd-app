@@ -14,6 +14,11 @@ export default function ShareListModal({ isOpen, onClose, list }: ShareListModal
   const { setListPrivacy, addToast } = useApp();
   const [submitting, setSubmitting] = useState(false);
 
+  const [origin, setOrigin] = useState('https://recd.app');
+  useState(() => {
+    if (typeof window !== 'undefined') setOrigin(window.location.origin);
+  });
+
   if (!isOpen) return null;
 
   const handleMakeShared = () => {
@@ -26,7 +31,7 @@ export default function ShareListModal({ isOpen, onClose, list }: ShareListModal
   };
 
   const handleCopy = () => {
-    const url = `recd.app/list/${list.id}`;
+    const url = `${origin.replace(/^https?:\/\//, '')}/list/${list.id}`;
     navigator.clipboard.writeText(url);
     addToast('Link copied. Good taste travels.', { type: 'success' });
   };
@@ -85,7 +90,7 @@ export default function ShareListModal({ isOpen, onClose, list }: ShareListModal
                 <div className="relative group">
                   <input 
                     readOnly
-                    value={`recd.app/list/${list.id}`}
+                    value={`${origin.replace(/^https?:\/\//, '')}/list/${list.id}`}
                     className="w-full bg-ink border border-border rounded-xl pl-4 pr-12 py-3 text-sm text-muted focus:outline-none"
                   />
                   <button 

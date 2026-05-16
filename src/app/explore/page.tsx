@@ -270,9 +270,16 @@ export default function ExplorePage() {
     { title: 'Stamped by People You Trust', titles: getTrustedPicks() },
   ].filter(s => s.titles.length > 0);
 
+  // Activation Logic (matches Home)
+  const hasRecommendations = recommendations.some(r => 
+    r.recommendedBy === currentUser?.id || 
+    r.recommendedToUserIds?.includes(currentUser?.id || '')
+  );
+  const isFirstTimeUser = !hasRecommendations;
+
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 page-enter">
       
       {/* ── 1. SEARCH-FIRST HERO ─────────────────────────────────────────── */}
       <section className="text-center pt-4 pb-6 border-b border-border">
@@ -374,38 +381,51 @@ export default function ExplorePage() {
           
           {/* Trending in India */}
           <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-bone font-editorial">Trending in <span className="text-cinema-red">India</span></h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Trending in <span className="text-cinema-red">India</span></h2>
+              <Link href="/explore" className="text-xs font-bold text-cinema-red uppercase tracking-widest hover:opacity-80 transition-opacity">View All</Link>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
-              {trendingTitles.map(t => {
+            <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              {trendingTitles.length > 0 ? trendingTitles.map(t => {
                 const rec = recommendations.find(r => r.titleId === t.id);
                 return (
-                  <div key={t.id} className="w-[240px] shrink-0 snap-start">
+                  <div key={t.id} className="w-[220px] shrink-0 snap-start">
                     <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                   </div>
                 );
-              })}
+              }) : (
+                [1,2,3,4,5,6].map(i => (
+                  <div key={i} className="w-[220px] shrink-0 snap-start">
+                    <div className="aspect-[2/3] rounded-[24px] bg-surface border border-border/20 animate-pulse relative overflow-hidden">
+                       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </section>
 
-          {/* Crew Powered */}
-          <div className="py-8 px-6 -mx-6 sm:px-8 sm:-mx-8 rounded-3xl bg-cinema-red/5 border border-cinema-red/10 my-10">
-            <div className="flex items-center gap-2 mb-6">
-              <span className="w-2 h-2 rounded-full bg-cinema-red animate-pulse" />
-              <h2 className="text-lg font-bold text-bone font-editorial">Crew-Powered Discovery</h2>
-            </div>
-            
-            {crewShelves.length > 0 ? (
-              <div className="space-y-8">
+          {/* Crew Powered Discovery - Only show if not a first-time user OR if there is actual crew content */}
+          {!isFirstTimeUser && crewShelves.length > 0 && (
+            <div className="py-12 px-6 -mx-6 sm:px-10 sm:-mx-8 rounded-[40px] bg-cinema-red/[0.03] border border-cinema-red/10 my-10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-cinema-red/5 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2" />
+              
+              <div className="flex items-center gap-3 mb-8 relative z-10">
+                <div className="w-1.5 h-6 rounded-full bg-cinema-red" />
+                <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Crew-Powered Discovery</h2>
+              </div>
+              
+              <div className="space-y-10 relative z-10">
                 {crewShelves.map(shelf => (
                   <div key={shelf.title}>
-                    <h3 className="text-sm font-semibold text-bone/90 mb-3">{shelf.title}</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold text-bone uppercase tracking-widest opacity-60">{shelf.title}</h3>
+                    </div>
                     <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar snap-x">
                       {shelf.titles.map(t => {
                         const rec = recommendations.find(r => r.titleId === t.id);
                         return (
-                          <div key={t.id} className="w-[240px] shrink-0 snap-start">
+                          <div key={t.id} className="w-[220px] shrink-0 snap-start">
                             <MovieCard title={t} stamp={rec?.primaryStamp || 'Crew Pick'} showRecommendAction />
                           </div>
                         );
@@ -414,29 +434,20 @@ export default function ExplorePage() {
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="py-10 text-center">
-                <p className="text-2xl mb-3 opacity-30">✦</p>
-                <h3 className="font-bold text-bone mb-1">Your Explore gets sharper with your people.</h3>
-                <p className="text-sm text-muted mb-4">Invite friends to start getting crew-powered recommendations.</p>
-                <button className="px-5 py-2.5 bg-cinema-red text-bone rounded-xl text-sm font-semibold btn-press hover:bg-cinema-red/90">
-                  Invite friends
-                </button>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Curated by User's Top Platform */}
           {curatedPlatformTitles.length > 0 && topPlatform && (
             <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-bone">Top Movies on <span className="text-cinema-red">{topPlatform}</span></h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Top on <span className="text-cinema-red">{topPlatform}</span></h2>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
                 {curatedPlatformTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[240px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -448,14 +459,14 @@ export default function ExplorePage() {
           {/* Curated by User's Top Language */}
           {curatedLanguageTitles.length > 0 && topLanguage && (
             <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-bone">Trending in <span className="text-cinema-red">{topLanguage}</span></h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Trending in <span className="text-cinema-red">{topLanguage}</span></h2>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
                 {curatedLanguageTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[240px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -467,14 +478,14 @@ export default function ExplorePage() {
           {/* Curated by User's Top Genre */}
           {curatedGenreTitles.length > 0 && topGenre && (
             <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-bone">Because you love <span className="text-cinema-red">{topGenre}</span></h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Because you love <span className="text-cinema-red">{topGenre}</span></h2>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
                 {curatedGenreTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[240px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -486,14 +497,14 @@ export default function ExplorePage() {
           {/* Theatrical Releases */}
           {theatricalTitles.length > 0 && (
             <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-bone">Now in <span className="text-cinema-red">Indian Theatres</span></h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Now in <span className="text-cinema-red">Theatres</span></h2>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
                 {theatricalTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[240px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -505,14 +516,14 @@ export default function ExplorePage() {
           {/* Upcoming Indian Cinema */}
           {upcomingTitles.length > 0 && (
             <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-bone">Upcoming <span className="text-cinema-red">Indian Cinema</span></h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Upcoming <span className="text-cinema-red">Cinema</span></h2>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
                 {upcomingTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[240px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -524,14 +535,14 @@ export default function ExplorePage() {
           {/* Bollywood Hits */}
           {bollywoodTitles.length > 0 && (
             <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-bone">Bollywood <span className="text-cinema-red">Hits</span></h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Bollywood <span className="text-cinema-red">Hits</span></h2>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
                 {bollywoodTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[240px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -543,14 +554,14 @@ export default function ExplorePage() {
           {/* Regional Gems */}
           {regionalTitles.length > 0 && (
             <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-bone">Regional <span className="text-cinema-red">Gems</span></h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Regional <span className="text-cinema-red">Gems</span></h2>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
                 {regionalTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[240px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -559,22 +570,7 @@ export default function ExplorePage() {
             </section>
           )}
 
-          {/* Mood Shelves (Fallback from local data) */}
-          {moodShelves.map(shelf => (
-            <section key={shelf.title}>
-              <h2 className="text-base font-bold text-bone mb-4">{shelf.title}</h2>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
-                {shelf.titles.map(t => {
-                  const rec = recommendations.find(r => r.titleId === t.id);
-                  return (
-                    <div key={t.id} className="w-[240px] shrink-0 snap-start">
-                      <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+
 
         </div>
       )}

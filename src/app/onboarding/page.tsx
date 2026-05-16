@@ -48,6 +48,7 @@ export default function OnboardingPage() {
 
   const next = async () => {
     // Fire and forget updates to ensure UI moves immediately
+    if (step === 1 && archetype) completeOnboarding({ taste_archetype: archetype });
     if (step === 2) updatePreferences({ genres: genres as any[] });
     if (step === 3) updatePreferences({ moods: moods as any[], formats: formats as any[], languages: languages as any[] });
     if (step === 4) updatePreferences({ platforms: platforms as any[] });
@@ -56,7 +57,7 @@ export default function OnboardingPage() {
       setStep(s => s + 1);
       window.scrollTo(0, 0); // Scroll to top for new step
     } else { 
-      completeOnboarding(); // Fire and forget
+      completeOnboarding({ onboarding_completed: true }); // Final sync
       router.push('/home'); 
     }
   };

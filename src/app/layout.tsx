@@ -18,7 +18,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Rec'd — Stamped by Taste",
+  title: "Rec'd Club — Stamped by Taste",
   description: "Good taste travels person to person. From your crew. For your watchlist. Pass it on.",
 };
 

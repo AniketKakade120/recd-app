@@ -75,7 +75,7 @@ export default function GroupModal({ isOpen, onClose, group }: GroupModalProps) 
         createdAt: new Date().toISOString(),
         avatarGradient: Math.ceil(Math.random() * 10),
       };
-      createGroup(newGroup);
+      createGroup(newGroup, selectedMembers);
       addToast('Group created! Let the chaos begin.');
     }
     onClose();

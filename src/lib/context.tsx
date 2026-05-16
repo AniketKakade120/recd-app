@@ -3,8 +3,8 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import type {
   User, Recommendation, Rating, VerdictState, TasteScore, Title,
-  Badge, Group, GroupMember, ActivityItem, WatchlistItem, WatchlistList, UserPreferences, RecAccuracy,
-  StampType, UserConnection,
+  Badge, Comment, Group, GroupMember, ActivityItem, WatchlistItem, WatchlistList, UserPreferences, RecAccuracy,
+  StampType, CrewConnection, CrewRequest, Notification,
 } from '@/lib/types';
 import {
   mockUsers, mockRecommendations, mockRatings, mockBadges, mockGroups,
@@ -28,7 +28,19 @@ import {
   saveRecommendation, 
   saveRating, 
   saveWatchlistItem, 
-  saveUserConnection 
+  deleteWatchlistItem,
+  updateWatchlistListDb,
+  deleteWatchlistListDb,
+  createWatchlistList as createWatchlistListDb,
+  addTitleToListDb,
+  removeTitleFromListDb,
+  sendCrewRequest as sendCrewRequestAction,
+  acceptCrewRequest as acceptCrewRequestAction,
+  rejectCrewRequest as rejectCrewRequestAction,
+  removeCrewMember as removeCrewMemberAction,
+  createCrewInvite as createCrewInviteAction,
+  acceptCrewInvite as acceptCrewInviteAction,
+  getCrewState as getCrewStateAction
 } from '@/lib/supabase/actions';
 
 // TODO: Replace mock data with Supabase queries
@@ -51,7 +63,10 @@ interface AppState {
   loading: boolean;
   titles: Title[];
   users: User[];
-  userConnections: UserConnection[];
+  crewConnections: CrewConnection[];
+  crewRequests: CrewRequest[];
+  notifications: Notification[];
+  comments: Comment[];
   toasts: { id: string; message: string; type?: 'success' | 'error' | 'info'; onUndo?: () => void }[];
   recommendModalOpen: boolean;
   recommendModalData: { titleId?: string; groupId?: string; recipientId?: string } | null;
@@ -63,7 +78,7 @@ interface AppContextType extends AppState {
   login: () => Promise<void>;
   enterDemoMode: () => void;
   logout: () => Promise<void>;
-  completeOnboarding: () => Promise<void>;
+  completeOnboarding: (data?: any) => Promise<void>;
   openRecommendModal: (data?: { titleId?: string; groupId?: string; recipientId?: string }) => void;
   closeRecommendModal: () => void;
   openGiveVerdictModal: (recommendationId: string, edit?: boolean) => void;
@@ -71,24 +86,19 @@ interface AppContextType extends AppState {
   addRecommendation: (rec: Recommendation) => void;
   updateVerdictState: (recId: string, state: VerdictState) => void;
   addRating: (rating: Rating) => void;
-  createGroup: (group: Group) => void;
+  createGroup: (group: Group, memberIds?: string[]) => void;
   updateGroup: (groupId: string, data: Partial<Group>) => void;
   deleteGroup: (groupId: string) => void;
   joinGroup: (groupId: string) => void;
-  addToCrew: (targetUserId: string) => void;
-  removeFromCrew: (targetUserId: string) => void;
+  sendCrewRequest: (receiverId: string, message?: string) => Promise<void>;
+  acceptCrewRequest: (requestId: string) => Promise<void>;
+  rejectCrewRequest: (requestId: string) => Promise<void>;
+  cancelCrewRequest: (requestId: string) => Promise<void>;
+  removeCrewMember: (memberId: string) => Promise<void>;
+  createInvite: () => Promise<string | null>;
+  acceptInvite: (inviteCode: string) => Promise<boolean>;
   isUserInCrew: (targetUserId: string) => boolean;
-  getMutualGroups: (targetUserId: string) => Group[];
-  addToWatchlist: (item: WatchlistItem) => void;
-  addTitleToWatchlist: (titleId: string) => void;
-  createWatchlistList: (data: Partial<WatchlistList>) => void;
-  updateWatchlistList: (listId: string, data: Partial<WatchlistList>) => void;
-  deleteWatchlistList: (listId: string) => void;
-  addTitleToList: (titleId: string, listId: string) => void;
-  removeTitleFromList: (listId: string, titleId: string) => void;
-  moveToList: (itemId: string, listId: string) => void;
-  removeFromWatchlist: (id: string) => void;
-  updatePreferences: (prefs: Partial<UserPreferences>) => void;
+  getConnectionState: (targetUserId: string) => 'none' | 'pending_sent' | 'pending_received' | 'connected' | 'rejected';
   updateUser: (data: Partial<User>) => void;
   getTitle: (id: string) => Title | undefined;
   addTitle: (title: Title) => void;
@@ -101,6 +111,7 @@ interface AppContextType extends AppState {
   getUserBadges: (userId: string) => Badge[];
   getViewerContext: (rec: Recommendation) => ViewerContext;
   getActions: (rec: Recommendation) => ActionSet;
+  getMutualGroups: (targetUserId: string) => Group[];
   isTitleInList: (titleId: string, listId: string) => boolean;
   setListPrivacy: (listId: string, privacy: 'private' | 'shared' | 'group') => void;
   getListStats: (listId: string) => any;
@@ -108,6 +119,16 @@ interface AppContextType extends AppState {
   removeToast: (id: string) => void;
   leaderboard: typeof mockLeaderboard;
   refreshData: () => Promise<void>;
+  addTitleToWatchlist: (titleId: string) => Promise<void>;
+  addToWatchlist: (item: WatchlistItem) => void;
+  createWatchlistList: (data: Partial<WatchlistList>) => Promise<{ id: string | null; error?: string }>;
+  updateWatchlistList: (listId: string, data: Partial<WatchlistList>) => Promise<void>;
+  deleteWatchlistList: (listId: string) => Promise<void>;
+  addTitleToList: (titleId: string, listId: string) => Promise<void>;
+  removeTitleFromList: (listId: string, titleId: string) => Promise<void>;
+  moveToList: (itemId: string, listId: string) => void;
+  removeFromWatchlist: (id: string) => Promise<void>;
+  updatePreferences: (data: Partial<UserPreferences>) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -125,13 +146,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     activity: mockActivity,
     tasteScore: mockTasteScore,
     watchlist: mockWatchlist,
-    watchlistLists: mockWatchlistLists,
+    watchlistLists: [],
     userPreferences: { genres: [], moods: [], formats: [], languages: [], platforms: [] },
     inviteLink: `${process.env.NEXT_PUBLIC_APP_URL}/invite/ABC123`,
     loading: true,
     titles: mockTitles,
-    users: mockUsers,
-    userConnections: mockUserConnections,
+    users: [],
+    crewConnections: [],
+    crewRequests: [],
+    notifications: [],
+    comments: [],
     toasts: [],
     recommendModalOpen: false,
     recommendModalData: null,
@@ -161,14 +185,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
 
   const refreshData = useCallback(async () => {
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!isSupabaseConfigured || !supabase || !state.currentUser) return;
 
     try {
-      // 1. Fetch titles
-      const { data: titlesData } = await supabase.from('titles').select('*');
-      const dbTitles = titlesData ? titlesData.map(mapDbTitleToTitle) : [];
+      const userId = state.currentUser.id;
 
-      // 2. Fetch recommendations
+      // 1. Fetch relevant recommendations (Sent by me OR To me OR in my Groups)
+      // For simplicity and speed, we fetch recent and filter client-side, but scoped
       const { data: recsData } = await supabase.from('recommendations').select(`
         *,
         targets:recommendation_targets(user_id)
@@ -189,7 +212,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createdAt: r.created_at
       })) : [];
 
-      // 3. Fetch ratings
+      // 2. Fetch relevant ratings
       const { data: ratingsData } = await supabase.from('ratings').select('*');
       const dbRatings: Rating[] = ratingsData ? ratingsData.map(r => ({
         id: r.id,
@@ -202,8 +225,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createdAt: r.created_at
       })) : [];
 
-      // 4. Fetch groups
-      const { data: groupsData } = await supabase.from('groups').select('*');
+      // 3. Fetch MY groups
+      const { data: myMemberships } = await supabase.from('group_members').select('group_id').eq('user_id', userId);
+      const myGroupIds = myMemberships?.map(m => m.group_id) || [];
+      
+      const { data: groupsData } = await supabase.from('groups').select('*').in('id', myGroupIds);
       const dbGroups: Group[] = groupsData ? groupsData.map(g => ({
         id: g.id,
         name: g.name,
@@ -216,8 +242,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         avatarGradient: g.avatar_gradient
       })) : [];
 
-      // 5. Fetch group members
-      const { data: membersData } = await supabase.from('group_members').select('*');
+      // 4. Fetch all group members for my groups
+      const { data: membersData } = await supabase.from('group_members').select('*').in('group_id', myGroupIds);
       const dbMembers: GroupMember[] = membersData ? membersData.map(m => ({
         id: m.id,
         groupId: m.group_id,
@@ -226,41 +252,151 @@ export function AppProvider({ children }: { children: ReactNode }) {
         joinedAt: m.joined_at
       })) : [];
 
-      // 6. Fetch watchlist
-      const { data: watchlistData } = await supabase.from('watchlist_items').select('*');
+      // 5. Fetch MY watchlist
+      const { data: watchlistData } = await supabase.from('watchlist_items').select('*').eq('user_id', userId);
       const dbWatchlist: WatchlistItem[] = watchlistData ? watchlistData.map(w => ({
         id: w.id,
         userId: w.user_id,
         titleId: w.title_id,
         addedBy: w.added_by,
-        listIds: [], // To be populated from lists if needed
+        listIds: [], 
         verdictState: 'none',
         createdAt: w.created_at,
         updatedAt: w.updated_at
       })) : [];
 
-      // 7. Fetch crew connections
-      const { data: connData } = await supabase.from('user_connections').select('*').eq('status', 'connected');
-      const dbConns: UserConnection[] = connData ? connData.map(c => ({
+      // 6. Fetch titles involved in above data
+      const relevantTitleIds = [...new Set([
+        ...dbRecs.map(r => r.titleId),
+        ...dbWatchlist.map(w => w.titleId)
+      ])];
+      
+      const { data: titlesData } = await supabase.from('titles').select('*').in('id', relevantTitleIds);
+      const dbTitles = titlesData ? titlesData.map(mapDbTitleToTitle) : [];
+
+      // 7. Fetch crew connections (My connections)
+      const { data: connData } = await supabase.from('crew_connections').select('*').eq('user_id', userId).eq('status', 'accepted');
+      const dbConns: CrewConnection[] = connData ? connData.map(c => ({
         id: c.id,
         userId: c.user_id,
-        connectedUserId: c.connected_user_id,
-        status: c.status,
+        crewMemberId: c.crew_member_id,
+        status: c.status as 'accepted',
         createdAt: c.created_at,
-        updatedAt: c.updated_at
+        updatedAt: c.updated_at,
       })) : [];
 
-      // Update state with merged data (Mock + Real)
-      setState(prev => ({
-        ...prev,
-        titles: dbTitles.length > 0 ? [...dbTitles, ...mockTitles.filter(mt => !dbTitles.some(dt => dt.id === mt.id))] : prev.titles,
-        recommendations: dbRecs.length > 0 ? [...dbRecs, ...mockRecommendations.filter(mr => !dbRecs.some(dr => dr.id === mr.id))] : prev.recommendations,
-        ratings: dbRatings.length > 0 ? [...dbRatings, ...mockRatings.filter(mr => !dbRatings.some(dr => dr.id === mr.id))] : prev.ratings,
-        groups: dbGroups.length > 0 ? [...dbGroups, ...mockGroups.filter(mg => !dbGroups.some(dg => dg.id === mg.id))] : prev.groups,
-        groupMembers: dbMembers.length > 0 ? [...dbMembers, ...mockGroupMembers.filter(mm => !dbMembers.some(dm => dm.id === mm.id))] : prev.groupMembers,
-        watchlist: dbWatchlist.length > 0 ? [...dbWatchlist, ...mockWatchlist.filter(mw => !dbWatchlist.some(dw => dw.id === mw.id))] : prev.watchlist,
-        userConnections: dbConns.length > 0 ? [...dbConns, ...mockUserConnections.filter(mc => !dbConns.some(dc => dc.id === mc.id))] : prev.userConnections,
-      }));
+      // 7b. Fetch Crew Requests
+      const { data: requestsData } = await supabase.from('crew_requests').select('*').or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+      const dbRequests: CrewRequest[] = requestsData ? requestsData.map(r => ({
+        id: r.id,
+        senderId: r.sender_id,
+        receiverId: r.receiver_id,
+        status: r.status as any,
+        message: r.message,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+      })) : [];
+
+      // 7c. Fetch Notifications
+      const { data: notifData } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+      const dbNotifs: Notification[] = notifData ? notifData.map(n => ({
+        id: n.id,
+        userId: n.user_id,
+        actorId: n.actor_id,
+        type: n.type as any,
+        title: n.title,
+        body: n.body,
+        resourceId: n.resource_id,
+        read: n.read,
+        createdAt: n.created_at
+      })) : [];
+
+      // 8. Fetch activity
+      const { data: activityData } = await supabase.from('activity').select('*').order('created_at', { ascending: false }).limit(20);
+      const dbActivity: ActivityItem[] = activityData ? activityData.map(a => ({
+        id: a.id,
+        type: a.type as any,
+        userId: a.user_id,
+        targetUserId: a.target_user_id,
+        titleId: a.title_id,
+        groupId: a.group_id,
+        recommendationId: a.recommendation_id,
+        message: a.message,
+        createdAt: a.created_at
+      })) : [];
+
+      // 9. Fetch watchlist lists
+      const { data: listsData } = await supabase.from('watchlist_lists').select('*').eq('user_id', userId);
+      const myIds = listsData?.map(l => l.id) || [];
+      const { data: listItemsData } = await supabase.from('watchlist_list_items').select('*').in('list_id', myIds);
+      
+      const dbLists: WatchlistList[] = listsData ? listsData.map(l => ({
+        id: l.id,
+        userId: l.user_id,
+        name: l.name,
+        description: l.description,
+        privacy: l.privacy,
+        coverStyle: l.cover_style,
+        coverImage: l.cover_image,
+        titleIds: listItemsData ? listItemsData.filter((item: any) => item.list_id === l.id).map((item: any) => item.title_id) : [],
+        createdAt: l.created_at,
+        updatedAt: l.updated_at
+      })) : [];
+
+      // 10. Fetch relevant comments
+      const { data: commentsData } = await supabase.from('comments').select('*').order('created_at', { ascending: true });
+      const dbComments: Comment[] = commentsData ? commentsData.map(c => ({
+        id: c.id,
+        userId: c.user_id,
+        groupId: c.group_id,
+        titleId: c.title_id,
+        recommendationId: c.recommendation_id,
+        comment: c.comment,
+        createdAt: c.created_at
+      })) : [];
+
+      // 11. Fetch profiles for users state
+      const { data: profilesData } = await supabase.from('profiles').select(`
+        *,
+        prefs:user_preferences(genres, moods)
+      `);
+      const dbUsers: User[] = profilesData ? profilesData.map((p: any) => ({
+        id: p.id,
+        username: p.username || 'user',
+        displayName: p.display_name || 'User',
+        avatarUrl: p.avatar_url || '',
+        bio: p.bio || '',
+        tasteArchetype: p.taste_archetype as any || 'Thriller Dealer',
+        tasteScore: p.taste_score || 0,
+        favoriteGenres: p.prefs?.[0]?.genres || [],
+        favoriteMoods: p.prefs?.[0]?.moods || [],
+        createdAt: p.created_at,
+      })) : [];
+
+      // Update state with DB data
+      setState(prev => {
+        // Link watchlist items to their lists
+        const enrichedWatchlist = dbWatchlist.map(item => ({
+          ...item,
+          listIds: dbLists.filter(l => l.titleIds.includes(item.titleId)).map(l => l.id)
+        }));
+
+        return {
+          ...prev,
+          titles: dbTitles.length > 0 ? [...dbTitles, ...mockTitles.filter(mt => !dbTitles.some(dt => dt.id === mt.id))] : prev.titles,
+          recommendations: dbRecs,
+          ratings: dbRatings,
+          groups: dbGroups,
+          groupMembers: dbMembers,
+          watchlist: enrichedWatchlist,
+          watchlistLists: dbLists,
+          crewConnections: dbConns,
+          crewRequests: dbRequests,
+          notifications: dbNotifs,
+          activity: dbActivity.length > 0 ? dbActivity : prev.activity,
+          users: dbUsers,
+        };
+      });
     } catch (err) {
       console.error('Error hydrating state from Supabase:', err);
     }
@@ -338,15 +474,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...prev,
             currentUser: {
               id: profile.id,
-              username: profile.username,
-              displayName: profile.display_name || profile.username,
-              avatarUrl: profile.avatar_url || '',
+              username: profile.username || session.user.email?.split('@')[0] || 'user',
+              displayName: profile.display_name || session.user.user_metadata?.full_name || 'User',
+              avatarUrl: profile.avatar_url || session.user.user_metadata?.avatar_url || '',
               bio: profile.bio || '',
               tasteArchetype: profile.taste_archetype as any || 'Thriller Dealer',
               createdAt: profile.created_at,
             },
-            // Only upgrade isOnboarded, never downgrade (protects against re-fires after completeOnboarding)
-            isOnboarded: prev.isOnboarded || dbOnboarded,
+            isOnboarded: dbOnboarded,
             userPreferences: prefs ? {
               genres: prefs.genres || [],
               moods: prefs.moods || [],
@@ -357,7 +492,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             loading: false,
           }));
         } else {
-          console.log('[Rec\'d Auth] No profile record found — new user.');
+          console.log('[Rec\'d Auth] No profile record found — trigger might be slow or failed.');
+          // If profile is missing, we still need to show onboarding
           setState(prev => ({ ...prev, isOnboarded: false, loading: false }));
         }
       } catch (err) {
@@ -377,7 +513,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         return prev;
       });
-    }, 5000);
+    }, 6000);
 
     return () => {
       subscription.unsubscribe();
@@ -425,17 +561,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async () => {
+    console.log('[Rec\'d Login] Triggered. Supabase Configured:', isSupabaseConfigured);
+    
     if (!isSupabaseConfigured || !supabase) {
+       console.log('[Rec\'d Login] Entering Demo Mode because Supabase is not configured.');
        setState(prev => ({ ...prev, currentUser: defaultUser, isAuthenticated: true }));
        return;
     }
     
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
-      },
-    });
+    try {
+      const cleanOrigin = window.location.origin.replace(/\/$/, '');
+      const redirectUrl = `${cleanOrigin}/api/auth/callback`;
+      console.log('[Rec\'d Login] Redirecting to Google with:', redirectUrl);
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) {
+        console.error('[Rec\'d Login] Supabase OAuth Error:', error.message);
+        throw error;
+      }
+    } catch (err) {
+      console.error('[Rec\'d Login] Unexpected Error:', err);
+      throw err;
+    }
   }, []);
 
   const enterDemoMode = useCallback(() => {
@@ -466,14 +623,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const completeOnboarding = useCallback(async () => {
-    // STEP 1: Set React state IMMEDIATELY — instant UI transition to /home
-    setState(prev => ({ ...prev, isOnboarded: true }));
+  const completeOnboarding = useCallback(async (data: any = { onboarding_completed: true }) => {
+    // STEP 1: Set React state IMMEDIATELY if finishing
+    if (data.onboarding_completed) {
+      setState(prev => ({ ...prev, isOnboarded: true }));
+    }
 
     // STEP 2: Fire-and-forget DB update — persists across sessions
     if (isSupabaseConfigured && supabase && state.currentUser) {
-      supabase.from('profiles').update({ onboarding_completed: true }).eq('id', state.currentUser.id)
-        .then(({ error }) => { if (error) console.error('Error completing onboarding in Supabase:', error); });
+      supabase.from('profiles').update(data).eq('id', state.currentUser.id)
+        .then(({ error }) => { if (error) console.error('Error updating profile in Supabase:', error); });
+    }
+  }, [state.currentUser]);
+
+  const updatePreferences = useCallback(async (data: Partial<UserPreferences>) => {
+    setState(prev => ({
+      ...prev,
+      userPreferences: { ...prev.userPreferences, ...data }
+    }));
+
+    if (isSupabaseConfigured && supabase && state.currentUser) {
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: state.currentUser.id,
+          ...data,
+          updated_at: new Date().toISOString()
+        });
+      
+      if (error) console.error('Error updating preferences in Supabase:', error);
     }
   }, [state.currentUser]);
 
@@ -591,7 +769,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, [refreshData]);
 
-  const createGroup = useCallback(async (group: Group) => {
+  const createGroup = useCallback(async (group: Group, memberIds: string[] = []) => {
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('groups')
@@ -607,12 +785,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
 
       if (!error) {
-        // Add creator as member
-        await supabase.from('group_members').insert({
-          group_id: group.id,
-          user_id: state.currentUser?.id || group.createdBy,
-          role: 'owner'
-        });
+        // Add creator as owner
+        const members = [
+          { group_id: group.id, user_id: state.currentUser?.id || group.createdBy, role: 'owner' },
+          ...memberIds.map(id => ({ group_id: group.id, user_id: id, role: 'member' }))
+        ];
+        
+        await supabase.from('group_members').insert(members);
         refreshData();
         return;
       }
@@ -680,46 +859,103 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, [state.currentUser, refreshData]);
 
-  const addToCrew = useCallback(async (targetUserId: string) => {
-    const targetUser = state.users.find(u => u.id === targetUserId);
-    if (isSupabaseConfigured && supabase && state.currentUser) {
-      const { success, error } = await saveUserConnection(state.currentUser.id, targetUserId);
-      if (success) refreshData();
-      else console.error('Failed to add to crew:', error);
-    } else {
-      const newConn: UserConnection = {
-        id: `conn-${Date.now()}`,
-        userId: state.currentUser?.id || '',
-        connectedUserId: targetUserId,
-        status: 'connected',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      setState(prev => ({
-        ...prev,
-        userConnections: [...prev.userConnections, newConn]
-      }));
-    }
-    addToast(`${targetUser?.displayName || 'User'} is now in your crew.`, { type: 'success' });
-  }, [state.currentUser, state.users, addToast, refreshData]);
-
-  const removeFromCrew = useCallback(async (targetUserId: string) => {
-    const targetUser = state.users.find(u => u.id === targetUserId);
-    if (isSupabaseConfigured && supabase && state.currentUser) {
-      await supabase.from('user_connections').delete().eq('user_id', state.currentUser.id).eq('connected_user_id', targetUserId);
+  const sendCrewRequest = useCallback(async (receiverId: string, message?: string) => {
+    if (!state.currentUser) return;
+    const { success, error } = await sendCrewRequestAction(receiverId, message);
+    if (success) {
+      addToast('Crew request sent!', { type: 'success' });
       refreshData();
     } else {
-      setState(prev => ({
-        ...prev,
-        userConnections: prev.userConnections.filter(c => !(c.userId === prev.currentUser?.id && c.connectedUserId === targetUserId))
-      }));
+      addToast(error || 'Failed to send request', { type: 'error' });
     }
-    addToast(`${targetUser?.displayName || 'User'} removed from your crew.`, { type: 'info' });
-  }, [state.currentUser, state.users, addToast, refreshData]);
+  }, [state.currentUser, addToast, refreshData]);
+
+  const acceptCrewRequest = useCallback(async (requestId: string) => {
+    const { success, error } = await acceptCrewRequestAction(requestId);
+    if (success) {
+      addToast('Accepted! You are now in each other\'s crew.', { type: 'success' });
+      refreshData();
+    } else {
+      addToast(error || 'Failed to accept request', { type: 'error' });
+    }
+  }, [addToast, refreshData]);
+
+  const rejectCrewRequest = useCallback(async (requestId: string) => {
+    const { success, error } = await rejectCrewRequestAction(requestId);
+    if (success) {
+      addToast('Request rejected.', { type: 'info' });
+      refreshData();
+    } else {
+      addToast(error || 'Failed to reject request', { type: 'error' });
+    }
+  }, [addToast, refreshData]);
+
+  const cancelCrewRequest = useCallback(async (requestId: string) => {
+    // For MVP, cancel is same as delete/reject by sender
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('crew_requests').delete().eq('id', requestId);
+      refreshData();
+    }
+  }, [refreshData]);
+
+  const removeCrewMember = useCallback(async (memberId: string) => {
+    const { success, error } = await removeCrewMemberAction(memberId);
+    if (success) {
+      addToast('Removed from crew.', { type: 'info' });
+      refreshData();
+    } else {
+      addToast(error || 'Failed to remove member', { type: 'error' });
+    }
+  }, [addToast, refreshData]);
+
+  const createInvite = useCallback(async () => {
+    const { success, data, error } = await createCrewInviteAction();
+    if (success && data) {
+      return data.invite_url;
+    } else {
+      addToast(error || 'Failed to create invite', { type: 'error' });
+      return null;
+    }
+  }, [addToast]);
+
+  const acceptInvite = useCallback(async (inviteCode: string) => {
+    const res = await acceptCrewInviteAction(inviteCode);
+    if (res.success) {
+      addToast('Joined crew successfully!', { type: 'success' });
+      refreshData();
+      return true;
+    } else {
+      if ((res as any).requires_auth) {
+        return false; // Handle redirect in component
+      }
+      addToast(res.error || 'Failed to join crew', { type: 'error' });
+      return false;
+    }
+  }, [addToast, refreshData]);
 
   const isUserInCrew = useCallback((targetUserId: string) => {
-    return state.userConnections.some(c => (c.userId === state.currentUser?.id && c.connectedUserId === targetUserId && c.status === 'connected'));
-  }, [state.currentUser, state.userConnections]);
+    if (!state.currentUser) return false;
+    return state.crewConnections.some(c => c.crewMemberId === targetUserId);
+  }, [state.currentUser, state.crewConnections]);
+
+  const getConnectionState = useCallback((targetUserId: string) => {
+    if (!state.currentUser) return 'none';
+    if (isUserInCrew(targetUserId)) return 'connected';
+
+    const req = state.crewRequests.find(r => 
+      (r.senderId === state.currentUser?.id && r.receiverId === targetUserId) ||
+      (r.receiverId === state.currentUser?.id && r.senderId === targetUserId)
+    );
+
+    if (req) {
+      if (req.status === 'pending') {
+        return req.senderId === state.currentUser?.id ? 'pending_sent' : 'pending_received';
+      }
+      return req.status as any;
+    }
+
+    return 'none';
+  }, [state.currentUser, state.crewRequests, isUserInCrew]);
 
   const getMutualGroups = useCallback((targetUserId: string) => {
     const myGroupIds = state.groupMembers.filter(gm => gm.userId === state.currentUser?.id).map(gm => gm.groupId);
@@ -758,9 +994,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addToWatchlist(newItem);
   }, [state.currentUser, addToWatchlist, refreshData]);
 
-  const createWatchlistList = useCallback((data: Partial<WatchlistList>) => {
+  const createWatchlistList = useCallback(async (data: Partial<WatchlistList>): Promise<{ id: string | null; error?: string }> => {
+    if (isSupabaseConfigured && supabase && state.currentUser) {
+      const { success, data: newList, error } = await createWatchlistListDb(state.currentUser.id, data);
+      if (success && newList) {
+        refreshData();
+        return { id: newList.id };
+      }
+      return { id: null, error: typeof error === 'string' ? error : (error as any)?.message || 'Database error' };
+    }
+
+    const id = data.id || `list-${Math.random().toString(36).substr(2, 9)}`;
     const newList: WatchlistList = {
-      id: data.id || `list-${Math.random().toString(36).substr(2, 9)}`,
+      id,
       userId: state.currentUser?.id || 'user-1',
       name: data.name || 'Untitled List',
       description: data.description,
@@ -774,9 +1020,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...prev,
       watchlistLists: [newList, ...prev.watchlistLists]
     }));
+    return { id };
   }, [state.currentUser]);
 
-  const updateWatchlistList = useCallback((listId: string, data: Partial<WatchlistList>) => {
+  const updateWatchlistList = useCallback(async (listId: string, data: Partial<WatchlistList>) => {
+    if (isSupabaseConfigured && supabase) {
+      await updateWatchlistListDb(listId, data);
+      refreshData();
+      return;
+    }
     setState(prev => ({
       ...prev,
       watchlistLists: prev.watchlistLists.map(l => 
@@ -785,14 +1037,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const deleteWatchlistList = useCallback((listId: string) => {
+  const deleteWatchlistList = useCallback(async (listId: string) => {
+    if (isSupabaseConfigured && supabase) {
+      await deleteWatchlistListDb(listId);
+      refreshData();
+      return;
+    }
     setState(prev => ({
       ...prev,
       watchlistLists: prev.watchlistLists.filter(l => l.id !== listId)
     }));
   }, []);
 
-  const addTitleToList = useCallback((titleId: string, listId: string) => {
+  const addTitleToList = useCallback(async (titleId: string, listId: string) => {
+    if (isSupabaseConfigured && supabase) {
+      // Ensure title exists in DB
+      const title = state.titles.find(t => t.id === titleId);
+      if (title) await ensureTitleExistsInDb(title);
+      
+      await addTitleToListDb(titleId, listId);
+      
+      // Also ensure it's in the general watchlist so it shows up in UI filters
+      if (state.currentUser) {
+        await saveWatchlistItem(state.currentUser.id, titleId, 'self');
+      }
+      
+      refreshData();
+      return;
+    }
     setState(prev => {
       // 1. Update the list
       const updatedLists = prev.watchlistLists.map(list => {
@@ -830,7 +1102,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const removeTitleFromList = useCallback((listId: string, titleId: string) => {
+  const removeTitleFromList = useCallback(async (listId: string, titleId: string) => {
+    if (isSupabaseConfigured && supabase) {
+      await removeTitleFromListDb(titleId, listId);
+      refreshData();
+      return;
+    }
     setState(prev => {
       const updatedLists = prev.watchlistLists.map(l => 
         l.id === listId ? { ...l, titleIds: l.titleIds.filter(id => id !== titleId), updatedAt: new Date().toISOString() } : l
@@ -868,27 +1145,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const removeFromWatchlist = useCallback((id: string) => {
-    setState(prev => ({ ...prev, watchlist: prev.watchlist.filter(w => w.id !== id) }));
-  }, []);
-
-  const updatePreferences = useCallback(async (prefs: Partial<UserPreferences>) => {
-    try {
-      if (isSupabaseConfigured && supabase && state.currentUser) {
-         await supabase.from('user_preferences').update(prefs).eq('user_id', state.currentUser.id);
-      }
-    } catch (err) {
-      console.error('Error updating preferences in Supabase:', err);
+  const removeFromWatchlist = useCallback(async (id: string) => {
+    const item = state.watchlist.find(w => w.id === id);
+    if (item && isSupabaseConfigured && supabase && state.currentUser) {
+      await deleteWatchlistItem(state.currentUser.id, item.titleId);
     }
-    setState(prev => ({ 
-      ...prev, 
-      userPreferences: { ...prev.userPreferences, ...prefs } 
-    }));
-  }, [state.currentUser]);
+    setState(prev => ({ ...prev, watchlist: prev.watchlist.filter(w => w.id !== id) }));
+  }, [state.watchlist, state.currentUser]);
+
 
   const updateUser = useCallback(async (data: Partial<User>) => {
     if (isSupabaseConfigured && supabase && state.currentUser) {
-      await supabase.from('users').update(data).eq('id', state.currentUser.id);
+      await supabase.from('profiles').update(data).eq('id', state.currentUser.id);
       refreshData();
     } else {
       setState(prev => {
@@ -997,7 +1265,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [getViewerContext]);
 
   const value: AppContextType = {
-    addTitle,
     addRecommendation,
     ...state, login, logout, completeOnboarding,
     openRecommendModal, closeRecommendModal,
@@ -1013,11 +1280,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     moveToList,
     removeFromWatchlist,
     updatePreferences,
-    updateUser,
-    addToCrew,
-    removeFromCrew,
+    sendCrewRequest,
+    acceptCrewRequest,
+    rejectCrewRequest,
+    cancelCrewRequest,
+    removeCrewMember,
+    createInvite,
+    acceptInvite,
     isUserInCrew,
+    getConnectionState,
     getMutualGroups,
+    updateUser,
     isTitleInList,
     setListPrivacy,
     getListStats,

@@ -25,18 +25,18 @@ export default function StampBadge({ stamp, size = 'sm', variant = 'outline', cl
   const negative = ['Not For Everyone', 'Missed The Mark'];
   
   if (positive.includes(stamp)) {
-    colorClasses = 'bg-cinema-red text-bone border-cinema-red';
+    colorClasses = 'bg-cinema-red/90 text-bone border-cinema-red/50 shadow-[0_0_15px_rgba(234,51,51,0.3)]';
   } else if (negative.includes(stamp)) {
-    colorClasses = 'bg-neutral-800 text-bone border-neutral-700';
+    colorClasses = 'bg-white/5 backdrop-blur-md text-muted border-white/10';
   } else {
     // Achievements / neutral
-    colorClasses = 'bg-surface border-border text-bone';
+    colorClasses = 'bg-white/5 backdrop-blur-md border-white/10 text-bone';
   }
 
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.sm;
 
   return (
-    <span className={`inline-flex items-center justify-center font-bold uppercase tracking-wider rounded-full border ${sizeClass} ${colorClasses} ${className}`}>
+    <span className={`inline-flex items-center justify-center font-black uppercase tracking-[0.1em] rounded-lg border backdrop-blur-md transition-all duration-300 ${sizeClass} ${colorClasses} ${className}`}>
       {stamp}
     </span>
   );

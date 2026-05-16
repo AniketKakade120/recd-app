@@ -8,12 +8,13 @@ export function createInviteLink(groupId?: string, invitedBy: string = 'user-1')
   const code = generateInviteCode();
   return {
     id: generateId('inv'),
-    groupId,
+    inviteType: groupId ? 'group' : 'crew',
     invitedBy,
-    inviteLink: `https://recd.app/invite/${code}`,
+    inviteUrl: `https://recd.app/invite/${code}`,
     inviteCode: code,
-    status: 'copied',
+    status: 'active',
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 }
 

@@ -68,26 +68,33 @@ function mapTmdbToTitle(item: any): Title | null {
 
 export async function searchTmdb(query: string, region = 'IN'): Promise<Title[]> {
   if (!TMDB_API_KEY) {
-    console.warn('TMDB_API_KEY is not set. Skipping search.');
+    console.warn('[Rec\'d TMDB] TMDB_API_KEY is not set. Skipping search.');
     return [];
   }
   
-  const response = await fetch(
-    `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false&region=${region}`
-  );
+  console.log('[Rec\'d TMDB] Searching for:', query);
   
-  if (!response.ok) {
-    throw new Error('Failed to fetch from TMDB');
-  }
-
-  const data = await response.json();
-  
-  // Map results and filter out people or nulls
-  const results: Title[] = data.results
-    .map(mapTmdbToTitle)
-    .filter((t: Title | null) => t !== null);
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false&region=${region}`
+    );
     
-  return results;
+    if (!response.ok) {
+      throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    // Map results and filter out people or nulls
+    const results: Title[] = (data.results || [])
+      .map(mapTmdbToTitle)
+      .filter((t: Title | null) => t !== null);
+      
+    return results;
+  } catch (error) {
+    console.error('[Rec\'d TMDB] Search failed:', error);
+    return [];
+  }
 }
 
 export async function getTrendingTmdb(region = 'IN'): Promise<Title[]> {
@@ -163,7 +170,6 @@ export async function getTitleDetails(tmdbId: number, type: 'movie' | 'series'):
     platforms,
     platformAvailability,
     runtime: data.runtime ? `${data.runtime} min` : (data.episode_run_time ? `${data.episode_run_time[0]} min` : undefined),
-    language: data.original_language,
-    externalIds: data.external_ids
+    language: data.original_language
   };
 }

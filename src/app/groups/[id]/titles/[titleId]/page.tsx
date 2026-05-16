@@ -4,7 +4,6 @@ import { use, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/context';
-import { mockGroupVerdicts, mockGroupComments } from '@/lib/mock-data';
 import type { StampType, RecAccuracy } from '@/lib/types';
 import StampBadge from '@/components/StampBadge';
 import UserAvatar from '@/components/UserAvatar';
@@ -37,7 +36,7 @@ function Stars({ rating }: { rating: number }) {
 export default function GroupTitleDetailPage({ params }: { params: Promise<{ id: string; titleId: string }> }) {
   const { id: groupId, titleId } = use(params);
   const router = useRouter();
-  const { getTitle, getGroup, getGroupMembers, getGroupRecommendations, getUser, currentUser, recommendations, titles, openGiveVerdictModal } = useApp();
+  const { getTitle, getGroup, getGroupMembers, getGroupRecommendations, getUser, currentUser, recommendations, ratings, comments, openGiveVerdictModal } = useApp();
 
   const title = getTitle(titleId);
   const group = getGroup(groupId);
@@ -47,8 +46,8 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
   const recommender = rec ? getUser(rec.recommendedBy) : null;
 
   // Verdicts for this title in this group
-  const verdicts = rec ? mockGroupVerdicts.filter(v => v.recommendationId === rec.id) : [];
-  const comments = mockGroupComments.filter(c => c.groupId === groupId && c.titleId === titleId);
+  const verdicts = rec ? ratings.filter(v => v.recommendationId === rec.id) : [];
+  const groupComments = comments.filter(c => c.groupId === groupId && c.titleId === titleId);
 
   // Pending members (not yet rated)
   const ratedUserIds = verdicts.map(v => v.ratedBy);
@@ -193,9 +192,9 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
 
           {/* ── 6. CREW DISCUSSION ─────────────────────────────────────────── */}
           <section>
-            <h2 className="text-base font-bold text-bone mb-4">Crew Discussion ({comments.length})</h2>
+            <h2 className="text-base font-bold text-bone mb-4">Crew Discussion ({groupComments.length})</h2>
             <div className="space-y-3">
-              {comments.map(c => {
+              {groupComments.map(c => {
                 const user = getUser(c.userId);
                 if (!user) return null;
                 return (

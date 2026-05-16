@@ -16,13 +16,13 @@ import InviteModal from '@/components/InviteModal';
 import { useRouter } from 'next/navigation';
 import VerdictModal from '@/components/VerdictModal';
 
-type TabType = 'overview' | 'given' | 'received' | 'rated' | 'crew';
+type TabType = 'overview' | 'given' | 'received' | 'rated' | 'crew' | 'watchlist' | 'badges';
 
 export default function ProfilePage() {
   const { 
     currentUser, tasteScore, getUserBadges, watchlist, recommendations, 
     ratings, groups, groupMembers, getTitle, getUser, getViewerContext, getActions,
-    userPreferences, openGiveVerdictModal
+    userPreferences, openGiveVerdictModal, logout
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -99,11 +99,16 @@ export default function ProfilePage() {
               Edit Profile
             </button>
             <button 
-              onClick={() => setActiveTab('crew')}
-              className="flex-1 md:flex-none px-6 py-2.5 bg-cinema-red text-bone font-bold rounded-xl btn-press hover:bg-cinema-red/90 text-sm"
+              onClick={() => {
+                logout();
+                router.push('/');
+              }}
+              className="flex-1 md:flex-none px-6 py-2.5 bg-ink border border-border text-muted hover:text-cinema-red transition-colors font-bold rounded-xl btn-press text-sm flex items-center justify-center gap-2"
             >
-              My Crew
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Logout
             </button>
+
           </div>
         </div>
       </div>

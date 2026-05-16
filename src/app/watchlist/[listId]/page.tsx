@@ -29,7 +29,25 @@ export default function ListDetailPage({ params }: { params: Promise<{ listId: s
   
   const listItems = useMemo(() => {
     if (!list) return [];
-    return watchlist.filter(item => list.titleIds.includes(item.titleId));
+    
+    // Construct items from titleIds directly to ensure everything in the list shows up
+    // even if it's not in the general watchlist state yet
+    return list.titleIds.map(titleId => {
+      const existing = watchlist.find(item => item.titleId === titleId);
+      if (existing) return existing;
+      
+      // Fallback: Create a ghost item for display
+      return {
+        id: `ghost-${titleId}`,
+        userId: list.userId,
+        titleId,
+        addedBy: 'self' as const,
+        listIds: [list.id],
+        verdictState: 'none' as const,
+        createdAt: list.createdAt,
+        updatedAt: list.updatedAt
+      };
+    });
   }, [list, watchlist]);
 
   if (!list) {

@@ -14,7 +14,7 @@ export default function RecommendModal() {
     recommendModalOpen, 
     recommendModalData, 
     closeRecommendModal,
-    titles, getTitle, currentUser, groupMembers, users, userConnections, toasts, addToast, getUser, groups, addRecommendation 
+    titles, getTitle, currentUser, groupMembers, users, crewConnections, toasts, addToast, getUser, groups, addRecommendation 
   } = useApp();
 
   const initTitleId = recommendModalData?.titleId || null;
@@ -55,7 +55,10 @@ export default function RecommendModal() {
 
   const selectedTitle = selectedTitleState;
   const myGroupIds = groupMembers.filter(gm => gm.userId === currentUser?.id).map(gm => gm.groupId);
-  const friendIds = [...new Set(groupMembers.filter(gm => myGroupIds.includes(gm.groupId) && gm.userId !== currentUser?.id).map(gm => gm.userId))];
+  const groupFriendIds = groupMembers.filter(gm => myGroupIds.includes(gm.groupId) && gm.userId !== currentUser?.id).map(gm => gm.userId);
+  const crewIds = crewConnections.map(c => c.crewMemberId);
+  
+  const friendIds = [...new Set([...groupFriendIds, ...crewIds])];
   const friends = friendIds.map(id => getUser(id)).filter(Boolean);
   const myGroups = myGroupIds.map(id => groups.find(g => g.id === id)).filter(Boolean);
 
@@ -78,7 +81,7 @@ export default function RecommendModal() {
         confidenceScore: confidence,
         moodTags: moods,
         tasteMatchScore: confidence,
-        status: 'pending',
+        verdictState: 'verdict_pending',
         createdAt: new Date().toISOString(),
       });
       addToast('Recommendation sent!', { type: 'success' });

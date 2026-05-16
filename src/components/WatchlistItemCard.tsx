@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Star } from 'lucide-react';
 import type { WatchlistItem, Title, User } from '@/lib/types';
 import { useApp } from '@/lib/context';
 import StampBadge from './StampBadge';
@@ -20,6 +21,7 @@ export default function WatchlistItemCard({ item }: WatchlistItemCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAddToList, setShowAddToList] = useState(false);
   const [showVerdictModal, setShowVerdictModal] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const router = useRouter();
   
   const actions = getWatchlistItemActions(item);
@@ -59,15 +61,16 @@ export default function WatchlistItemCard({ item }: WatchlistItemCardProps) {
       <Link href={`/title/${title.id}`} className="absolute inset-0 z-0" aria-label={`View details for ${title.title}`} />
       
       {/* Poster Area */}
-      <div className="relative aspect-[2/3] overflow-hidden">
-        {title.posterUrl ? (
+      <div className="relative aspect-[2/3] overflow-hidden bg-surface">
+        <div className={`absolute inset-0 poster-gradient-${title.posterGradient || 1} transition-transform duration-700 group-hover:scale-105`} />
+        
+        {title.posterUrl && !imageError && (
           <img 
             src={title.posterUrl} 
             alt={title.title} 
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            onError={() => setImageError(true)}
           />
-        ) : (
-          <div className={`w-full h-full poster-gradient-${title.posterGradient || 1}`} />
         )}
 
         {/* More Menu Trigger */}
@@ -119,18 +122,27 @@ export default function WatchlistItemCard({ item }: WatchlistItemCardProps) {
         )}
         
         {/* Overlay context */}
-        <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
-          <div className="flex items-center justify-between">
-            {item.verdictState === 'verdict_given' && item.stamp ? (
-              <StampBadge stamp={item.stamp} size="xs" variant="filled" />
-            ) : item.verdictState === 'verdict_pending' ? (
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded border border-cinema-red/30 bg-cinema-red/10 text-cinema-red">
-                Verdict Pending
-              </span>
-            ) : (
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded border border-white/10 bg-white/5 text-bone/60">
-                Saved by you
-              </span>
+        <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-black/95 via-black/40 to-transparent">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col gap-2">
+              {item.verdictState === 'verdict_given' && item.stamp ? (
+                <StampBadge stamp={item.stamp} size="xs" variant="filled" />
+              ) : item.verdictState === 'verdict_pending' ? (
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-lg border border-cinema-red/30 bg-cinema-red/10 text-cinema-red backdrop-blur-md">
+                  Verdict Pending
+                </span>
+              ) : (
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 text-bone/60 backdrop-blur-md">
+                  Saved
+                </span>
+              )}
+            </div>
+
+            {title.externalRating && title.externalRating > 0 && (
+              <div className="bg-black/60 backdrop-blur-2xl px-2.5 py-1.5 rounded-xl text-[10px] font-black text-bone border border-white/10 flex items-center gap-1.5 shadow-2xl">
+                <Star size={10} fill="currentColor" className="text-cinema-red" />
+                <span className="tracking-tighter">{title.externalRating.toFixed(1)}</span>
+              </div>
             )}
           </div>
         </div>

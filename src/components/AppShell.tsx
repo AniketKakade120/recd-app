@@ -8,56 +8,65 @@ import InviteModal from './InviteModal';
 import RecommendModal from './RecommendModal';
 import GiveVerdictModal from './GiveVerdictModal';
 import ToastOverlay from './ToastOverlay';
+import Logo from './Logo';
+import UserMenu from './UserMenu';
 
 const navItems = [
   { name: 'Home', path: '/home', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
   { name: 'Explore', path: '/explore', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> },
-  { name: 'Groups', path: '/groups', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
+  { name: 'Crew', path: '/explore?tab=people', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
+  { name: 'Groups', path: '/groups', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> },
   { name: 'Watchlist', path: '/watchlist', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg> },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { isAuthenticated, currentUser, loading, openRecommendModal, isOnboarded, logout } = useApp();
+  const [mounted, setMounted] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const isPublicRoute = ['/', '/login', '/signup', '/onboarding'].includes(pathname) || pathname.startsWith('/list/');
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || loading) return;
+
+    const isPublicRoute = ['/', '/login', '/signup', '/onboarding'].includes(pathname) || pathname.startsWith('/list/') || pathname.startsWith('/invite/');
     
-    if (!loading) {
-      console.log(`[Rec'd Shell] Path: ${pathname}, Auth: ${isAuthenticated}, Onboarded: ${isOnboarded}`);
-      
-      // 1. If not authenticated and not on a public route, send to landing
-      if (!isAuthenticated && !isPublicRoute) {
-        router.push('/');
-        return;
-      }
-      
-      // 2. If authenticated but NOT onboarded, and not already on onboarding, send to onboarding
-      //    BUT only if we are NOT currently on /home (to avoid fighting with completeOnboarding's router.push)
-      if (isAuthenticated && !isOnboarded && pathname !== '/onboarding' && !pathname.startsWith('/list/')) {
-        console.log('[Rec\'d Shell] Redirecting to onboarding...');
-        router.push('/onboarding');
-        return;
-      }
-
-      // 3. If authenticated AND onboarded, and on a landing/login/onboarding page, send to home
-      if (isAuthenticated && isOnboarded && ['/', '/login', '/signup', '/onboarding'].includes(pathname)) {
-        console.log('[Rec\'d Shell] Redirecting to home...');
-        router.push('/home');
-      }
+    console.log(`[Rec'd Shell] Path: ${pathname}, Auth: ${isAuthenticated}, Onboarded: ${isOnboarded}`);
+    
+    // 1. If not authenticated and not on a public route, send to landing
+    if (!isAuthenticated && !isPublicRoute) {
+      router.push('/');
+      return;
     }
-  }, [loading, isAuthenticated, isOnboarded, pathname, router]);
+    
+    // 2. If authenticated but NOT onboarded, and not already on onboarding, send to onboarding
+    if (isAuthenticated && !isOnboarded && pathname !== '/onboarding' && !pathname.startsWith('/list/') && !pathname.startsWith('/invite/')) {
+      console.log('[Rec\'d Shell] Redirecting to onboarding...');
+      router.push('/onboarding');
+      return;
+    }
 
-  if (loading) {
+    // 3. If authenticated AND onboarded, and on a landing/login/signup page, send to home
+    if (isAuthenticated && isOnboarded && ['/', '/login', '/signup'].includes(pathname)) {
+      console.log('[Rec\'d Shell] Redirecting to home...');
+      router.push('/home');
+    }
+  }, [mounted, loading, isAuthenticated, isOnboarded, pathname, router]);
+
+  const isPublicRoute = ['/', '/login', '/signup', '/onboarding'].includes(pathname) || pathname.startsWith('/list/') || pathname.startsWith('/invite/');
+  
+  console.log(`[Rec'd Shell] Path: ${pathname}, Public: ${isPublicRoute}, Loading: ${loading}, Auth: ${isAuthenticated}`);
+
+  if (loading && !isPublicRoute) {
     return (
       <div className="fixed inset-0 bg-ink z-[100] flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 border-2 border-cinema-red border-t-transparent rounded-full animate-spin mb-8 shadow-[0_0_30px_rgba(234,51,51,0.3)]" />
-        <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight animate-pulse">
-          Rec<span className="text-cinema-red">&apos;</span>d
-        </h2>
+        <Logo variant="square" size="md" className="animate-pulse" />
         <p className="text-xs text-muted mt-4 uppercase tracking-widest">Stamping your taste...</p>
       </div>
     );
@@ -74,10 +83,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <header className="hidden md:flex flex-col border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-40 px-6 pt-3 pb-0">
         {/* Logo Centered on Top */}
         <div className="flex justify-center mb-1">
-          <Link href="/home" className="flex items-center gap-1.5 shrink-0">
-            <span className="text-2xl font-bold text-bone font-editorial tracking-tight">
-              Rec<span className="text-cinema-red">&apos;</span>d
-            </span>
+          <Link href="/home" className="flex items-center shrink-0">
+            <Logo variant="horizontal" size="md" />
           </Link>
         </div>
 
@@ -103,7 +110,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           {/* Right Actions - Absolute positioned to keep nav centered */}
-          <div className="absolute right-0 flex items-center gap-3">
+          <div className="absolute right-0 flex items-center gap-4">
             <button onClick={() => setInviteOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-bone hover:bg-surface/50 transition-colors btn-press">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
@@ -115,14 +122,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               + Recommend
             </button>
 
-            <button onClick={() => setShowLogoutConfirm(true)}
-              className="ml-2 px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-cinema-red transition-colors btn-press">
-              Logout
-            </button>
-
-            <Link href="/profile" className="ml-1 w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center overflow-hidden hover:border-border-strong transition-colors btn-press">
-               {currentUser?.displayName.charAt(0) || 'U'}
-            </Link>
+            <UserMenu />
           </div>
         </div>
       </header>
@@ -164,10 +164,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Top Nav (Logo only) */}
       <header className="md:hidden flex items-center justify-center border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-40 py-3.5">
-        <Link href="/home" className="flex items-center gap-1.5 shrink-0">
-          <span className="text-xl font-bold text-bone font-editorial tracking-tight">
-            Rec<span className="text-cinema-red">&apos;</span>d
-          </span>
+        <Link href="/home" className="flex items-center shrink-0">
+          <Logo variant="horizontal" size="sm" />
         </Link>
       </header>
 

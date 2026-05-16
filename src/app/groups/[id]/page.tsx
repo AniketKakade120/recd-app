@@ -26,8 +26,8 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   const recommendations = allRecommendations.filter(rec => {
-    if (filter === 'pending') return rec.status === 'pending';
-    if (filter === 'watched') return rec.status === 'watched' || rec.status === 'rated';
+    if (filter === 'pending') return rec.verdictState === 'verdict_pending';
+    if (filter === 'watched') return rec.verdictState === 'verdict_given';
     return true;
   });
 

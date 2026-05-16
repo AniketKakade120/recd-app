@@ -51,10 +51,10 @@ export function getRecommendationViewerContext(
     verdictState,
     
     // Simplified Permission Matrix
-    canGiveVerdict: isReceiver && verdictState === 'verdict_pending' && !hasRated,
-    canViewVerdict: verdictState === 'verdict_given' || (isRecommender && verdictState === 'verdict_given') || (viewerRole === 'groupMember' && verdictState === 'verdict_given'),
+    canGiveVerdict: isReceiver && (verdictState as VerdictState) === 'verdict_pending' && !hasRated,
+    canViewVerdict: (verdictState as VerdictState) === 'verdict_given' || (isRecommender && (verdictState as VerdictState) === 'verdict_given') || (viewerRole === 'groupMember' && (verdictState as VerdictState) === 'verdict_given'),
     canEditVerdict: isReceiver && hasRated,
-    canSave: verdictState === 'verdict_pending',
+    canSave: (verdictState as VerdictState) === 'verdict_pending',
   };
 }
 

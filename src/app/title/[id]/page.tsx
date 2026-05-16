@@ -15,6 +15,7 @@ import VerdictModal from '@/components/VerdictModal';
 import PlatformLogo from '@/components/PlatformLogo';
 import InviteModal from '@/components/InviteModal';
 import RecommendationCard from '@/components/RecommendationCard';
+import MovieCard from '@/components/MovieCard';
 
 export default function TitleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -28,7 +29,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
   const { 
     getTitle, addTitle, getUser, recommendations, watchlist, currentUser, addRating,
     addToWatchlist, removeFromWatchlist, updateVerdictState,
-    getViewerContext, getActions, userConnections, ratings, addToast,
+    getViewerContext, getActions, crewConnections, ratings, addToast,
     groups, watchlistLists, openRecommendModal, openGiveVerdictModal
   } = useApp();
 
@@ -194,6 +195,8 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
   const [addToListOpen, setAddToListOpen] = useState(false);
   const [verdictModalOpen, setVerdictModalOpen] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [heroImageError, setHeroImageError] = useState(false);
+  const [posterImageError, setPosterImageError] = useState(false);
 
   if (tmdbLoading) {
     return (
@@ -287,24 +290,31 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
         <MobileBackLink label={mobileBackLabel} href={mobileBackHref} />
       </div>
 
-      {/* SECTION 1: CINEMATIC HERO */}
-      <div className="relative w-full h-[50vh] min-h-[350px] lg:h-[60vh] flex items-end -mt-6 md:-mt-10">
+      <div className="relative w-full h-[50vh] min-h-[350px] lg:h-[60vh] flex items-end -mt-6 md:-mt-10 overflow-hidden">
         <div className="absolute inset-0 bg-ink z-0">
-          {title.backdropUrl ? (
-            <img src={title.backdropUrl} alt={title.title} className="w-full h-full object-cover opacity-40" />
-          ) : (
-            <div className={`w-full h-full poster-gradient-${title.posterGradient} opacity-30`} />
+          <div className={`absolute inset-0 poster-gradient-${title.posterGradient || '1'} opacity-30`} />
+          {title.backdropUrl && !heroImageError && (
+            <img 
+              src={title.backdropUrl} 
+              alt={title.title} 
+              className="w-full h-full object-cover opacity-40 transition-opacity duration-1000" 
+              onError={() => setHeroImageError(true)}
+            />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/40 to-transparent" />
         </div>
 
         <div className="relative z-10 w-full px-4 sm:px-6 lg:px-12 pb-8 flex flex-col md:flex-row items-start md:items-end gap-6 md:gap-10">
-          <div className="shrink-0 w-32 md:w-48 lg:w-64 aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border border-bone/10 relative">
-             {title.posterUrl ? (
-               <img src={title.posterUrl} alt={title.title} className="w-full h-full object-cover" />
-             ) : (
-               <div className={`w-full h-full poster-gradient-${title.posterGradient}`} />
+          <div className="shrink-0 w-32 md:w-48 lg:w-64 aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border border-bone/10 relative bg-surface">
+             <div className={`absolute inset-0 poster-gradient-${title.posterGradient || '1'} opacity-60`} />
+             {title.posterUrl && !posterImageError && (
+               <img 
+                src={title.posterUrl} 
+                alt={title.title} 
+                className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500" 
+                onError={() => setPosterImageError(true)}
+               />
              )}
           </div>
 
@@ -494,9 +504,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
             <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted/60">What your crew thinks</h2>
             {(() => {
               // 1. Get IDs of people in user's crew
-              const crewIds = userConnections
-                .filter(c => c.userId === currentUser?.id && c.status === 'connected')
-                .map(c => c.connectedUserId);
+              const crewIds = crewConnections.map(c => c.crewMemberId);
               
               // 2. Find all recommendations for this title by crew members
               const crewRecs = recommendations.filter(r => r.titleId === id && crewIds.includes(r.recommendedBy));
@@ -640,51 +648,48 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
       {/* SECTION 9 & 10: RELATED CONTENT */}
       <div className="px-4 sm:px-6 lg:px-12 mt-16 space-y-12">
         {/* SECTION 9: MORE FROM YOUR CREW */}
-        <div className="space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-muted">More from your crew</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {/* Mocking a few recommendations from crew */}
-            {recommendations.filter(r => r.id !== recId).slice(0, 6).map(rec => {
-              const recTitle = getTitle(rec.titleId);
-              if (!recTitle) return null;
-              return (
-                <div key={rec.id} onClick={() => router.push(`/title/${rec.titleId}?recId=${rec.id}`)} className="cursor-pointer group">
-                  <div className={`w-full aspect-[2/3] rounded-xl overflow-hidden relative mb-2 ${!recTitle.posterUrl ? `poster-gradient-${recTitle.posterGradient}` : ''}`}>
-                    {recTitle.posterUrl && <img src={recTitle.posterUrl} alt={recTitle.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
-                    {rec.primaryStamp && (
-                      <div className="absolute top-2 left-2 right-2 flex justify-start">
-                        <StampBadge stamp={rec.primaryStamp} size="xs" variant="filled" />
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="text-sm font-bold text-bone truncate">{recTitle.title}</h3>
-                  <p className="text-xs text-muted truncate">Rec&apos;d by {getUser(rec.recommendedBy)?.displayName}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {(() => {
+          const crewIds = crewConnections.map(c => c.crewMemberId);
+          const crewRecs = recommendations.filter(r => 
+            r.id !== recId && 
+            r.titleId !== id && 
+            crewIds.includes(r.recommendedBy)
+          );
+
+          if (crewRecs.length === 0) return null;
+
+          return (
+            <div className="space-y-4">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-muted">More from your crew</h2>
+              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+                {crewRecs.slice(0, 6).map(rec => {
+                  const recTitle = getTitle(rec.titleId);
+                  if (!recTitle) return null;
+                  return (
+                    <div key={rec.id} className="w-[200px] shrink-0 snap-start">
+                      <MovieCard title={recTitle} stamp={rec.primaryStamp} recommendedBy={rec.recommendedBy} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* SECTION 10: SIMILAR PICKS */}
         <div className="space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-widest text-muted">More like this</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
              {similarLoading ? (
                Array.from({ length: 6 }).map((_, i) => (
-                 <div key={i} className="animate-pulse">
-                   <div className="w-full aspect-[2/3] rounded-xl bg-surface mb-2" />
-                   <div className="h-4 w-3/4 bg-surface rounded mb-1" />
-                   <div className="h-3 w-1/2 bg-surface rounded" />
+                 <div key={i} className="w-[200px] shrink-0 snap-start animate-pulse">
+                   <div className="aspect-[2/3] rounded-2xl bg-surface border border-border/20" />
                  </div>
                ))
              ) : similarTitles.length > 0 ? (
                similarTitles.map(simTitle => (
-                 <div key={simTitle.id} onClick={() => router.push(`/title/${simTitle.id}?type=${simTitle.type}`)} className="cursor-pointer group">
-                   <div className={`w-full aspect-[2/3] rounded-xl overflow-hidden relative mb-2 ${!simTitle.posterUrl ? `poster-gradient-${simTitle.posterGradient}` : 'bg-surface border border-border/50'}`}>
-                     {simTitle.posterUrl && <img src={simTitle.posterUrl} alt={simTitle.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
-                   </div>
-                   <h3 className="text-sm font-bold text-bone truncate">{simTitle.title}</h3>
-                   <p className="text-xs text-muted truncate">{simTitle.releaseYear} · {simTitle.format}</p>
+                 <div key={simTitle.id} className="w-[200px] shrink-0 snap-start">
+                   <MovieCard title={simTitle} />
                  </div>
                ))
              ) : (

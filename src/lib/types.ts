@@ -19,11 +19,21 @@ export interface User {
   createdAt: string;
 }
 
-export interface UserConnection {
+export interface CrewRequest {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
+  message?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrewConnection {
   id: string;
   userId: string;
-  connectedUserId: string;
-  status: 'connected' | 'removed';
+  crewMemberId: string;
+  status: 'accepted';
   createdAt: string;
   updatedAt: string;
 }
@@ -291,6 +301,15 @@ export type ContentFormat = 'Movie' | 'Series' | 'Limited series' | 'Documentary
 // RECOMMENDATIONS
 // ============================================
 
+export type RecommendationStatus = 
+  | 'pending'
+  | 'accepted'
+  | 'watching'
+  | 'watched'
+  | 'rated'
+  | 'maybe_later'
+  | 'not_my_vibe';
+
 export type VerdictState =
   | 'verdict_pending'
   | 'verdict_given'
@@ -427,12 +446,27 @@ export interface Badge {
 
 export interface Invite {
   id: string;
-  groupId?: string;
+  inviteType: 'crew' | 'group' | 'list';
   invitedBy: string;
-  inviteLink: string;
+  invitedUserId?: string;
+  invitedEmail?: string;
   inviteCode: string;
-  email?: string;
-  status: 'copied' | 'sent' | 'accepted' | 'expired';
+  inviteUrl?: string;
+  status: 'active' | 'accepted' | 'expired' | 'revoked';
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  actorId?: string;
+  type: 'crew_request_received' | 'crew_request_accepted' | 'invite_received' | string;
+  title: string;
+  body?: string;
+  resourceId?: string;
+  read: boolean;
   createdAt: string;
 }
 
@@ -465,14 +499,15 @@ export type ActivityType =
   | 'saved_to_watchlist';
 
 // ============================================
-// GROUP COMMENTS (Crew Discussion)
+// COMMENTS
 // ============================================
 
-export interface GroupComment {
+export interface Comment {
   id: string;
-  groupId: string;
-  titleId: string;
   userId: string;
+  groupId?: string;
+  titleId?: string;
+  recommendationId?: string;
   comment: string;
   createdAt: string;
 }

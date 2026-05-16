@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '@/lib/context';
 import type { WatchlistList, Title } from '@/lib/types';
+import { ensureTitleExistsInDb } from '@/lib/supabase/actions';
 
 interface CreateListModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export default function CreateListModal({ isOpen, onClose, list, preselectedTitl
     deleteWatchlistList, 
     addTitleToList, 
     removeTitleFromList,
+    addTitle,
     titles,
     getTitle,
     watchlistLists
@@ -28,6 +30,8 @@ export default function CreateListModal({ isOpen, onClose, list, preselectedTitl
   const [privacy, setPrivacy] = useState<'private' | 'shared' | 'group'>('private');
   const [coverStyle, setCoverStyle] = useState<'collage' | 'gradient' | 'poster_stack'>('gradient');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Title[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [view, setView] = useState<'details' | 'movies' | 'share'>('details');
   const [createdListId, setCreatedListId] = useState<string | null>(null);
@@ -57,44 +61,73 @@ export default function CreateListModal({ isOpen, onClose, list, preselectedTitl
     return currentList.titleIds.map(id => getTitle(id)).filter(Boolean) as Title[];
   }, [currentList, getTitle]);
 
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    return titles.filter(t => 
-      t.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
-      !currentList?.titleIds.includes(t.id)
-    ).slice(0, 5);
-  }, [searchQuery, titles, currentList]);
+  useEffect(() => {
+    const search = async () => {
+      if (searchQuery.length < 2) {
+        setSearchResults([]);
+        return;
+      }
+
+      setSearchLoading(true);
+      try {
+        const res = await fetch(`/api/tmdb/search?q=${encodeURIComponent(searchQuery)}`);
+        if (res.ok) {
+          const data = await res.json();
+          // Filter out titles already in the list
+          setSearchResults(data.filter((t: Title) => !currentList?.titleIds.includes(t.id)).slice(0, 5));
+        }
+      } catch (err) {
+        console.error('Search failed:', err);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+
+    const timer = setTimeout(search, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, currentList]);
 
   if (!isOpen) return null;
 
-  const handleNextStep = (e: React.FormEvent) => {
+  const handleNextStep = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || submitting) return;
 
-    if (list) {
-      updateWatchlistList(list.id, { name, description, privacy, coverStyle });
-      setView('movies');
-      return;
+    setSubmitting(true);
+    try {
+      if (list) {
+        await updateWatchlistList(list.id, { name, description, privacy, coverStyle });
+        setView('movies');
+        return;
+      }
+
+      if (createdListId) {
+        await updateWatchlistList(createdListId, { name, description, privacy, coverStyle });
+        setView('movies');
+        return;
+      }
+
+      // Create the list first
+      const { id, error } = await createWatchlistList({
+        name,
+        description,
+        privacy,
+        coverStyle,
+        titleIds: preselectedTitleId ? [preselectedTitleId] : []
+      });
+
+      if (id) {
+        setCreatedListId(id);
+        setView('movies');
+      } else {
+        console.error('Failed to create list:', error);
+      }
+    } catch (err) {
+      console.error('Error in handleNextStep:', err);
+      alert('An unexpected error occurred. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-
-    if (createdListId) {
-      updateWatchlistList(createdListId, { name, description, privacy, coverStyle });
-      setView('movies');
-      return;
-    }
-
-    // Create the list first
-    const id = `list-${Date.now()}`;
-    createWatchlistList({
-      id,
-      name,
-      description,
-      privacy,
-      coverStyle,
-      titleIds: preselectedTitleId ? [preselectedTitleId] : []
-    });
-    setCreatedListId(id);
-    setView('movies');
   };
 
   const handleFinalize = () => {
@@ -103,6 +136,10 @@ export default function CreateListModal({ isOpen, onClose, list, preselectedTitl
       setSubmitting(false);
       onClose();
     }, 800);
+  };
+
+  const handleShare = (platform: string) => {
+    alert(`Sharing to ${platform} coming soon!`);
   };
 
   const handleDelete = () => {
@@ -245,8 +282,13 @@ export default function CreateListModal({ isOpen, onClose, list, preselectedTitl
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Search by title..."
-                    className="w-full bg-ink border border-border rounded-2xl !pl-14 pr-4 py-4 text-bone focus:outline-none focus:border-cinema-red transition-all shadow-inner text-sm"
+                    className="w-full bg-ink border border-border rounded-2xl !pl-14 pr-12 py-4 text-bone focus:outline-none focus:border-cinema-red transition-all shadow-inner text-sm"
                   />
+                  {searchLoading && (
+                    <div className="absolute right-5 top-1/2 -translate-y-1/2">
+                      <div className="w-4 h-4 border-2 border-cinema-red border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                 </div>
 
                 {searchResults.length > 0 && (
@@ -254,7 +296,10 @@ export default function CreateListModal({ isOpen, onClose, list, preselectedTitl
                     {searchResults.map(result => (
                       <button
                         key={result.id}
-                        onClick={() => {
+                        onClick={async () => {
+                          // Ensure title is in DB and also in our local context state
+                          await ensureTitleExistsInDb(result);
+                          addTitle(result); // Add to local state so it appears immediately
                           addTitleToList(result.id, activeListId);
                           setSearchQuery('');
                         }}
@@ -331,7 +376,8 @@ export default function CreateListModal({ isOpen, onClose, list, preselectedTitl
               <div className="space-y-3">
                  <button 
                     onClick={() => {
-                      navigator.clipboard.writeText(`https://recd.app/list/${activeListId}`);
+                      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://recd.app';
+                      navigator.clipboard.writeText(`${origin}/list/${activeListId}`);
                       alert('Link copied to clipboard!');
                     }}
                     className="w-full p-4 bg-ink border border-border rounded-2xl flex items-center justify-between hover:border-bone/20 transition-all group"
