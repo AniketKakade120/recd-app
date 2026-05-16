@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useApp } from '@/lib/context';
+import type { User } from '@/lib/types';
 import CrewMemberCard from './CrewMemberCard';
 import UserAvatar from './UserAvatar';
 import InviteModal from './InviteModal';
@@ -25,18 +26,20 @@ export default function ProfileCrewTab() {
   if (!currentUser) return null;
 
   // 1. My Crew (Accepted Connections)
-  const myCrew = crewConnections.map(c => c.profile).filter(Boolean);
+  const myCrew = crewConnections
+    .map(c => c.crew_member_profile)
+    .filter((p): p is User => Boolean(p));
 
   // 2. Pending Received
   const pendingReceived = crewRequests
     .filter(r => r.receiverId === currentUser.id && r.status === 'pending')
-    .map(r => ({ ...r, user: r.senderProfile }))
+    .map(r => ({ ...r, user: r.sender_profile }))
     .filter(r => r.user);
 
   // 3. Pending Sent
   const pendingSent = crewRequests
     .filter(r => r.senderId === currentUser.id && r.status === 'pending')
-    .map(r => ({ ...r, user: r.receiverProfile }))
+    .map(r => ({ ...r, user: r.receiver_profile }))
     .filter(r => r.user);
 
   const totalRequests = pendingReceived.length + pendingSent.length;

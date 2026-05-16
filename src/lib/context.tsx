@@ -284,27 +284,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .from('crew_connections')
         .select(`
           *,
-          profiles:crew_member_id (*)
+          crew_member_profile:profiles!crew_member_id (*)
         `)
         .eq('user_id', userId)
         .eq('status', 'accepted');
       
-      const dbConns: (CrewConnection & { profile?: User })[] = connData ? connData.map(c => ({
+      const dbConns: CrewConnection[] = connData ? connData.map(c => ({
         id: c.id,
         userId: c.user_id,
         crewMemberId: c.crew_member_id,
         status: c.status as 'accepted',
         createdAt: c.created_at,
         updatedAt: c.updated_at,
-        profile: c.profiles ? {
-          id: c.profiles.id,
-          username: c.profiles.username,
-          displayName: c.profiles.display_name,
-          avatarUrl: c.profiles.avatar_url,
-          bio: c.profiles.bio,
-          tasteArchetype: c.profiles.taste_archetype,
-          createdAt: c.profiles.created_at
-        } : undefined
+        crew_member_profile: c.crew_member_profile ? {
+          id: c.crew_member_profile.id,
+          username: c.crew_member_profile.username,
+          displayName: c.crew_member_profile.display_name,
+          avatarUrl: c.crew_member_profile.avatar_url,
+          bio: c.crew_member_profile.bio,
+          tasteArchetype: c.crew_member_profile.taste_archetype,
+          createdAt: c.crew_member_profile.created_at
+        } : null
       })) : [];
 
       // 7b. Fetch Crew Requests (Incoming and Outgoing with profile info)
@@ -312,31 +312,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .from('crew_requests')
         .select(`
           *,
-          sender:sender_id (*),
-          receiver:receiver_id (*)
+          sender_profile:profiles!sender_id (*),
+          receiver_profile:profiles!receiver_id (*)
         `)
         .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
 
-      const dbRequests: (CrewRequest & { senderProfile?: any, receiverProfile?: any })[] = requestsData ? requestsData.map(r => ({
+      const dbRequests: CrewRequest[] = requestsData ? requestsData.map(r => ({
         id: r.id,
         senderId: r.sender_id,
         receiverId: r.receiver_id,
         status: r.status as any,
         message: r.message,
+        source: r.source,
+        inviteCode: r.invite_code,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
-        senderProfile: r.sender ? {
-          id: r.sender.id,
-          username: r.sender.username,
-          displayName: r.sender.display_name,
-          avatarUrl: r.sender.avatar_url
-        } : undefined,
-        receiverProfile: r.receiver ? {
-          id: r.receiver.id,
-          username: r.receiver.username,
-          displayName: r.receiver.display_name,
-          avatarUrl: r.receiver.avatar_url
-        } : undefined
+        sender_profile: r.sender_profile ? {
+          id: r.sender_profile.id,
+          username: r.sender_profile.username,
+          displayName: r.sender_profile.display_name,
+          avatarUrl: r.sender_profile.avatar_url,
+          bio: r.sender_profile.bio,
+          tasteArchetype: r.sender_profile.taste_archetype,
+          createdAt: r.sender_profile.created_at
+        } : null,
+        receiver_profile: r.receiver_profile ? {
+          id: r.receiver_profile.id,
+          username: r.receiver_profile.username,
+          displayName: r.receiver_profile.display_name,
+          avatarUrl: r.receiver_profile.avatar_url,
+          bio: r.receiver_profile.bio,
+          tasteArchetype: r.receiver_profile.taste_archetype,
+          createdAt: r.receiver_profile.created_at
+        } : null
       })) : [];
 
       // 7c. Fetch Notifications

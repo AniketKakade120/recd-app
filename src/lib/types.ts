@@ -25,8 +25,12 @@ export interface CrewRequest {
   receiverId: string;
   status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
   message?: string;
+  source?: string | null;
+  inviteCode?: string | null;
   createdAt: string;
   updatedAt: string;
+  sender_profile?: User | null;
+  receiver_profile?: User | null;
 }
 
 export interface CrewConnection {
@@ -36,6 +40,7 @@ export interface CrewConnection {
   status: 'accepted';
   createdAt: string;
   updatedAt: string;
+  crew_member_profile: User | null;
 }
 
 export interface PublicUserProfile extends User {
