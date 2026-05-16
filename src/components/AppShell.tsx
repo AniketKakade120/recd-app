@@ -50,8 +50,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 3. If authenticated AND onboarded, and on a landing/login/signup page, send to home
-    if (isAuthenticated && isOnboarded && ['/', '/login', '/signup'].includes(pathname)) {
+    // 3. If authenticated AND onboarded, and on a landing/login/signup/onboarding page, send to home
+    if (isAuthenticated && isOnboarded && ['/', '/login', '/signup', '/onboarding'].includes(pathname)) {
       console.log('[Rec\'d Shell] Redirecting to home...');
       router.push('/home');
     }
