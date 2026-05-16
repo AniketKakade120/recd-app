@@ -514,7 +514,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return { 
             ...prev, 
             loading: false, 
-            isAuthenticated: !!prev.currentUser || prev.isAuthenticated,
+            isAuthenticated: prev.isAuthenticated,
+            currentUser: prev.currentUser || {
+              id: 'temp',
+              username: 'recovering',
+              displayName: 'User',
+              avatarUrl: '',
+              bio: '',
+              tasteArchetype: 'Thriller Dealer',
+              createdAt: new Date().toISOString(),
+            },
             isOnboarded: !!prev.currentUser?.username
           };
         }
