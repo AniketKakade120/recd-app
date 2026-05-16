@@ -44,7 +44,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     console.log(`[Rec'd Shell] Path: ${pathname}, Auth: ${isAuthenticated}, Onboarded: ${isOnboarded}`);
     
     // 1. If not authenticated and not on a public route, send to landing
-    if (!isAuthenticated && !isPublicRoute) {
+    // We only do this if we are SURE we aren't still loading the auth state
+    if (!isAuthenticated && !isPublicRoute && !loading && !isInitialAuthLoading) {
+      console.log('[Rec\'d Shell] Not authenticated, redirecting to landing...');
       router.push('/');
       return;
     }
