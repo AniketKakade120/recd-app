@@ -28,6 +28,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
+    (window as any).__mountedTime = Date.now();
   }, []);
 
   useEffect(() => {
@@ -44,8 +45,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     console.log(`[Rec'd Shell] Path: ${pathname}, Auth: ${isAuthenticated}, Onboarded: ${isOnboarded}`);
     
     // 1. If not authenticated and not on a public route, send to landing
-    // We only do this if we are SURE we aren't still loading the auth state
-    if (!isAuthenticated && !isPublicRoute && !loading && !isInitialAuthLoading) {
+    // We give it a 10-second grace period after mounting to avoid accidental kicks
+    const gracePeriodPassed = Date.now() - (window as any).__mountedTime > 10000;
+    if (!isAuthenticated && !isPublicRoute && !loading && !isInitialAuthLoading && gracePeriodPassed) {
       console.log('[Rec\'d Shell] Not authenticated, redirecting to landing...');
       router.push('/');
       return;
