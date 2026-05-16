@@ -34,11 +34,21 @@ export default function InviteAcceptancePage() {
     }
 
     setIsJoining(true);
-    const success = await acceptInvite(code as string);
-    if (success) {
+    setError(null);
+    const res = await acceptInvite(code as string);
+    
+    if (res.success) {
       router.push('/profile?tab=crew');
     } else {
-      setError('Failed to join crew. The link might be expired or invalid.');
+      if (res.errorCode === 'NOT_FOUND') {
+        setError('This invite link is invalid. Please ask your friend for a new one.');
+      } else if (res.errorCode === 'INACTIVE') {
+        setError('This invite link has expired or has already been used.');
+      } else if (res.errorCode === 'OWN_INVITE') {
+        setError('You cannot accept your own invite link.');
+      } else {
+        setError('Failed to join crew. Please try again later.');
+      }
       setIsJoining(false);
     }
   };

@@ -25,20 +25,18 @@ export default function ProfileCrewTab() {
   if (!currentUser) return null;
 
   // 1. My Crew (Accepted Connections)
-  const myCrew = crewConnections
-    .map(c => getUser(c.crewMemberId))
-    .filter(Boolean);
+  const myCrew = crewConnections.map(c => c.profile).filter(Boolean);
 
   // 2. Pending Received
   const pendingReceived = crewRequests
     .filter(r => r.receiverId === currentUser.id && r.status === 'pending')
-    .map(r => ({ ...r, user: getUser(r.senderId) }))
+    .map(r => ({ ...r, user: r.senderProfile }))
     .filter(r => r.user);
 
   // 3. Pending Sent
   const pendingSent = crewRequests
     .filter(r => r.senderId === currentUser.id && r.status === 'pending')
-    .map(r => ({ ...r, user: getUser(r.receiverId) }))
+    .map(r => ({ ...r, user: r.receiverProfile }))
     .filter(r => r.user);
 
   const totalRequests = pendingReceived.length + pendingSent.length;

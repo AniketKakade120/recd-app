@@ -274,27 +274,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { data: titlesData } = await supabase.from('titles').select('*').in('id', relevantTitleIds);
       const dbTitles = titlesData ? titlesData.map(mapDbTitleToTitle) : [];
 
-      // 7. Fetch crew connections (My connections)
-      const { data: connData } = await supabase.from('crew_connections').select('*').eq('user_id', userId).eq('status', 'accepted');
-      const dbConns: CrewConnection[] = connData ? connData.map(c => ({
+      // 7. Fetch crew connections (My connections with profile info)
+      const { data: connData } = await supabase
+        .from('crew_connections')
+        .select(`
+          *,
+          profiles:crew_member_id (*)
+        `)
+        .eq('user_id', userId)
+        .eq('status', 'accepted');
+      
+      const dbConns: (CrewConnection & { profile?: User })[] = connData ? connData.map(c => ({
         id: c.id,
         userId: c.user_id,
         crewMemberId: c.crew_member_id,
         status: c.status as 'accepted',
         createdAt: c.created_at,
         updatedAt: c.updated_at,
+        profile: c.profiles ? {
+          id: c.profiles.id,
+          username: c.profiles.username,
+          displayName: c.profiles.display_name,
+          avatarUrl: c.profiles.avatar_url,
+          bio: c.profiles.bio,
+          tasteArchetype: c.profiles.taste_archetype,
+          createdAt: c.profiles.created_at
+        } : undefined
       })) : [];
 
-      // 7b. Fetch Crew Requests
-      const { data: requestsData } = await supabase.from('crew_requests').select('*').or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
-      const dbRequests: CrewRequest[] = requestsData ? requestsData.map(r => ({
+      // 7b. Fetch Crew Requests (Incoming and Outgoing with profile info)
+      const { data: requestsData } = await supabase
+        .from('crew_requests')
+        .select(`
+          *,
+          sender:sender_id (*),
+          receiver:receiver_id (*)
+        `)
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+
+      const dbRequests: (CrewRequest & { senderProfile?: any, receiverProfile?: any })[] = requestsData ? requestsData.map(r => ({
         id: r.id,
         senderId: r.sender_id,
         receiverId: r.receiver_id,
         status: r.status as any,
         message: r.message,
         createdAt: r.created_at,
-        updatedAt: r.updated_at
+        updatedAt: r.updated_at,
+        senderProfile: r.sender ? {
+          id: r.sender.id,
+          username: r.sender.username,
+          displayName: r.sender.display_name,
+          avatarUrl: r.sender.avatar_url
+        } : undefined,
+        receiverProfile: r.receiver ? {
+          id: r.receiver.id,
+          username: r.receiver.username,
+          displayName: r.receiver.display_name,
+          avatarUrl: r.receiver.avatar_url
+        } : undefined
       })) : [];
 
       // 7c. Fetch Notifications
@@ -887,9 +924,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state.currentUser, addToast, refreshData]);
 
   const acceptCrewRequest = useCallback(async (requestId: string) => {
-    const { success, error } = await acceptCrewRequestAction(requestId);
+    const { success, message, error } = await acceptCrewRequestAction(requestId);
     if (success) {
-      addToast('Accepted! You are now in each other\'s crew.', { type: 'success' });
+      addToast(message || 'Joined crew!', { type: 'success' });
       refreshData();
     } else {
       addToast(error || 'Failed to accept request', { type: 'error' });
@@ -937,15 +974,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const acceptInvite = useCallback(async (inviteCode: string) => {
     const res = await acceptCrewInviteAction(inviteCode);
     if (res.success) {
-      addToast('Joined crew successfully!', { type: 'success' });
+      addToast(res.message || 'Joined crew successfully!', { type: 'success' });
       refreshData();
-      return true;
+      return { success: true, alreadyConnected: res.alreadyConnected };
     } else {
       if ((res as any).requires_auth) {
-        return false; // Handle redirect in component
+        return { success: false, requiresAuth: true };
       }
-      addToast(res.error || 'Failed to join crew', { type: 'error' });
-      return false;
+      addToast(res.message || res.error || 'Failed to join crew', { type: 'error' });
+      return { success: false, errorCode: (res as any).errorCode };
     }
   }, [addToast, refreshData]);
 
@@ -956,22 +993,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getConnectionState = useCallback((targetUserId: string) => {
     if (!state.currentUser) return 'none';
-    if (isUserInCrew(targetUserId)) return 'connected';
+    if (targetUserId === state.currentUser.id) return 'self';
+    
+    // 1. Check accepted connections
+    const isConnected = state.crewConnections.some(c => c.crewMemberId === targetUserId);
+    if (isConnected) return 'connected';
 
+    // 2. Check requests
     const req = state.crewRequests.find(r => 
       (r.senderId === state.currentUser?.id && r.receiverId === targetUserId) ||
       (r.receiverId === state.currentUser?.id && r.senderId === targetUserId)
     );
 
     if (req) {
+      if (req.status === 'accepted') return 'connected';
       if (req.status === 'pending') {
-        return req.senderId === state.currentUser?.id ? 'pending_sent' : 'pending_received';
+        return req.senderId === state.currentUser.id ? 'pending_sent' : 'pending_received';
       }
-      return req.status as any;
     }
 
     return 'none';
-  }, [state.currentUser, state.crewRequests, isUserInCrew]);
+  }, [state.currentUser, state.crewConnections, state.crewRequests]);
 
   const getMutualGroups = useCallback((targetUserId: string) => {
     const myGroupIds = state.groupMembers.filter(gm => gm.userId === state.currentUser?.id).map(gm => gm.groupId);

@@ -203,6 +203,32 @@ export async function sendCrewRequest(receiverId: string, message?: string) {
     if (!user) throw new Error('Not authenticated');
     if (user.id === receiverId) throw new Error('You cannot add yourself to your crew');
 
+    // 1. Check if already connected
+    const { data: existingConn } = await supabase
+      .from('crew_connections')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('crew_member_id', receiverId)
+      .maybeSingle();
+    
+    if (existingConn) {
+      return { success: true, alreadyConnected: true };
+    }
+
+    // 2. Check for reverse pending request (Product logic: If they requested you, just accept it)
+    const { data: reverseReq } = await supabase
+      .from('crew_requests')
+      .select('id')
+      .eq('sender_id', receiverId)
+      .eq('receiver_id', user.id)
+      .eq('status', 'pending')
+      .maybeSingle();
+    
+    if (reverseReq) {
+      return await acceptCrewRequest(reverseReq.id);
+    }
+
+    // 3. Create the request
     const { data, error } = await supabase
       .from('crew_requests')
       .upsert({
@@ -210,22 +236,13 @@ export async function sendCrewRequest(receiverId: string, message?: string) {
         receiver_id: receiverId,
         status: 'pending',
         message: message || null,
+        source: 'direct',
         updated_at: new Date().toISOString()
       }, { onConflict: 'sender_id,receiver_id' })
       .select()
       .single();
 
     if (error) throw error;
-
-    // Create notification for receiver
-    await supabase.from('notifications').insert({
-      user_id: receiverId,
-      actor_id: user.id,
-      type: 'crew_request_received',
-      title: 'New Crew Request',
-      body: 'Someone wants to join your crew.',
-      resource_id: data.id
-    });
 
     return { success: true, data };
   } catch (err: any) {
@@ -235,58 +252,29 @@ export async function sendCrewRequest(receiverId: string, message?: string) {
 }
 
 /**
- * Accepts a Crew Request
+ * Accepts a Crew Request via secure RPC
  */
 export async function acceptCrewRequest(requestId: string) {
   const supabase = await createClient();
   if (!supabase) return { success: false, error: 'No Supabase client' };
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-
-    // 1. Get the request details
-    const { data: request, error: fetchError } = await supabase
-      .from('crew_requests')
-      .select('*')
-      .eq('id', requestId)
-      .single();
-
-    if (fetchError || !request) throw new Error('Request not found');
-    if (request.receiver_id !== user.id) throw new Error('Not authorized to accept this request');
-
-    // 2. Update request status
-    const { error: updateError } = await supabase
-      .from('crew_requests')
-      .update({ status: 'accepted', updated_at: new Date().toISOString() })
-      .eq('id', requestId);
-
-    if (updateError) throw updateError;
-
-    // 3. Create mutual connections
-    const { error: connError } = await supabase
-      .from('crew_connections')
-      .upsert([
-        { user_id: request.sender_id, crew_member_id: request.receiver_id, status: 'accepted' },
-        { user_id: request.receiver_id, crew_member_id: request.sender_id, status: 'accepted' }
-      ], { onConflict: 'user_id,crew_member_id' });
-
-    if (connError) throw connError;
-
-    // 4. Create notification for sender
-    await supabase.from('notifications').insert({
-      user_id: request.sender_id,
-      actor_id: user.id,
-      type: 'crew_request_accepted',
-      title: 'Crew Request Accepted',
-      body: 'You are now in each other\'s crew.',
-      resource_id: request.id
+    const { data, error } = await supabase.rpc('accept_crew_request', {
+      request_id: requestId
     });
 
-    return { success: true };
+    if (error) throw error;
+    
+    return { 
+      success: true, 
+      message: 'You are now in each other’s crew.' 
+    };
   } catch (err: any) {
     console.error('Error accepting crew request:', err);
-    return { success: false, error: err.message || 'Unknown error' };
+    return { 
+      success: false, 
+      error: 'Couldn’t accept request. Please try again.' 
+    };
   }
 }
 
@@ -383,7 +371,7 @@ export async function createCrewInvite() {
 }
 
 /**
- * Accepts a Crew Invite by code
+ * Accepts a Crew Invite by code via secure RPC
  */
 export async function acceptCrewInvite(inviteCode: string) {
   const supabase = await createClient();
@@ -393,43 +381,25 @@ export async function acceptCrewInvite(inviteCode: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, requires_auth: true };
 
-    // 1. Get the invite
-    const { data: invite, error: fetchError } = await supabase
-      .from('invites')
-      .select('*')
-      .eq('invite_code', inviteCode)
-      .eq('status', 'active')
-      .single();
-
-    if (fetchError || !invite) throw new Error('Invite not found or expired');
-    if (invite.invited_by === user.id) throw new Error('You cannot accept your own invite');
-
-    // 2. Create mutual connections
-    const { error: connError } = await supabase
-      .from('crew_connections')
-      .upsert([
-        { user_id: invite.invited_by, crew_member_id: user.id, status: 'accepted' },
-        { user_id: user.id, crew_member_id: invite.invited_by, status: 'accepted' }
-      ], { onConflict: 'user_id,crew_member_id' });
-
-    if (connError) throw connError;
-
-    // 3. Mark invite as accepted (if needed, or keep active for multi-use)
-    // For MVP, we can keep it active but track the join in a separate table if we want.
-    // Let's just create a notification for the inviter.
-    await supabase.from('notifications').insert({
-      user_id: invite.invited_by,
-      actor_id: user.id,
-      type: 'crew_request_accepted',
-      title: 'New Crew Member',
-      body: 'Someone joined your crew via invite link.',
-      resource_id: invite.id
+    const { data, error } = await supabase.rpc('accept_crew_invite', {
+      invite_code_input: inviteCode
     });
 
-    return { success: true };
+    if (error) {
+      if (error.message.includes('Invite not found')) return { success: false, errorCode: 'NOT_FOUND', message: 'This invite link is invalid.' };
+      if (error.message.includes('Invite is not active')) return { success: false, errorCode: 'INACTIVE', message: 'This invite has expired.' };
+      if (error.message.includes('Cannot accept own invite')) return { success: false, errorCode: 'OWN_INVITE', message: 'You cannot accept your own invite.' };
+      throw error;
+    }
+
+    return { 
+      success: true, 
+      alreadyConnected: data?.already_connected || false,
+      message: data?.already_connected ? 'You’re already in each other’s crew.' : 'You’re now in each other’s crew.'
+    };
   } catch (err: any) {
     console.error('Error accepting crew invite:', err);
-    return { success: false, error: err.message || 'Unknown error' };
+    return { success: false, error: 'Couldn’t join crew. Please try again.' };
   }
 }
 

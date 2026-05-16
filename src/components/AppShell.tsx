@@ -45,9 +45,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     console.log(`[Rec'd Shell] Path: ${pathname}, Auth: ${isAuthenticated}, Onboarded: ${isOnboarded}`);
     
     // 1. If not authenticated and not on a public route, send to landing
-    // We give it a 10-second grace period after mounting to avoid accidental kicks
-    const gracePeriodPassed = Date.now() - (window as any).__mountedTime > 10000;
-    if (!isAuthenticated && !isPublicRoute && !loading && !isInitialAuthLoading && gracePeriodPassed) {
+    // We give a small 2s buffer after mount to allow hydration to settle
+    const hydrationBufferPassed = Date.now() - (window as any).__mountedTime > 2000;
+    if (!isAuthenticated && !isPublicRoute && hydrationBufferPassed) {
       console.log('[Rec\'d Shell] Not authenticated, redirecting to landing...');
       router.push('/');
       return;
