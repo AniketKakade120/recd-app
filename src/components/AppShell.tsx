@@ -35,6 +35,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     const isPublicRoute = ['/', '/login', '/signup', '/onboarding'].includes(pathname) || pathname.startsWith('/list/') || pathname.startsWith('/invite/');
     
+    // 0. Wait for profile to be fully loaded if authenticated
+    if (isAuthenticated && !currentUser && !isPublicRoute) {
+      console.log('[Rec\'d Shell] Auth exists but profile missing, waiting...');
+      return;
+    }
+    
     console.log(`[Rec'd Shell] Path: ${pathname}, Auth: ${isAuthenticated}, Onboarded: ${isOnboarded}`);
     
     // 1. If not authenticated and not on a public route, send to landing
@@ -61,7 +67,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   
   console.log(`[Rec'd Shell] Path: ${pathname}, Public: ${isPublicRoute}, Loading: ${loading}, Auth: ${isAuthenticated}`);
 
-  if (loading && !isPublicRoute) {
+  // 4. Show loading state while authenticating or fetching profile
+  const isInitialAuthLoading = isAuthenticated && !currentUser;
+  if ((loading || isInitialAuthLoading) && !isPublicRoute) {
     return (
       <div className="fixed inset-0 bg-ink z-[100] flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 border-2 border-cinema-red border-t-transparent rounded-full animate-spin mb-8 shadow-[0_0_30px_rgba(234,51,51,0.3)]" />

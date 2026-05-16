@@ -431,22 +431,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Optimistic Update: Set authenticated and user immediately
-      // Keep loading=true until profile fetch confirms onboarding status
+      // Optimistic Update: Set authenticated immediately
+      // We wait for the profile fetch before setting currentUser to avoid redirect loops
       setState(prev => ({
         ...prev,
         isAuthenticated: true,
-        // Do NOT set isOnboarded here — wait for DB profile fetch
-        // Do NOT set loading: false — wait for profile fetch
-        currentUser: prev.currentUser || {
-          id: session.user.id,
-          username: session.user.email?.split('@')[0] || 'user',
-          displayName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-          avatarUrl: session.user.user_metadata?.avatar_url || '',
-          bio: '',
-          tasteArchetype: 'Thriller Dealer',
-          createdAt: new Date().toISOString(),
-        }
       }));
 
       try {
