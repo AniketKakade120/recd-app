@@ -1250,7 +1250,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateUser = useCallback(async (data: Partial<User>) => {
     if (isSupabaseConfigured && supabase && state.currentUser) {
-      await supabase.from('profiles').update(data).eq('id', state.currentUser.id);
+      // Map camelCase User keys to database snake_case profiles columns
+      const dbUpdates: any = {};
+      
+      if (data.username !== undefined) dbUpdates.username = data.username;
+      if (data.displayName !== undefined) dbUpdates.display_name = data.displayName;
+      if (data.avatarUrl !== undefined) dbUpdates.avatar_url = data.avatarUrl;
+      if (data.bio !== undefined) dbUpdates.bio = data.bio;
+      if (data.tasteArchetype !== undefined) dbUpdates.taste_archetype = data.tasteArchetype;
+      if (data.profileVisibility !== undefined) dbUpdates.profile_visibility = data.profileVisibility;
+
+      const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', state.currentUser.id);
+      
+      if (error) {
+        console.error('Failed to update profile in database:', error);
+        addToast(error.message || 'Failed to update profile', { type: 'error' });
+        return;
+      }
+
+      // Optimistic Update: Immediately update React state to feel ultra-responsive
+      setState(prev => {
+        if (!prev.currentUser) return prev;
+        const updatedUser = { ...prev.currentUser, ...data };
+        return {
+          ...prev,
+          currentUser: updatedUser,
+          users: prev.users.map(u => u.id === updatedUser.id ? updatedUser : u)
+        };
+      });
+
       refreshData();
     } else {
       setState(prev => {
