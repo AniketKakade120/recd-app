@@ -75,10 +75,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // 4. Show loading state while authenticating or fetching profile
   const isInitialAuthLoading = isAuthenticated && !currentUser;
   
-  // Show loader if global loading is true, OR if we are on onboarding but profile hasn't loaded yet
-  const shouldShowLoader = loading || (isInitialAuthLoading && pathname === '/onboarding');
+  // Show loader if:
+  // - We are on a private route and still loading/authenticating
+  // - OR we are on the onboarding route and still loading/authenticating
+  const shouldShowLoader = ((loading || isInitialAuthLoading) && !isPublicRoute) || 
+                           ((loading || isInitialAuthLoading) && pathname === '/onboarding');
   
-  if (shouldShowLoader || (isInitialAuthLoading && !isPublicRoute)) {
+  if (shouldShowLoader) {
     return (
       <div className="fixed inset-0 bg-ink z-[100] flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 border-2 border-cinema-red border-t-transparent rounded-full animate-spin mb-8 shadow-[0_0_30px_rgba(234,51,51,0.3)]" />
