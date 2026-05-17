@@ -732,15 +732,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
 
     if (isSupabaseConfigured && supabase && state.currentUser) {
-      const { error } = await supabase
+      // 1. Try to update the existing user preferences row
+      const { data: updateData, error: updateError } = await supabase
         .from('user_preferences')
-        .upsert({
-          user_id: state.currentUser.id,
-          ...data,
+        .update({
+          genres: data.genres,
+          moods: data.moods,
+          formats: data.formats,
+          languages: data.languages,
+          platforms: data.platforms,
           updated_at: new Date().toISOString()
-        });
-      
-      if (error) console.error('Error updating preferences in Supabase:', error);
+        })
+        .eq('user_id', state.currentUser.id)
+        .select();
+
+      // 2. Self-healing fallback: If the row doesn't exist (e.g. legacy users), insert it
+      if (!updateError && (!updateData || updateData.length === 0)) {
+        console.log('[Rec\'d] Preferences row not found, creating new one...');
+        const { error: insertError } = await supabase
+          .from('user_preferences')
+          .insert({
+            user_id: state.currentUser.id,
+            genres: data.genres || [],
+            moods: data.moods || [],
+            formats: data.formats || [],
+            languages: data.languages || [],
+            platforms: data.platforms || [],
+            updated_at: new Date().toISOString()
+          });
+        
+        if (insertError) console.error('Error inserting preferences in Supabase:', insertError);
+      } else if (updateError) {
+        console.error('Error updating preferences in Supabase:', updateError);
+      }
     }
   }, [state.currentUser]);
 
