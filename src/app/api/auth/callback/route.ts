@@ -1,27 +1,41 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, NextRequest } from 'next/server'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next')
 
   if (code) {
-    const supabase = await createClient()
+    // 1. Create a redirect response object immediately so we can write cookies directly to it
+    const response = NextResponse.redirect(`${origin}${next || '/home'}`)
     
-    if (!supabase) {
-      console.error('[Rec\'d Auth] Supabase client could not be initialized');
-      return NextResponse.redirect(`${origin}/login?error=supabase_not_configured`);
-    }
+    // 2. Initialize createServerClient with direct mapping to request cookies and response cookies
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return Array.from(request.cookies.getAll()).map(({ name, value }) => ({ name, value }))
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value)
+              response.cookies.set(name, value, options)
+            })
+          },
+        },
+      }
+    )
 
+    // 3. Exchange OAuth code for active session (this will set the cookies on the response object)
     const { error } = await supabase.auth.exchangeCodeForSession(code)
+    
     if (!error) {
-      // Use the request origin for redirects to ensure it matches the current domain
-      const baseUrl = origin
-
-      // Check if this user has completed onboarding
+      // 4. Check if this user has completed onboarding to decide the final destination
       const { data: { user } } = await supabase.auth.getUser()
-      let destination = '/onboarding' // Default: new users go to onboarding
+      let destination = '/onboarding'
       
       if (user) {
         console.log(`[Rec'd Auth] Checking profile for user: ${user.id}`);
@@ -45,10 +59,14 @@ export async function GET(request: Request) {
         }
       }
 
-      return NextResponse.redirect(`${baseUrl}${destination}`)
+      // 5. Update the Location header on our response object to redirect to the correct destination
+      response.headers.set('Location', `${origin}${destination}`)
+      return response
     }
+    
+    console.error('[Rec\'d Auth] Code exchange failed:', error.message)
   }
 
-  // return the user to login page with an error
+  // Return the user to login page with an error
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
 }
