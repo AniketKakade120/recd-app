@@ -675,8 +675,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     
     try {
+      // Get current query param 'redirectTo' if present in window location
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirectToParam = searchParams.get('redirectTo');
+      
       const cleanOrigin = window.location.origin.replace(/\/$/, '');
-      const redirectUrl = `${cleanOrigin}/api/auth/callback`;
+      let redirectUrl = `${cleanOrigin}/api/auth/callback`;
+      if (redirectToParam) {
+        redirectUrl += `?next=${encodeURIComponent(redirectToParam)}`;
+      }
+      
       console.log('[Rec\'d Login] Redirecting to Google with:', redirectUrl);
 
       const { error } = await supabase.auth.signInWithOAuth({

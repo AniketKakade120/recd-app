@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const next = searchParams.get('next')
 
   if (code) {
     const supabase = await createClient()
@@ -35,10 +36,12 @@ export async function GET(request: Request) {
         }
 
         if (profile?.onboarding_completed) {
-          console.log('[Rec\'d Auth] User is onboarded. Redirecting to /home');
-          destination = '/home' // Returning onboarded users go straight to home
+          const redirectDestination = next || '/home';
+          console.log(`[Rec'd Auth] User is onboarded. Redirecting to: ${redirectDestination}`);
+          destination = redirectDestination; // Returning onboarded users go straight to next or home
         } else {
           console.log('[Rec\'d Auth] User not onboarded. Redirecting to /onboarding');
+          destination = next ? `/onboarding?next=${encodeURIComponent(next)}` : '/onboarding';
         }
       }
 

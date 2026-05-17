@@ -58,11 +58,18 @@ export default function OnboardingPage() {
       window.scrollTo(0, 0); // Scroll to top for new step
     } else { 
       completeOnboarding({ onboarding_completed: true }); // Final sync
-      router.push('/home'); 
+      const searchParams = new URLSearchParams(window.location.search);
+      const nextParam = searchParams.get('next');
+      router.push(nextParam || '/home'); 
     }
   };
 
-  const skip = () => { completeOnboarding(); router.push('/home'); };
+  const skip = () => { 
+    completeOnboarding(); 
+    const searchParams = new URLSearchParams(window.location.search);
+    const nextParam = searchParams.get('next');
+    router.push(nextParam || '/home'); 
+  };
 
   if (!currentUser) return null;
 
