@@ -54,14 +54,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
     
     // 2. If authenticated but NOT onboarded, and not already on onboarding, send to onboarding
-    if (isAuthenticated && !isOnboarded && pathname !== '/onboarding' && !pathname.startsWith('/list/') && !pathname.startsWith('/invite/')) {
+    // Wait until currentUser profile is loaded to prevent redirecting to a blank screen
+    if (isAuthenticated && currentUser && !isOnboarded && pathname !== '/onboarding' && !pathname.startsWith('/list/') && !pathname.startsWith('/invite/')) {
       console.log('[Rec\'d Shell] Redirecting to onboarding...');
       router.push('/onboarding');
       return;
     }
 
     // 3. If authenticated AND onboarded, and on a landing/login/signup/onboarding page, send to home
-    if (isAuthenticated && isOnboarded && ['/', '/login', '/signup', '/onboarding'].includes(pathname)) {
+    if (isAuthenticated && currentUser && isOnboarded && ['/', '/login', '/signup', '/onboarding'].includes(pathname)) {
       console.log('[Rec\'d Shell] Redirecting to home...');
       router.push('/home');
     }
@@ -73,7 +74,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // 4. Show loading state while authenticating or fetching profile
   const isInitialAuthLoading = isAuthenticated && !currentUser;
-  if ((loading || isInitialAuthLoading) && !isPublicRoute) {
+  
+  // Show loader if global loading is true, OR if we are on onboarding but profile hasn't loaded yet
+  const shouldShowLoader = loading || (isInitialAuthLoading && pathname === '/onboarding');
+  
+  if (shouldShowLoader || (isInitialAuthLoading && !isPublicRoute)) {
     return (
       <div className="fixed inset-0 bg-ink z-[100] flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 border-2 border-cinema-red border-t-transparent rounded-full animate-spin mb-8 shadow-[0_0_30px_rgba(234,51,51,0.3)]" />
