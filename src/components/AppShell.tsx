@@ -77,9 +77,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   
   // Show loader if:
   // - We are on a private route and still loading/authenticating
-  // - OR we are on the onboarding route and still loading/authenticating
+  // - OR we are on the onboarding route and the app is performing initial boot loading
   const shouldShowLoader = ((loading || isInitialAuthLoading) && !isPublicRoute) || 
-                           ((loading || isInitialAuthLoading) && pathname === '/onboarding');
+                           (loading && pathname === '/onboarding');
   
   if (shouldShowLoader) {
     return (
