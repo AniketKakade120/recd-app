@@ -510,8 +510,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           console.log(`[Rec'd Auth] Profile found. Onboarded: ${profile.onboarding_completed}`);
           
           // AUTO-SYNC: If the profile has placeholder info, sync it with Google metadata
-          const googleName = session.user.user_metadata?.full_name;
-          const googleAvatar = session.user.user_metadata?.avatar_url;
+          const googleName = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
+          const googleAvatar = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
           let needsUpdate = false;
           const updates: any = {};
 
@@ -561,8 +561,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             currentUser: {
               id: session.user.id,
               username: 'newuser',
-              displayName: session.user.user_metadata?.full_name || 'New User',
-              avatarUrl: session.user.user_metadata?.avatar_url || '',
+              displayName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'New User',
+              avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || '',
               bio: '',
               tasteArchetype: 'Thriller Dealer',
               createdAt: new Date().toISOString(),
