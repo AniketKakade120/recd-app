@@ -72,14 +72,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   
   console.log(`[Rec'd Shell] Path: ${pathname}, Public: ${isPublicRoute}, Loading: ${loading}, Auth: ${isAuthenticated}`);
 
-  // 4. Show loading state while authenticating or fetching profile
-  const isInitialAuthLoading = isAuthenticated && !currentUser;
-  
-  // Show loader if:
-  // - We are on a private route and still loading/authenticating
-  // - OR we are on the onboarding route and the app is performing initial boot loading
-  const shouldShowLoader = ((loading || isInitialAuthLoading) && !isPublicRoute) || 
-                           (loading && pathname === '/onboarding');
+  // Show loader if we are currently loading the context state
+  const shouldShowLoader = loading && (!isPublicRoute || pathname === '/onboarding');
   
   if (shouldShowLoader) {
     return (
