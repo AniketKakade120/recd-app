@@ -91,9 +91,9 @@ export default function EditPreferencesModal({ isOpen, onClose }: EditPreference
           ))}
         </div>
 
-        {/* Selection Grid */}
+        {/* Selection Flow (Consistent Chips) */}
         <div className="flex-1 overflow-y-auto min-h-[300px] pr-2 custom-scrollbar">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-8">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 pb-8">
             {currentTabData.items.map(item => {
               const isSelected = currentTabData.current.includes(item);
               
@@ -101,16 +101,13 @@ export default function EditPreferencesModal({ isOpen, onClose }: EditPreference
                 <button
                   key={item}
                   onClick={() => toggleSelection(item, currentTabData.current, currentTabData.setter)}
-                  className={`px-4 py-4 rounded-2xl border text-xs font-bold transition-all text-center flex flex-col items-center justify-center gap-2 group ${
+                  className={`px-4 py-2.5 rounded-2xl text-sm font-semibold border transition-all duration-300 ease-out hover:-translate-y-0.5 active:scale-95 ${
                     isSelected 
-                      ? 'bg-cinema-red border-cinema-red text-bone shadow-[0_0_20px_rgba(234,51,51,0.2)]' 
-                      : 'bg-ink border-border text-muted hover:border-border-strong hover:bg-surface-hover'
+                      ? 'bg-cinema-red/10 border-cinema-red/50 text-bone shadow-[0_0_30px_rgba(229,9,20,0.15)] ring-1 ring-cinema-red/30' 
+                      : 'bg-surface/50 backdrop-blur-sm border-border text-muted hover:border-border-strong hover:text-bone hover:bg-surface'
                   }`}
                 >
-                  <span className="truncate w-full">{item}</span>
-                  {isSelected && (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
-                  )}
+                  {item}
                 </button>
               );
             })}
