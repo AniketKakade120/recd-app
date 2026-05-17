@@ -598,27 +598,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Safety timeout to ensure loading doesn't stay true forever (e.g. network issues)
     const safetyTimeout = setTimeout(() => {
       setState(prev => {
-        if (prev.loading || (prev.isAuthenticated && !prev.currentUser)) {
-          console.warn('[Rec\'d] Auth/Profile took too long, forcing recovery state.');
+        if (prev.loading) {
+          console.warn('[Rec\'d] Auth/Profile took too long to load. Resolving loading spinner.');
           return { 
             ...prev, 
-            loading: false, 
-            isAuthenticated: prev.isAuthenticated,
-            currentUser: prev.currentUser || {
-              id: 'temp',
-              username: 'recovering',
-              displayName: 'User',
-              avatarUrl: '',
-              bio: '',
-              tasteArchetype: 'Thriller Dealer',
-              createdAt: new Date().toISOString(),
-            },
-            isOnboarded: !!prev.currentUser?.username
+            loading: false
           };
         }
         return prev;
       });
-    }, 5000);
+    }, 15000);
 
     return () => {
       subscription.unsubscribe();
