@@ -512,6 +512,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           // AUTO-SYNC: If the profile has placeholder info, sync it with Google metadata
           const googleName = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
           const googleAvatar = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
+          const emailPrefix = session.user.email?.split('@')[0];
+          
           let needsUpdate = false;
           const updates: any = {};
 
@@ -528,17 +530,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
           if (needsUpdate) {
             console.log('[Rec\'d Auth] Syncing Google metadata to profile...', updates);
-            await supabase.from('profiles').update(updates).eq('id', profile.id);
+            const { error: syncError } = await supabase.from('profiles').update(updates).eq('id', profile.id);
+            if (syncError) {
+              console.error('[Rec\'d Auth] Error syncing Google metadata to database:', syncError);
+            }
           }
+
+          // Bulletproof fallback chain for Display Name & Avatar
+          const finalDisplayName = profile.display_name && profile.display_name !== 'User'
+            ? profile.display_name 
+            : (googleName || emailPrefix || 'User');
+            
+          const finalAvatarUrl = profile.avatar_url || googleAvatar || '';
 
           const dbOnboarded = !!profile.onboarding_completed;
           setState(prev => ({
             ...prev,
             currentUser: {
               id: profile.id,
-              username: profile.username || session.user.email?.split('@')[0] || 'user',
-              displayName: profile.display_name || 'User',
-              avatarUrl: profile.avatar_url || '',
+              username: profile.username || emailPrefix || 'user',
+              displayName: finalDisplayName,
+              avatarUrl: finalAvatarUrl,
               bio: profile.bio || '',
               tasteArchetype: profile.taste_archetype as any || 'Thriller Dealer',
               createdAt: profile.created_at,
@@ -555,14 +567,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }));
         } else {
           console.log('[Rec\'d Auth] No profile record found — trigger might be slow or failed.');
+          const googleName = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
+          const googleAvatar = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
+          const emailPrefix = session.user.email?.split('@')[0];
+
           // Create a placeholder user to unstick the shell and allow onboarding
           setState(prev => ({ 
             ...prev, 
             currentUser: {
               id: session.user.id,
-              username: 'newuser',
-              displayName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'New User',
-              avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || '',
+              username: emailPrefix || 'newuser',
+              displayName: googleName || emailPrefix || 'New User',
+              avatarUrl: googleAvatar || '',
               bio: '',
               tasteArchetype: 'Thriller Dealer',
               createdAt: new Date().toISOString(),
