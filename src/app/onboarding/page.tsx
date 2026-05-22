@@ -71,6 +71,21 @@ export default function OnboardingPage() {
     router.push(nextParam || '/home'); 
   };
 
+  // Safety timeout: if currentUser is still null after 8s, the SIGNED_IN event
+  // never fired — session is likely invalid. Redirect to login.
+  const [authTimedOut, setAuthTimedOut] = useState(false);
+  useEffect(() => {
+    if (currentUser) return; // session arrived, no need for timeout
+    const t = setTimeout(() => setAuthTimedOut(true), 8000);
+    return () => clearTimeout(t);
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (authTimedOut && !currentUser) {
+      router.push('/login?error=session_expired');
+    }
+  }, [authTimedOut, currentUser, router]);
+
   // Don't render a blank screen while auth state is loading — show a spinner instead.
   // currentUser is null for 1-2s after OAuth redirect while onAuthStateChange fetches the profile.
   if (!currentUser) {

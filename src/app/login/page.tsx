@@ -20,6 +20,7 @@ export default function LoginPage() {
     switch (code) {
       case 'auth_callback_failed': return 'Authentication failed. Please try again.';
       case 'supabase_not_configured': return 'Server configuration error. Please contact support.';
+      case 'session_expired': return 'Your session could not be loaded. Please sign in again.';
       default: return 'An unexpected error occurred during login.';
     }
   };

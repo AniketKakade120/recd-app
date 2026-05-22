@@ -492,14 +492,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.log(`[Rec'd Auth] Event: ${event}`, session?.user?.email);
       
       if (!session?.user) {
-        console.log('[Rec\'d Auth] No session found.');
-        setState(prev => ({
-          ...prev,
-          currentUser: null,
-          isAuthenticated: false,
-          isOnboarded: false,
-          loading: false,
-        }));
+        // INITIAL_SESSION with no session fires immediately on page load, before
+        // the middleware has had a chance to refresh/propagate the cookie session.
+        // Only treat "no session" as a definitive logout on explicit SIGNED_OUT events,
+        // not on the ambiguous INITIAL_SESSION that fires before cookies are read.
+        if (event === 'SIGNED_OUT') {
+          console.log('[Rec\'d Auth] User signed out.');
+          setState(prev => ({
+            ...prev,
+            currentUser: null,
+            isAuthenticated: false,
+            isOnboarded: false,
+            loading: false,
+          }));
+        } else if (event === 'INITIAL_SESSION') {
+          // No session yet on first load — the middleware may not have refreshed
+          // the token yet. Set loading: false so the UI isn't blocked forever,
+          // but don't clear currentUser (it starts as null already).
+          console.log('[Rec\'d Auth] INITIAL_SESSION: no session yet.');
+          setState(prev => ({ ...prev, loading: false }));
+        }
         return;
       }
 
