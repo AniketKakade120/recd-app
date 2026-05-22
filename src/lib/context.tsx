@@ -1367,11 +1367,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const removeFromWatchlist = useCallback(async (id: string) => {
     const item = state.watchlist.find(w => w.id === id);
+    
+    // 1. Optimistic update: remove from global watchlist AND all custom lists
+    setState(prev => {
+      const targetTitleId = prev.watchlist.find(w => w.id === id)?.titleId;
+      
+      const updatedLists = prev.watchlistLists.map(l => {
+        if (targetTitleId && l.titleIds.includes(targetTitleId)) {
+          return { ...l, titleIds: l.titleIds.filter(tid => tid !== targetTitleId), updatedAt: new Date().toISOString() };
+        }
+        return l;
+      });
+
+      return { 
+        ...prev, 
+        watchlist: prev.watchlist.filter(w => w.id !== id),
+        watchlistLists: updatedLists
+      };
+    });
+
     if (item && isSupabaseConfigured && supabase && state.currentUser) {
+      // Delete from main watchlist table
       await deleteWatchlistItem(state.currentUser.id, item.titleId);
+      
+      // Also explicitly delete from all list tables to ensure DB consistency
+      // (in case there's no cascade delete configured)
+      const listIds = item.listIds || [];
+      await Promise.all(listIds.map(listId => removeTitleFromListDb(item.titleId, listId)));
+      
+      refreshData();
     }
-    setState(prev => ({ ...prev, watchlist: prev.watchlist.filter(w => w.id !== id) }));
-  }, [state.watchlist, state.currentUser]);
+  }, [state.watchlist, state.currentUser, refreshData]);
 
 
   const updateUser = useCallback(async (data: Partial<User>) => {
