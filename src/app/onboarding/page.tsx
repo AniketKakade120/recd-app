@@ -71,7 +71,16 @@ export default function OnboardingPage() {
     router.push(nextParam || '/home'); 
   };
 
-  if (!currentUser) return null;
+  // Don't render a blank screen while auth state is loading — show a spinner instead.
+  // currentUser is null for 1-2s after OAuth redirect while onAuthStateChange fetches the profile.
+  if (!currentUser) {
+    return (
+      <div className="fixed inset-0 bg-ink z-[100] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 border-2 border-cinema-red border-t-transparent rounded-full animate-spin mb-8 shadow-[0_0_30px_rgba(234,51,51,0.3)]" />
+        <p className="text-xs text-muted uppercase tracking-widest animate-pulse">Stamping your taste...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col max-w-4xl mx-auto pt-8 pb-32 sm:pb-24 px-6 items-center text-center relative">
