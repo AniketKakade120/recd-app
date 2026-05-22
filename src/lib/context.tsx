@@ -1181,16 +1181,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addTitleToWatchlist = useCallback(async (titleId: string) => {
     if (!state.currentUser) return;
     
-    if (isSupabaseConfigured && supabase) {
-      const { success, error } = await saveWatchlistItem(state.currentUser.id, titleId);
-      if (success) {
-        refreshData();
-        return;
-      } else {
-        console.error('Failed to add to watchlist:', error);
-      }
-    }
-
+    // 1. Optimistic update
     const newItem: WatchlistItem = {
       id: `wl-${Date.now()}`,
       userId: state.currentUser.id,
@@ -1202,18 +1193,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updatedAt: new Date().toISOString(),
     };
     addToWatchlist(newItem);
+
+    if (isSupabaseConfigured && supabase) {
+      const { success, error } = await saveWatchlistItem(state.currentUser.id, titleId);
+      if (success) {
+        refreshData();
+      } else {
+        console.error('Failed to add to watchlist:', error);
+      }
+    }
   }, [state.currentUser, addToWatchlist, refreshData]);
 
   const createWatchlistList = useCallback(async (data: Partial<WatchlistList>): Promise<{ id: string | null; error?: string }> => {
-    if (isSupabaseConfigured && supabase && state.currentUser) {
-      const { success, data: newList, error } = await createWatchlistListDb(state.currentUser.id, data);
-      if (success && newList) {
-        refreshData();
-        return { id: newList.id };
-      }
-      return { id: null, error: typeof error === 'string' ? error : (error as any)?.message || 'Database error' };
-    }
-
     const id = data.id || `list-${Math.random().toString(36).substr(2, 9)}`;
     const newList: WatchlistList = {
       id,
@@ -1226,38 +1217,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    
+    // 1. Optimistic update
     setState(prev => ({
       ...prev,
       watchlistLists: [newList, ...prev.watchlistLists]
     }));
+
+    if (isSupabaseConfigured && supabase && state.currentUser) {
+      const { success, data: dbList, error } = await createWatchlistListDb(state.currentUser.id, data);
+      if (success && dbList) {
+        // Swap out the temporary ID for the real DB ID
+        setState(prev => ({
+          ...prev,
+          watchlistLists: prev.watchlistLists.map(l => l.id === id ? dbList : l)
+        }));
+        refreshData();
+        return { id: dbList.id };
+      }
+      return { id: null, error: typeof error === 'string' ? error : (error as any)?.message || 'Database error' };
+    }
+
     return { id };
-  }, [state.currentUser]);
+  }, [state.currentUser, refreshData]);
 
   const updateWatchlistList = useCallback(async (listId: string, data: Partial<WatchlistList>) => {
-    if (isSupabaseConfigured && supabase) {
-      await updateWatchlistListDb(listId, data);
-      refreshData();
-      return;
-    }
+    // 1. Optimistic update
     setState(prev => ({
       ...prev,
       watchlistLists: prev.watchlistLists.map(l => 
         l.id === listId ? { ...l, ...data, updatedAt: new Date().toISOString() } : l
       )
     }));
-  }, []);
+
+    if (isSupabaseConfigured && supabase) {
+      await updateWatchlistListDb(listId, data);
+      refreshData();
+    }
+  }, [refreshData]);
 
   const deleteWatchlistList = useCallback(async (listId: string) => {
-    if (isSupabaseConfigured && supabase) {
-      await deleteWatchlistListDb(listId);
-      refreshData();
-      return;
-    }
+    // 1. Optimistic update
     setState(prev => ({
       ...prev,
       watchlistLists: prev.watchlistLists.filter(l => l.id !== listId)
     }));
-  }, []);
+
+    if (isSupabaseConfigured && supabase) {
+      await deleteWatchlistListDb(listId);
+      refreshData();
+    }
+  }, [refreshData]);
 
   const addTitleToList = useCallback(async (titleId: string, listId: string) => {
     // 1. Optimistic update so UI reflects immediately
