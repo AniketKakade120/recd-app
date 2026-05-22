@@ -1260,23 +1260,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addTitleToList = useCallback(async (titleId: string, listId: string) => {
-    if (isSupabaseConfigured && supabase) {
-      // Ensure title exists in DB
-      const title = state.titles.find(t => t.id === titleId);
-      if (title) await ensureTitleExistsInDb(title);
-      
-      await addTitleToListDb(titleId, listId);
-      
-      // Also ensure it's in the general watchlist so it shows up in UI filters
-      if (state.currentUser) {
-        await saveWatchlistItem(state.currentUser.id, titleId, 'self');
-      }
-      
-      refreshData();
-      return;
-    }
+    // 1. Optimistic update so UI reflects immediately
     setState(prev => {
-      // 1. Update the list
       const updatedLists = prev.watchlistLists.map(list => {
         if (list.id === listId && !list.titleIds.includes(titleId)) {
           return { ...list, titleIds: [...list.titleIds, titleId], updatedAt: new Date().toISOString() };
@@ -1284,7 +1269,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return list;
       });
 
-      // 2. Ensure item exists in watchlist and is linked to this list
       const existingItem = prev.watchlist.find(i => i.titleId === titleId);
       let updatedWatchlist = [...prev.watchlist];
 
@@ -1310,14 +1294,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       return { ...prev, watchlistLists: updatedLists, watchlist: updatedWatchlist };
     });
-  }, []);
+
+    if (isSupabaseConfigured && supabase) {
+      // Ensure title exists in DB
+      const title = state.titles.find(t => t.id === titleId);
+      if (title) await ensureTitleExistsInDb(title);
+      
+      await addTitleToListDb(titleId, listId);
+      
+      // Also ensure it's in the general watchlist so it shows up in UI filters
+      if (state.currentUser) {
+        await saveWatchlistItem(state.currentUser.id, titleId, 'self');
+      }
+      
+      refreshData();
+    }
+  }, [state.titles, state.currentUser, refreshData]);
 
   const removeTitleFromList = useCallback(async (listId: string, titleId: string) => {
-    if (isSupabaseConfigured && supabase) {
-      await removeTitleFromListDb(titleId, listId);
-      refreshData();
-      return;
-    }
+    // 1. Optimistic update
     setState(prev => {
       const updatedLists = prev.watchlistLists.map(l => 
         l.id === listId ? { ...l, titleIds: l.titleIds.filter(id => id !== titleId), updatedAt: new Date().toISOString() } : l
@@ -1332,7 +1327,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       return { ...prev, watchlistLists: updatedLists, watchlist: updatedWatchlist };
     });
-  }, []);
+
+    if (isSupabaseConfigured && supabase) {
+      await removeTitleFromListDb(titleId, listId);
+      refreshData();
+    }
+  }, [refreshData]);
 
   const moveToList = useCallback((itemId: string, listId: string) => {
     setState(prev => {
