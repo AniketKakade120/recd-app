@@ -3,6 +3,7 @@
 import { createClient } from './server';
 import { Title } from '../types';
 import { getTitleDetails } from '../tmdb';
+import { headers } from 'next/headers';
 
 /**
  * Ensures a TMDB title is cached in our local Supabase database
@@ -347,7 +348,21 @@ export async function createCrewInvite() {
     if (!user) throw new Error('Not authenticated');
 
     const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    
+    // Dynamic host detection to ensure invite links always match the active domain (including Vercel previews)
+    let appUrl = 'https://recd-app.vercel.app';
+    try {
+      const headersList = await headers();
+      const host = headersList.get('host');
+      const proto = headersList.get('x-forwarded-proto') || 'https';
+      if (host) {
+        appUrl = `${proto}://${host}`;
+      }
+    } catch (e) {
+      console.warn('Could not read request headers inside createCrewInvite, using fallback:', e);
+      appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://recd-app.vercel.app';
+    }
+
     const inviteUrl = `${appUrl}/invite/crew/${inviteCode}`;
 
     const { data, error } = await supabase

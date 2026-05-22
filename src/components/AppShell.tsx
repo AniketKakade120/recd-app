@@ -20,10 +20,11 @@ const navItems = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { isAuthenticated, currentUser, loading, openRecommendModal, isOnboarded, logout } = useApp();
+  const { isAuthenticated, currentUser, loading, openRecommendModal, isOnboarded, logout, refreshData } = useApp();
   const [mounted, setMounted] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -69,8 +70,29 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [mounted, loading, isAuthenticated, isOnboarded, pathname, router]);
 
   const isPublicRoute = ['/', '/login', '/signup', '/onboarding'].includes(pathname) || pathname.startsWith('/list/') || pathname.startsWith('/invite/');
-  
-  console.log(`[Rec'd Shell] Path: ${pathname}, Public: ${isPublicRoute}, Loading: ${loading}, Auth: ${isAuthenticated}`);
+  const isSyncFailure = isAuthenticated && !currentUser && !loading && !isPublicRoute;
+
+  console.log(`[Rec'd Shell] Path: ${pathname}, Public: ${isPublicRoute}, Loading: ${loading}, Auth: ${isAuthenticated}, SyncFailure: ${isSyncFailure}`);
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await refreshData();
+    } catch (err) {
+      console.error('[Rec\'d Recovery] Retry profile hydration failed:', err);
+    } finally {
+      setTimeout(() => setRetrying(false), 1000);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      router.push('/');
+    } catch (err) {
+      console.error('[Rec\'d Recovery] Sign out failed:', err);
+    }
+  };
 
   // Show loader if we are currently loading the context state
   const shouldShowLoader = loading && (!isPublicRoute || pathname === '/onboarding');
@@ -81,6 +103,54 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="w-16 h-16 border-2 border-cinema-red border-t-transparent rounded-full animate-spin mb-8 shadow-[0_0_30px_rgba(234,51,51,0.3)]" />
         <Logo variant="square" size="md" className="animate-pulse" />
         <p className="text-xs text-muted mt-4 uppercase tracking-widest">Stamping your taste...</p>
+      </div>
+    );
+  }
+
+  // Render a premium Connection Recovery Panel if authenticated but database syncing failed
+  if (isSyncFailure) {
+    return (
+      <div className="fixed inset-0 bg-ink z-[90] flex items-center justify-center p-6 text-center">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(229,9,20,0.07)_0%,transparent_70%)] animate-pulse pointer-events-none" />
+        <div className="relative w-full max-w-md bg-surface/40 backdrop-blur-xl border border-border/80 rounded-[32px] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col items-center">
+          
+          {/* Pulsing Cinema Red status ring */}
+          <div className="relative mb-8 flex items-center justify-center">
+            <div className="absolute w-24 h-24 rounded-full bg-cinema-red/10 animate-ping duration-1000" />
+            <div className="w-16 h-16 rounded-full bg-cinema-red/20 border border-cinema-red/50 flex items-center justify-center shadow-[0_0_30px_rgba(229,9,20,0.3)]">
+              <svg viewBox="0 0 24 24" width="28" height="28" className="text-cinema-red animate-pulse"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <Logo variant="square" size="md" className="mb-6 opacity-90" />
+          
+          <h2 className="text-2xl font-bold text-bone font-editorial mb-3 tracking-wide">Stamping Connection Error</h2>
+          <p className="text-muted text-sm leading-relaxed max-w-xs mb-8">
+            We are having trouble syncing your profile. This is usually due to a temporary database delay.
+          </p>
+
+          <button 
+            onClick={handleRetry}
+            disabled={retrying}
+            className="w-full py-4 bg-cinema-red text-bone font-bold rounded-2xl shadow-[0_0_30px_rgba(229,9,20,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 btn-press"
+          >
+            {retrying ? (
+              <>
+                <div className="w-5 h-5 border-2 border-bone border-t-transparent rounded-full animate-spin" />
+                <span>Syncing taste...</span>
+              </>
+            ) : (
+              <span>Retry Connection</span>
+            )}
+          </button>
+
+          <button 
+            onClick={handleSignOut}
+            className="mt-6 text-sm font-semibold text-muted hover:text-cinema-red hover:underline transition-colors btn-press"
+          >
+            Sign Out & Escape
+          </button>
+        </div>
       </div>
     );
   }

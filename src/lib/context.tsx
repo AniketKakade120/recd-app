@@ -45,6 +45,16 @@ import {
 
 // TODO: Replace mock data with Supabase queries
 
+const demoUser: User = {
+  id: 'demo-user-id-001',
+  username: 'cinephile_demo',
+  displayName: 'Cinema Club Demo',
+  avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+  bio: 'Cinephile exploring the edges of cinema.',
+  tasteArchetype: 'Thriller Dealer',
+  createdAt: new Date().toISOString(),
+};
+
 interface AppState {
   currentUser: User | null;
   isAuthenticated: boolean;
@@ -194,15 +204,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     try {
       const userId = state.currentUser.id;
+      console.log(`[Rec'd Data] Starting parallel database hydration for user: ${userId}`);
 
-      // 1. Fetch relevant recommendations (Sent by me OR To me OR in my Groups)
-      // For simplicity and speed, we fetch recent and filter client-side, but scoped
-      const { data: recsData } = await supabase.from('recommendations').select(`
-        *,
-        targets:recommendation_targets(user_id)
-      `).order('created_at', { ascending: false });
-      
-      const dbRecs: Recommendation[] = recsData ? recsData.map(r => ({
+      // Stage 1 (Parallel): Fetch primary independent social and media records concurrently
+      const [
+        recsResult,
+        ratingsResult,
+        membershipsResult,
+        watchlistResult,
+        connResult,
+        requestsResult,
+        notifResult,
+        activityResult,
+        listsResult,
+        commentsResult,
+        profilesResult
+      ] = await Promise.all([
+        supabase.from('recommendations').select('*, targets:recommendation_targets(user_id)').order('created_at', { ascending: false }),
+        supabase.from('ratings').select('*'),
+        supabase.from('group_members').select('group_id').eq('user_id', userId),
+        supabase.from('watchlist_items').select('*').eq('user_id', userId),
+        supabase.from('crew_connections').select('*, crew_member_profile:profiles!crew_member_id (*)').eq('user_id', userId).eq('status', 'accepted'),
+        supabase.from('crew_requests').select('*, sender_profile:profiles!sender_id (*), receiver_profile:profiles!receiver_id (*)').or(`sender_id.eq.${userId},receiver_id.eq.${userId}`),
+        supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('activity').select('*').order('created_at', { ascending: false }).limit(20),
+        supabase.from('watchlist_lists').select('*').eq('user_id', userId),
+        supabase.from('comments').select('*').order('created_at', { ascending: true }),
+        supabase.from('profiles').select('*, prefs:user_preferences(genres, moods)')
+      ]);
+
+      // Check primary independent query errors
+      if (recsResult.error) console.error('[Rec\'d Hydrate] Recommendations fetch error:', recsResult.error.message);
+      if (ratingsResult.error) console.error('[Rec\'d Hydrate] Ratings fetch error:', ratingsResult.error.message);
+      if (membershipsResult.error) console.error('[Rec\'d Hydrate] Memberships fetch error:', membershipsResult.error.message);
+      if (watchlistResult.error) console.error('[Rec\'d Hydrate] Watchlist fetch error:', watchlistResult.error.message);
+      if (connResult.error) console.error('[Rec\'d Hydrate] Connections fetch error:', connResult.error.message);
+      if (requestsResult.error) console.error('[Rec\'d Hydrate] Requests fetch error:', requestsResult.error.message);
+      if (notifResult.error) console.error('[Rec\'d Hydrate] Notifications fetch error:', notifResult.error.message);
+      if (activityResult.error) console.error('[Rec\'d Hydrate] Activity fetch error:', activityResult.error.message);
+      if (listsResult.error) console.error('[Rec\'d Hydrate] Custom lists fetch error:', listsResult.error.message);
+      if (commentsResult.error) console.error('[Rec\'d Hydrate] Comments fetch error:', commentsResult.error.message);
+      if (profilesResult.error) console.error('[Rec\'d Hydrate] Profiles fetch error:', profilesResult.error.message);
+
+      // Map independent records
+      const dbRecs: Recommendation[] = recsResult.data ? recsResult.data.map(r => ({
         id: r.id,
         titleId: r.title_id,
         groupId: r.group_id,
@@ -217,9 +262,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createdAt: r.created_at
       })) : [];
 
-      // 2. Fetch relevant ratings
-      const { data: ratingsData } = await supabase.from('ratings').select('*');
-      const dbRatings: Rating[] = ratingsData ? ratingsData.map(r => ({
+      const dbRatings: Rating[] = ratingsResult.data ? ratingsResult.data.map(r => ({
         id: r.id,
         recommendationId: r.recommendation_id,
         ratedBy: r.rated_by,
@@ -230,12 +273,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createdAt: r.created_at
       })) : [];
 
-      // 3. Fetch MY groups
-      const { data: myMemberships } = await supabase.from('group_members').select('group_id').eq('user_id', userId);
-      const myGroupIds = myMemberships?.map(m => m.group_id) || [];
-      
-      const { data: groupsData } = await supabase.from('groups').select('*').in('id', myGroupIds);
-      const dbGroups: Group[] = groupsData ? groupsData.map(g => ({
+      const myGroupIds = membershipsResult.data?.map(m => m.group_id) || [];
+      const myListIds = listsResult.data?.map(l => l.id) || [];
+
+      const dbWatchlist: WatchlistItem[] = watchlistResult.data ? watchlistResult.data.map(w => ({
+        id: w.id,
+        userId: w.user_id,
+        titleId: w.title_id,
+        addedBy: w.added_by,
+        listIds: [], 
+        verdictState: 'none',
+        createdAt: w.created_at,
+        updatedAt: w.updated_at
+      })) : [];
+
+      // Gather involved title IDs for Stage 2 fetching
+      const relevantTitleIds = [...new Set([
+        ...dbRecs.map(r => r.titleId),
+        ...dbWatchlist.map(w => w.titleId)
+      ])];
+
+      // Stage 2 (Parallel - Dependent): Fetch related groups, list items, group members and title metadata concurrently
+      const [
+        groupsResult,
+        membersResult,
+        listItemsResult,
+        titlesResult
+      ] = await Promise.all([
+        myGroupIds.length > 0 ? supabase.from('groups').select('*').in('id', myGroupIds) : Promise.resolve({ data: [], error: null }),
+        myGroupIds.length > 0 ? supabase.from('group_members').select('*').in('group_id', myGroupIds) : Promise.resolve({ data: [], error: null }),
+        myListIds.length > 0 ? supabase.from('watchlist_list_items').select('*').in('list_id', myListIds) : Promise.resolve({ data: [], error: null }),
+        relevantTitleIds.length > 0 ? supabase.from('titles').select('*').in('id', relevantTitleIds) : Promise.resolve({ data: [], error: null })
+      ]);
+
+      if (groupsResult.error) console.error('[Rec\'d Hydrate Stage 2] Groups fetch error:', groupsResult.error.message);
+      if (membersResult.error) console.error('[Rec\'d Hydrate Stage 2] Members fetch error:', membersResult.error.message);
+      if (listItemsResult.error) console.error('[Rec\'d Hydrate Stage 2] List items fetch error:', listItemsResult.error.message);
+      if (titlesResult.error) console.error('[Rec\'d Hydrate Stage 2] Titles fetch error:', titlesResult.error.message);
+
+      // Map Stage 2 data
+      const dbGroups: Group[] = groupsResult.data ? groupsResult.data.map(g => ({
         id: g.id,
         name: g.name,
         vibe: g.vibe,
@@ -247,9 +324,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         avatarGradient: g.avatar_gradient
       })) : [];
 
-      // 4. Fetch all group members for my groups
-      const { data: membersData } = await supabase.from('group_members').select('*').in('group_id', myGroupIds);
-      const dbMembers: GroupMember[] = membersData ? membersData.map(m => ({
+      const dbMembers: GroupMember[] = membersResult.data ? membersResult.data.map(m => ({
         id: m.id,
         groupId: m.group_id,
         userId: m.user_id,
@@ -257,39 +332,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         joinedAt: m.joined_at
       })) : [];
 
-      // 5. Fetch MY watchlist
-      const { data: watchlistData } = await supabase.from('watchlist_items').select('*').eq('user_id', userId);
-      const dbWatchlist: WatchlistItem[] = watchlistData ? watchlistData.map(w => ({
-        id: w.id,
-        userId: w.user_id,
-        titleId: w.title_id,
-        addedBy: w.added_by,
-        listIds: [], 
-        verdictState: 'none',
-        createdAt: w.created_at,
-        updatedAt: w.updated_at
+      const dbLists: WatchlistList[] = listsResult.data ? listsResult.data.map(l => ({
+        id: l.id,
+        userId: l.user_id,
+        name: l.name,
+        description: l.description,
+        privacy: l.privacy,
+        coverStyle: l.cover_style,
+        coverImage: l.cover_image,
+        titleIds: listItemsResult.data ? listItemsResult.data.filter((item: any) => item.list_id === l.id).map((item: any) => item.title_id) : [],
+        createdAt: l.created_at,
+        updatedAt: l.updated_at
       })) : [];
 
-      // 6. Fetch titles involved in above data
-      const relevantTitleIds = [...new Set([
-        ...dbRecs.map(r => r.titleId),
-        ...dbWatchlist.map(w => w.titleId)
-      ])];
-      
-      const { data: titlesData } = await supabase.from('titles').select('*').in('id', relevantTitleIds);
-      const dbTitles = titlesData ? titlesData.map(mapDbTitleToTitle) : [];
+      const dbTitles = titlesResult.data ? titlesResult.data.map(mapDbTitleToTitle) : [];
 
-      // 7. Fetch crew connections (My connections with profile info)
-      const { data: connData } = await supabase
-        .from('crew_connections')
-        .select(`
-          *,
-          crew_member_profile:profiles!crew_member_id (*)
-        `)
-        .eq('user_id', userId)
-        .eq('status', 'accepted');
-      
-      const dbConns: CrewConnection[] = connData ? connData.map(c => ({
+      const dbConns: CrewConnection[] = connResult.data ? connResult.data.map(c => ({
         id: c.id,
         userId: c.user_id,
         crewMemberId: c.crew_member_id,
@@ -307,17 +365,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } : null
       })) : [];
 
-      // 7b. Fetch Crew Requests (Incoming and Outgoing with profile info)
-      const { data: requestsData } = await supabase
-        .from('crew_requests')
-        .select(`
-          *,
-          sender_profile:profiles!sender_id (*),
-          receiver_profile:profiles!receiver_id (*)
-        `)
-        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
-
-      const dbRequests: CrewRequest[] = requestsData ? requestsData.map(r => ({
+      const dbRequests: CrewRequest[] = requestsResult.data ? requestsResult.data.map(r => ({
         id: r.id,
         senderId: r.sender_id,
         receiverId: r.receiver_id,
@@ -347,9 +395,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } : null
       })) : [];
 
-      // 7c. Fetch Notifications
-      const { data: notifData } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-      const dbNotifs: Notification[] = notifData ? notifData.map(n => ({
+      const dbNotifs: Notification[] = notifResult.data ? notifResult.data.map(n => ({
         id: n.id,
         userId: n.user_id,
         actorId: n.actor_id,
@@ -361,9 +407,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createdAt: n.created_at
       })) : [];
 
-      // 8. Fetch activity
-      const { data: activityData } = await supabase.from('activity').select('*').order('created_at', { ascending: false }).limit(20);
-      const dbActivity: ActivityItem[] = activityData ? activityData.map(a => ({
+      const dbActivity: ActivityItem[] = activityResult.data ? activityResult.data.map(a => ({
         id: a.id,
         type: a.type as any,
         userId: a.user_id,
@@ -375,27 +419,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createdAt: a.created_at
       })) : [];
 
-      // 9. Fetch watchlist lists
-      const { data: listsData } = await supabase.from('watchlist_lists').select('*').eq('user_id', userId);
-      const myIds = listsData?.map(l => l.id) || [];
-      const { data: listItemsData } = await supabase.from('watchlist_list_items').select('*').in('list_id', myIds);
-      
-      const dbLists: WatchlistList[] = listsData ? listsData.map(l => ({
-        id: l.id,
-        userId: l.user_id,
-        name: l.name,
-        description: l.description,
-        privacy: l.privacy,
-        coverStyle: l.cover_style,
-        coverImage: l.cover_image,
-        titleIds: listItemsData ? listItemsData.filter((item: any) => item.list_id === l.id).map((item: any) => item.title_id) : [],
-        createdAt: l.created_at,
-        updatedAt: l.updated_at
-      })) : [];
-
-      // 10. Fetch relevant comments
-      const { data: commentsData } = await supabase.from('comments').select('*').order('created_at', { ascending: true });
-      const dbComments: Comment[] = commentsData ? commentsData.map(c => ({
+      const dbComments: Comment[] = commentsResult.data ? commentsResult.data.map(c => ({
         id: c.id,
         userId: c.user_id,
         groupId: c.group_id,
@@ -405,12 +429,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createdAt: c.created_at
       })) : [];
 
-      // 11. Fetch profiles for users state
-      const { data: profilesData } = await supabase.from('profiles').select(`
-        *,
-        prefs:user_preferences(genres, moods)
-      `);
-      const dbUsers: User[] = profilesData ? profilesData.map((p: any) => ({
+      const dbUsers: User[] = profilesResult.data ? profilesResult.data.map((p: any) => ({
         id: p.id,
         username: p.username || 'user',
         displayName: p.display_name || 'User',
@@ -423,9 +442,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createdAt: p.created_at,
       })) : [];
 
-      // Update state with DB data
+      // Update state with database mapped entries
       setState(prev => {
-        // Link watchlist items to their lists
         const enrichedWatchlist = dbWatchlist.map(item => ({
           ...item,
           listIds: dbLists.filter(l => l.titleIds.includes(item.titleId)).map(l => l.id)
@@ -447,8 +465,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           users: dbUsers,
         };
       });
+
+      console.log('[Rec\'d Data] Hydrated successfully in parallel.');
     } catch (err) {
-      console.error('Error hydrating state from Supabase:', err);
+      console.error('Error hydrating state in parallel from Supabase:', err);
     }
   }, []);
 
@@ -458,7 +478,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Fallback to mock mode if Supabase isn't setup
       setState(prev => ({
         ...prev,
-        currentUser: defaultUser,
+        currentUser: demoUser,
         isAuthenticated: true,
         loading: false,
       }));
@@ -489,18 +509,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }));
 
       try {
-        // Fetch real profile details — this determines onboarding status
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+        // Fetch real profile details and preferences in parallel
+        const [profileResult, prefsResult] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', session.user.id).single(),
+          supabase.from('user_preferences').select('*').eq('user_id', session.user.id).single()
+        ]);
 
-        const { data: prefs } = await supabase
-          .from('user_preferences')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
+        const { data: profile, error: profileError } = profileResult;
+        const { data: prefs } = prefsResult;
 
         if (profileError && profileError.code !== 'PGRST116') {
           console.error('Error fetching profile:', profileError);
@@ -659,7 +675,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     if (!isSupabaseConfigured || !supabase) {
        console.log('[Rec\'d Login] Entering Demo Mode because Supabase is not configured.');
-       setState(prev => ({ ...prev, currentUser: defaultUser, isAuthenticated: true }));
+       setState(prev => ({ ...prev, currentUser: demoUser, isAuthenticated: true }));
        return;
     }
     
@@ -700,7 +716,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const enterDemoMode = useCallback(() => {
     setState(prev => ({
       ...prev,
-      currentUser: defaultUser,
+      currentUser: demoUser,
       isAuthenticated: true,
       isOnboarded: false,
       loading: false
