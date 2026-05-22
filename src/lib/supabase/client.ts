@@ -8,10 +8,14 @@ export const isSupabaseConfigured = !!(
 );
 
 if (!isSupabaseConfigured) {
-  console.log(
-    '%c[Rec\'d] Running in mock data mode. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local to connect Supabase.',
-    'color: #FACC15; font-weight: bold;'
-  );
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('CRITICAL: Supabase environment variables are missing in production. App cannot launch in mock mode.');
+  } else {
+    console.log(
+      '%c[Rec\'d] Running in mock data mode. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local to connect Supabase.',
+      'color: #FACC15; font-weight: bold;'
+    );
+  }
 }
 
 export function createClient() {

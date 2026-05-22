@@ -202,7 +202,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Accepts an optional userId so it can be called from onAuthStateChange before
   // state.currentUser is set (kills stale closure bug). Falls back to state.currentUser.
   const refreshData = useCallback(async (overrideUserId?: string) => {
-    const userId = overrideUserId || state.currentUser?.id;
+    let userId = overrideUserId || state.currentUser?.id;
+    
+    // RECOVERY MODE: If we have no userId (e.g. currentUser failed to load and user clicked Retry),
+    // attempt to fetch the session directly.
+    if (!userId && isSupabaseConfigured && supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        userId = session.user.id;
+      }
+    }
+
     if (!isSupabaseConfigured || !supabase || !userId) return;
 
     try {
@@ -247,6 +257,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (listsResult.error) console.error('[Rec\'d Hydrate] Custom lists fetch error:', listsResult.error.message);
       if (commentsResult.error) console.error('[Rec\'d Hydrate] Comments fetch error:', commentsResult.error.message);
       if (profilesResult.error) console.error('[Rec\'d Hydrate] Profiles fetch error:', profilesResult.error.message);
+
+      // Recovery: If we recovered the session but currentUser is null in state, try to set it from the profilesResult
+      const myProfileRecord = profilesResult.data?.find((p: any) => p.id === userId);
+      const isMissingCurrentUser = !state.currentUser;
 
       // Map independent records
       const dbRecs: Recommendation[] = recsResult.data ? recsResult.data.map(r => ({
@@ -451,8 +465,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
           listIds: dbLists.filter(l => l.titleIds.includes(item.titleId)).map(l => l.id)
         }));
 
+        let recoveredCurrentUser = prev.currentUser;
+        let recoveredIsOnboarded = prev.isOnboarded;
+        
+        // Recover currentUser if it was missing
+        if (!prev.currentUser && myProfileRecord) {
+          const emailPrefix = 'user'; // We don't have the session email here, but it's just a fallback
+          recoveredCurrentUser = {
+            id: myProfileRecord.id,
+            username: myProfileRecord.username || emailPrefix,
+            displayName: myProfileRecord.display_name || 'User',
+            avatarUrl: myProfileRecord.avatar_url || '',
+            bio: myProfileRecord.bio || '',
+            tasteArchetype: myProfileRecord.taste_archetype as any || 'Thriller Dealer',
+            createdAt: myProfileRecord.created_at,
+          };
+          recoveredIsOnboarded = !!myProfileRecord.onboarding_completed;
+        }
+
         return {
           ...prev,
+          currentUser: recoveredCurrentUser,
+          isOnboarded: recoveredIsOnboarded,
           titles: dbTitles.length > 0 ? [...dbTitles, ...mockTitles.filter(mt => !dbTitles.some(dt => dt.id === mt.id))] : prev.titles,
           recommendations: dbRecs,
           ratings: dbRatings,
@@ -516,10 +550,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       // Optimistic Update: Set authenticated immediately
-      // We wait for the profile fetch before setting currentUser to avoid redirect loops
+      // Set loading to true while we fetch the profile to prevent the AppShell Connection Error screen flash
       setState(prev => ({
         ...prev,
         isAuthenticated: true,
+        loading: true,
       }));
 
       try {
@@ -675,6 +710,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     // Safety timeout to ensure loading doesn't stay true forever (e.g. network issues)
+    // Increased to 25s for MVP launch to account for cold-start Supabase delays
     const safetyTimeout = setTimeout(() => {
       setState(prev => {
         if (prev.loading) {
@@ -686,7 +722,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         return prev;
       });
-    }, 15000);
+    }, 25000);
 
     return () => {
       subscription.unsubscribe();
