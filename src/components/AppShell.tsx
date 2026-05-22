@@ -20,6 +20,7 @@ const navItems = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const normalizedPathname = pathname.replace(/\/$/, '') || '/';
   const { isAuthenticated, currentUser, loading, openRecommendModal, isOnboarded, logout, refreshData } = useApp();
   const [mounted, setMounted] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -35,7 +36,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted || loading) return;
 
-    const isPublicRoute = ['/', '/login', '/signup', '/onboarding'].includes(pathname) || pathname.startsWith('/list/') || pathname.startsWith('/invite/');
+    const isPublicRoute = ['/', '/login', '/signup', '/onboarding'].includes(normalizedPathname) || normalizedPathname.startsWith('/list/') || normalizedPathname.startsWith('/invite/');
     
     // 0. Wait for profile to be fully loaded if authenticated
     if (isAuthenticated && !currentUser && !isPublicRoute) {
@@ -43,7 +44,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    console.log(`[Rec'd Shell] Path: ${pathname}, Auth: ${isAuthenticated}, Onboarded: ${isOnboarded}`);
+    console.log(`[Rec'd Shell] Path: ${pathname}, Normalized: ${normalizedPathname}, Auth: ${isAuthenticated}, Onboarded: ${isOnboarded}`);
     
     // 1. If not authenticated and not on a public route, send to landing
     // We give a small 2s buffer after mount to allow hydration to settle
@@ -56,23 +57,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     
     // 2. If authenticated but NOT onboarded, and not already on onboarding, send to onboarding
     // Wait until currentUser profile is loaded to prevent redirecting to a blank screen
-    if (isAuthenticated && currentUser && !isOnboarded && pathname !== '/onboarding' && !pathname.startsWith('/list/') && !pathname.startsWith('/invite/')) {
+    if (isAuthenticated && currentUser && !isOnboarded && normalizedPathname !== '/onboarding' && !normalizedPathname.startsWith('/list/') && !normalizedPathname.startsWith('/invite/')) {
       console.log('[Rec\'d Shell] Redirecting to onboarding...');
       router.push('/onboarding');
       return;
     }
 
     // 3. If authenticated AND onboarded, and on a landing/login/signup/onboarding page, send to home
-    if (isAuthenticated && currentUser && isOnboarded && ['/', '/login', '/signup', '/onboarding'].includes(pathname)) {
+    if (isAuthenticated && currentUser && isOnboarded && ['/', '/login', '/signup', '/onboarding'].includes(normalizedPathname)) {
       console.log('[Rec\'d Shell] Redirecting to home...');
       router.push('/home');
     }
-  }, [mounted, loading, isAuthenticated, isOnboarded, pathname, router]);
+  }, [mounted, loading, isAuthenticated, isOnboarded, pathname, normalizedPathname, router]);
 
-  const isPublicRoute = ['/', '/login', '/signup', '/onboarding'].includes(pathname) || pathname.startsWith('/list/') || pathname.startsWith('/invite/');
+  const isPublicRoute = ['/', '/login', '/signup', '/onboarding'].includes(normalizedPathname) || normalizedPathname.startsWith('/list/') || normalizedPathname.startsWith('/invite/');
   const isSyncFailure = isAuthenticated && !currentUser && !loading && !isPublicRoute;
 
-  console.log(`[Rec'd Shell] Path: ${pathname}, Public: ${isPublicRoute}, Loading: ${loading}, Auth: ${isAuthenticated}, SyncFailure: ${isSyncFailure}`);
+  console.log(`[Rec'd Shell] Path: ${pathname}, Normalized: ${normalizedPathname}, Public: ${isPublicRoute}, Loading: ${loading}, Auth: ${isAuthenticated}, SyncFailure: ${isSyncFailure}`);
 
   const handleRetry = async () => {
     setRetrying(true);
