@@ -183,6 +183,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     currentUserRef.current = state.currentUser;
   }, [state.currentUser]);
 
+  // Helper to enforce timeouts on promises
+  const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, name: string): Promise<T> => {
+    return Promise.race([
+      Promise.resolve(promise),
+      new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Timeout at ${name} after ${ms}ms`)), ms))
+    ]);
+  };
+
   // Dedicated helper to fetch or create a user profile safely
   const fetchOrCreateProfile = async (user: any) => {
     if (!user?.id) throw new Error("Missing auth user id");
@@ -704,13 +712,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       let activeSession = session;
-
-      const withTimeout = <T,>(promise: Promise<T>, ms: number, name: string): Promise<T> => {
-        return Promise.race([
-          promise,
-          new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Timeout at ${name} after ${ms}ms`)), ms))
-        ]);
-      };
 
       if (!activeSession?.user) {
         if (event === 'SIGNED_OUT') {
