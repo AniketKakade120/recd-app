@@ -33,14 +33,7 @@ import {
   deleteWatchlistListDb,
   createWatchlistList as createWatchlistListDb,
   addTitleToListDb,
-  removeTitleFromListDb,
-  sendCrewRequest as sendCrewRequestAction,
-  acceptCrewRequest as acceptCrewRequestAction,
-  rejectCrewRequest as rejectCrewRequestAction,
-  removeCrewMember as removeCrewMemberAction,
-  createCrewInvite as createCrewInviteAction,
-  acceptCrewInvite as acceptCrewInviteAction,
-  getCrewState as getCrewStateAction
+  removeTitleFromListDb
 } from '@/lib/supabase/actions';
 
 // TODO: Replace mock data with Supabase queries
@@ -1217,39 +1210,82 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, [state.currentUser, refreshData]);
 
-  const sendCrewRequest = useCallback(async (receiverId: string, message?: string) => {
-    if (!state.currentUser) return;
-    const { success, error } = await sendCrewRequestAction(receiverId, message);
-    if (success) {
-      addToast('Crew request sent!', { type: 'success' });
+  const sendCrewRequest = useCallback(async (receiverId: string) => {
+    if (!state.currentUser?.id) return { success: false, error: 'Not authenticated' };
+    
+    // 1. Check if already connected (via local state)
+    const isConnected = state.crewConnections.some(c => c.crewMemberId === receiverId);
+    if (isConnected) return { success: true, alreadyConnected: true };
+
+    // 2. Check for reverse pending request (Product logic: If they requested you, just accept it)
+    const reverseReq = state.crewRequests.find(r => r.senderId === receiverId && r.receiverId === state.currentUser!.id && r.status === 'pending');
+    
+    if (reverseReq) {
+      const { data, error } = await supabase.rpc('accept_crew_request', { request_id: reverseReq.id });
+      if (error) {
+        console.error('Error accepting reverse request:', error);
+        addToast('Failed to accept existing request', { type: 'error' });
+        return { success: false, error: 'Failed to accept existing request' };
+      }
+      addToast('Request accepted!', { type: 'success' });
       refreshData();
-    } else {
-      addToast(error || 'Failed to send request', { type: 'error' });
+      return { success: true, alreadyConnected: true };
     }
-  }, [state.currentUser, addToast, refreshData]);
+
+    // 3. Create the request
+    const { data, error } = await supabase
+      .from('crew_requests')
+      .upsert({
+        sender_id: state.currentUser.id,
+        receiver_id: receiverId,
+        status: 'pending',
+        message: null,
+        source: 'direct',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'sender_id,receiver_id' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error sending request:', error);
+      addToast(error.message || 'Failed to send request', { type: 'error' });
+      return { success: false, error: error.message };
+    }
+
+    addToast('Request sent.', { type: 'success' });
+    refreshData();
+    return { success: true, data };
+  }, [state.currentUser, state.crewConnections, state.crewRequests, addToast, refreshData]);
 
   const acceptCrewRequest = useCallback(async (requestId: string) => {
-    const { success, message, error } = await acceptCrewRequestAction(requestId);
-    if (success) {
-      addToast(message || 'Joined crew!', { type: 'success' });
-      refreshData();
+    const { data, error } = await supabase.rpc('accept_crew_request', { request_id: requestId });
+    if (error) {
+      console.error('Error accepting crew request:', error);
+      addToast('Couldn’t accept request. Please try again.', { type: 'error' });
     } else {
-      addToast(error || 'Failed to accept request', { type: 'error' });
+      addToast('Joined crew!', { type: 'success' });
+      refreshData();
     }
   }, [addToast, refreshData]);
 
   const rejectCrewRequest = useCallback(async (requestId: string) => {
-    const { success, error } = await rejectCrewRequestAction(requestId);
-    if (success) {
+    if (!state.currentUser?.id) return;
+    const { error } = await supabase
+      .from('crew_requests')
+      .update({ status: 'rejected', updated_at: new Date().toISOString() })
+      .eq('id', requestId)
+      .eq('receiver_id', state.currentUser.id);
+      
+    if (error) {
+      console.error('Error rejecting crew request:', error);
+      addToast('Failed to reject request', { type: 'error' });
+    } else {
       addToast('Request rejected.', { type: 'info' });
       refreshData();
-    } else {
-      addToast(error || 'Failed to reject request', { type: 'error' });
     }
-  }, [addToast, refreshData]);
+  }, [state.currentUser, addToast, refreshData]);
 
   const cancelCrewRequest = useCallback(async (requestId: string) => {
-    // For MVP, cancel is same as delete/reject by sender
     if (isSupabaseConfigured && supabase) {
       await supabase.from('crew_requests').delete().eq('id', requestId);
       refreshData();
@@ -1257,39 +1293,73 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [refreshData]);
 
   const removeCrewMember = useCallback(async (memberId: string) => {
-    const { success, error } = await removeCrewMemberAction(memberId);
-    if (success) {
+    if (!state.currentUser?.id) return;
+    const { error } = await supabase
+      .from('crew_connections')
+      .delete()
+      .or(`and(user_id.eq.${state.currentUser.id},crew_member_id.eq.${memberId}),and(user_id.eq.${memberId},crew_member_id.eq.${state.currentUser.id})`);
+      
+    if (error) {
+      console.error('Error removing crew member:', error);
+      addToast('Failed to remove member', { type: 'error' });
+    } else {
       addToast('Removed from crew.', { type: 'info' });
       refreshData();
-    } else {
-      addToast(error || 'Failed to remove member', { type: 'error' });
     }
-  }, [addToast, refreshData]);
+  }, [state.currentUser, addToast, refreshData]);
 
   const createInvite = useCallback(async () => {
-    const { success, data, error } = await createCrewInviteAction();
-    if (success && data) {
-      return data.invite_url;
-    } else {
-      addToast(error || 'Failed to create invite', { type: 'error' });
+    if (!state.currentUser?.id) {
+      addToast('Not authenticated', { type: 'error' });
       return null;
     }
-  }, [addToast]);
+    
+    const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://recd-app.vercel.app';
+    const inviteUrl = `${appUrl}/invite/crew/${inviteCode}`;
+
+    const { error } = await supabase
+      .from('invites')
+      .insert({
+        invite_type: 'crew',
+        invited_by: state.currentUser.id,
+        invite_code: inviteCode,
+        invite_url: inviteUrl,
+        status: 'active'
+      });
+
+    if (error) {
+      console.error('Error creating invite:', error);
+      addToast(error.message || 'Failed to create invite', { type: 'error' });
+      return null;
+    }
+    
+    return inviteUrl;
+  }, [state.currentUser, addToast]);
 
   const acceptInvite = useCallback(async (inviteCode: string) => {
-    const res = await acceptCrewInviteAction(inviteCode);
-    if (res.success) {
-      addToast(res.message || 'Joined crew successfully!', { type: 'success' });
-      refreshData();
-      return { success: true, alreadyConnected: res.alreadyConnected };
-    } else {
-      if ((res as any).requires_auth) {
-        return { success: false, requiresAuth: true };
-      }
-      addToast(res.message || res.error || 'Failed to join crew', { type: 'error' });
-      return { success: false, errorCode: (res as any).errorCode };
+    if (!state.currentUser?.id) return { success: false, requiresAuth: true };
+    
+    const { data, error } = await supabase.rpc('accept_crew_invite', {
+      invite_code_input: inviteCode
+    });
+
+    if (error) {
+      let errorCode = 'UNKNOWN';
+      let message = 'Failed to join crew';
+      if (error.message.includes('Invite not found')) { errorCode = 'NOT_FOUND'; message = 'This invite link is invalid.'; }
+      else if (error.message.includes('Invite is not active')) { errorCode = 'INACTIVE'; message = 'This invite has expired.'; }
+      else if (error.message.includes('Cannot accept own invite')) { errorCode = 'OWN_INVITE'; message = 'You cannot accept your own invite.'; }
+      
+      addToast(message, { type: 'error' });
+      return { success: false, errorCode };
     }
-  }, [addToast, refreshData]);
+
+    const alreadyConnected = data?.already_connected || false;
+    addToast(alreadyConnected ? 'You’re already in each other’s crew.' : 'You’re now in each other’s crew.', { type: 'success' });
+    refreshData();
+    return { success: true, alreadyConnected };
+  }, [state.currentUser, addToast, refreshData]);
 
   const isUserInCrew = useCallback((targetUserId: string) => {
     if (!state.currentUser) return false;
