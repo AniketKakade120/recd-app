@@ -1051,7 +1051,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .insert({
             title_id: rec.titleId,
             group_id: rec.groupId || null,
-            recommended_by: rec.recommendedBy,
+            recommended_by: state.currentUser.id, // FORCE IT HERE to bypass any weird React state masking!
             reason: rec.reason,
             confidence_score: rec.confidenceScore,
             mood_tags: rec.moodTags,
@@ -1083,7 +1083,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       } catch (err: any) {
         console.error('Failed to save recommendation:', err);
-        addToast(err?.message || String(err), { type: 'error' });
+        addToast(`FK Error: ${err?.message}. CurrentUser ID: ${state.currentUser?.id}. Target: ${rec.recommendedToUserIds?.[0]}`, { type: 'error' });
         return; // CRITICAL: Do not fall through to mock fallback if DB fails!
       }
     }
