@@ -23,20 +23,9 @@ import {
 } from '@/lib/logic/action-system';
 import { ViewerContext } from '@/lib/types';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
-import { 
-  ensureTitleExistsInDb, 
-  saveRecommendation, 
-  saveRating, 
-  saveWatchlistItem, 
-  deleteWatchlistItem,
-  updateWatchlistListDb,
-  deleteWatchlistListDb,
-  createWatchlistList as createWatchlistListDb,
-  addTitleToListDb,
-  removeTitleFromListDb
-} from '@/lib/supabase/actions';
 
 // TODO: Replace mock data with Supabase queries
+
 
 const demoUser: User = {
   id: 'demo-user-id-001',
@@ -1029,12 +1018,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addRecommendation = useCallback(async (rec: Recommendation) => {
     if (isSupabaseConfigured && supabase) {
-      // 1. Ensure title is in DB first (cached from TMDB)
-      const title = state.titles.find(t => t.id === rec.titleId);
-      if (title) await ensureTitleExistsInDb(title);
-
       // Use local client instead of server action
       try {
+        // 1. Ensure title is in DB first (cached from TMDB) using secure client-side connection
+        const title = state.titles.find(t => t.id === rec.titleId);
+        if (title) {
+           const { error: titleError } = await supabase.from('titles').upsert({
+             id: title.id,
+             title: title.title,
+             type: title.type,
+             poster_url: title.posterUrl || null,
+             backdrop_url: title.backdropUrl || null,
+             poster_gradient: title.posterGradient,
+             release_year: title.releaseYear,
+             genres: title.genres,
+             runtime: title.runtime || null,
+             overview: title.overview,
+             external_rating: title.externalRating,
+             platforms: title.platforms || [],
+             format: title.format || 'Movie',
+             language: title.language || null,
+             cast_data: title.cast || [],
+             director_data: title.directorOrCreatorProfile || {},
+             watch_providers: title.platformAvailability || []
+           }, { onConflict: 'id' });
+           
+           if (titleError) throw titleError;
+        }
+
         const { data, error: recError } = await supabase
           .from('recommendations')
           .insert({
@@ -1072,6 +1083,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       } catch (err) {
         console.error('Failed to save recommendation:', err);
+        return; // CRITICAL: Do not fall through to mock fallback if DB fails!
       }
     }
 
@@ -1650,15 +1662,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     if (isSupabaseConfigured && supabase) {
-      // Ensure title exists in DB
       const title = state.titles.find(t => t.id === titleId);
-      if (title) await ensureTitleExistsInDb(title);
+      if (title) {
+        await supabase.from('titles').upsert({
+          id: title.id,
+          title: title.title,
+          type: title.type,
+          poster_url: title.posterUrl || null,
+          backdrop_url: title.backdropUrl || null,
+          poster_gradient: title.posterGradient,
+          release_year: title.releaseYear,
+          genres: title.genres,
+          runtime: title.runtime || null,
+          overview: title.overview,
+          external_rating: title.externalRating,
+          platforms: title.platforms || [],
+          format: title.format || 'Movie',
+          language: title.language || null,
+          cast_data: title.cast || [],
+          director_data: title.directorOrCreatorProfile || {},
+          watch_providers: title.platformAvailability || []
+        }, { onConflict: 'id' });
+      }
       
-      await addTitleToListDb(titleId, listId);
+      await supabase
+        .from('watchlist_list_items')
+        .upsert({ list_id: listId, title_id: titleId }, { onConflict: 'list_id,title_id' });
       
-      // Also ensure it's in the general watchlist so it shows up in UI filters
       if (state.currentUser) {
-        await saveWatchlistItem(state.currentUser.id, titleId, 'self');
+        await supabase
+          .from('watchlist_items')
+          .upsert({ user_id: state.currentUser.id, title_id: titleId, added_by: 'self' }, { onConflict: 'user_id,title_id' });
       }
       
       refreshData();
@@ -1683,7 +1717,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     if (isSupabaseConfigured && supabase) {
-      await removeTitleFromListDb(titleId, listId);
+      await supabase
+        .from('watchlist_list_items')
+        .delete()
+        .eq('list_id', listId)
+        .eq('title_id', titleId);
       refreshData();
     }
   }, [refreshData]);
@@ -1743,9 +1781,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       
       // Also explicitly delete from all list tables to ensure DB consistency
-      // (in case there's no cascade delete configured)
       const listIds = item.listIds || [];
-      await Promise.all(listIds.map(listId => removeTitleFromListDb(item.titleId, listId)));
+      await Promise.all(listIds.map(listId => 
+        supabase
+          .from('watchlist_list_items')
+          .delete()
+          .eq('list_id', listId)
+          .eq('title_id', item.titleId)
+      ));
       
       refreshData();
     }
