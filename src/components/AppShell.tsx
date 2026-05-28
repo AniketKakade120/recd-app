@@ -36,7 +36,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted || loading) return;
 
-    const isPublicRoute = ['/', '/login', '/signup', '/onboarding', '/auth/callback'].includes(normalizedPathname) || normalizedPathname.startsWith('/list/') || normalizedPathname.startsWith('/invite/');
+    const isPublicRoute = ['/', '/login', '/signup', '/onboarding', '/auth/callback', '/api/auth/callback'].includes(normalizedPathname) || normalizedPathname.startsWith('/list/') || normalizedPathname.startsWith('/invite/');
     
     // 0. Wait for profile to be fully loaded if authenticated
     if (isAuthenticated && !currentUser && !isPublicRoute) {
@@ -70,7 +70,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [mounted, loading, isAuthenticated, isOnboarded, pathname, normalizedPathname, router]);
 
-  const isPublicRoute = ['/', '/login', '/signup', '/onboarding', '/auth/callback'].includes(normalizedPathname) || normalizedPathname.startsWith('/list/') || normalizedPathname.startsWith('/invite/');
+  const isPublicRoute = ['/', '/login', '/signup', '/onboarding', '/auth/callback', '/api/auth/callback'].includes(normalizedPathname) || normalizedPathname.startsWith('/list/') || normalizedPathname.startsWith('/invite/');
   const isSyncFailure = isAuthenticated && !currentUser && !loading && !isPublicRoute;
 
   console.log(`[Rec'd Shell] Path: ${pathname}, Normalized: ${normalizedPathname}, Public: ${isPublicRoute}, Loading: ${loading}, Auth: ${isAuthenticated}, SyncFailure: ${isSyncFailure}`);
@@ -156,7 +156,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const noShell = !isAuthenticated || ['/', '/login', '/signup', '/onboarding', '/auth/callback'].includes(pathname) || pathname.startsWith('/list/');
+  const noShell = !isAuthenticated || ['/', '/login', '/signup', '/onboarding', '/auth/callback', '/api/auth/callback'].includes(pathname) || pathname.startsWith('/list/');
   if (noShell) {
     return <main className="min-h-screen flex flex-col">{children}</main>;
   }

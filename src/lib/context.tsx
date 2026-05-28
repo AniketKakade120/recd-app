@@ -526,10 +526,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.log(`[Rec'd Auth] Event: ${event}`, session?.user?.email);
       
       if (!session?.user) {
-        // INITIAL_SESSION with no session fires immediately on page load, before
-        // the middleware has had a chance to refresh/propagate the cookie session.
-        // Only treat "no session" as a definitive logout on explicit SIGNED_OUT events,
-        // not on the ambiguous INITIAL_SESSION that fires before cookies are read.
         if (event === 'SIGNED_OUT') {
           console.log('[Rec\'d Auth] User signed out.');
           setState(prev => ({
@@ -540,10 +536,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
             loading: false,
           }));
         } else if (event === 'INITIAL_SESSION') {
-          // No session yet on first load — the middleware may not have refreshed
-          // the token yet. Set loading: false so the UI isn't blocked forever,
-          // but don't clear currentUser (it starts as null already).
-          console.log('[Rec\'d Auth] INITIAL_SESSION: no session yet.');
+          // INITIAL_SESSION can fire before cookies are ready (race with middleware).
+          // Attempt a getSession() recovery to pick up cookies the middleware just wrote.
+          console.log('[Rec\'d Auth] INITIAL_SESSION: no session in event. Attempting recovery...');
+          try {
+            const { data: { session: recoveredSession } } = await supabase.auth.getSession();
+            if (recoveredSession?.user) {
+              console.log('[Rec\'d Auth] Session recovered via getSession:', recoveredSession.user.email);
+              // Re-enter the auth handler by NOT returning — the onAuthStateChange
+              // will fire again with the recovered session. Just keep loading=true.
+              return;
+            }
+          } catch (e) {
+            console.warn('[Rec\'d Auth] getSession recovery failed:', e);
+          }
+          // No session even after recovery — genuinely no active session.
+          console.log('[Rec\'d Auth] No session after recovery. Setting loading=false.');
           setState(prev => ({ ...prev, loading: false }));
         }
         return;
@@ -823,14 +831,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      if (isSupabaseConfigured && supabase) {
-        supabase.auth.signOut(); // Fire and forget
-      }
-    } catch (err) {
-      console.error('Error during logout:', err);
-    }
-    // Clear local session state only - do NOT touch DB onboarding flag
+    // Clear local state first for instant UI response
     setState(prev => ({ 
       ...prev, 
       currentUser: null, 
@@ -838,6 +839,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isOnboarded: false,
       loading: false 
     }));
+    // Then await Supabase signOut to ensure cookies are cleared before next login
+    try {
+      if (isSupabaseConfigured && supabase) {
+        await supabase.auth.signOut();
+      }
+    } catch (err) {
+      console.error('Error during logout:', err);
+    }
   }, []);
 
   const completeOnboarding = useCallback(async (data: any = { onboarding_completed: true }) => {

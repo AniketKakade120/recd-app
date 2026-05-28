@@ -55,12 +55,14 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for:
+     * - api/auth (OAuth callback and auth API routes — must NOT be intercepted)
+     * - auth/callback (deprecated client-side callback — must NOT be intercepted)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public files (images, fonts, etc.)
-     * - api/auth/callback (the OAuth callback itself — must NOT be intercepted)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api/auth|auth/callback|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
+
