@@ -687,6 +687,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       let activeSession = session;
 
+      const withTimeout = <T,>(promise: Promise<T>, ms: number, name: string): Promise<T> => {
+        return Promise.race([
+          promise,
+          new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Timeout at ${name} after ${ms}ms`)), ms))
+        ]);
+      };
+
       if (!activeSession?.user) {
         if (event === 'SIGNED_OUT') {
           setState(prev => ({ ...prev, currentUser: null, isAuthenticated: false, isOnboarded: false, loading: false, authStatus: 'unauthenticated' }));
@@ -694,7 +701,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } else if (event === 'INITIAL_SESSION') {
           console.log('[Auth Debug] getSession result (INITIAL_SESSION): null. Attempting recovery...');
           try {
-            const { data: { session: recoveredSession } } = await supabase.auth.getSession();
+            const { data: { session: recoveredSession } } = await withTimeout(supabase.auth.getSession(), 8000, 'getSession recovery');
             if (recoveredSession?.user) {
               console.log('[Auth Debug] Session recovered via getSession');
               activeSession = recoveredSession;
@@ -717,7 +724,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       try {
         console.log('[Auth Debug] Fetching profile');
-        const profileData = await fetchOrCreateProfile(activeSession.user);
+        const profileData = await withTimeout(fetchOrCreateProfile(activeSession.user), 15000, 'fetchOrCreateProfile');
         console.log('[Auth] Profile ready');
         
         setState(prev => ({
@@ -738,7 +745,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           authError: undefined
         }));
         
-        refreshData(session.user.id);
+        refreshData(activeSession.user.id);
       } catch (err: any) {
         console.error('[Auth Debug] Profile error catch block:', err);
         if (err?.message?.includes('JWT') || err?.message?.includes('unauthorized') || err?.status === 401) {
