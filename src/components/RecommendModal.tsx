@@ -14,7 +14,7 @@ export default function RecommendModal() {
     recommendModalOpen, 
     recommendModalData, 
     closeRecommendModal,
-    titles, getTitle, currentUser, groupMembers, users, crewConnections, toasts, addToast, getUser, groups, addRecommendation 
+    titles, getTitle, addTitle, currentUser, groupMembers, users, crewConnections, toasts, addToast, getUser, groups, addRecommendation 
   } = useApp();
 
   const initTitleId = recommendModalData?.titleId || null;
@@ -169,10 +169,12 @@ export default function RecommendModal() {
                       onSelect={async (title) => {
                         setTitleId(title.id);
                         setSelectedTitleState(title);
+                        addTitle(title);
                         // Sync to DB immediately to ensure full details are cached
                         const res = await ensureTitleExistsInDb(title);
                         if (res.success && res.title) {
                           setSelectedTitleState(res.title);
+                          addTitle(res.title);
                         }
                         nextStep();
                       }} 
