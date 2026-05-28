@@ -62,6 +62,7 @@ interface AppState {
   isAuthenticated: boolean;
   isOnboarded: boolean;
   authStatus: AuthStatus;
+  authError?: string;
   recommendations: Recommendation[];
   ratings: Rating[];
   badges: Badge[];
@@ -147,6 +148,7 @@ interface AppContextType extends AppState {
   moveToList: (itemId: string, listId: string) => void;
   removeFromWatchlist: (id: string) => Promise<void>;
   updatePreferences: (data: Partial<UserPreferences>) => Promise<void>;
+  retryAuthSync: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -190,24 +192,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Dedicated helper to fetch or create a user profile safely
   const fetchOrCreateProfile = async (user: any) => {
-    const [profileResult, prefsResult] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('user_preferences').select('*').eq('user_id', user.id).single()
-    ]);
+    if (!user?.id) throw new Error("Missing auth user id");
+    console.info("[Auth Debug] fetching profile", { userId: user.id });
+
+    // Step 1: Attempt to read existing profile
+    const profileResult = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    const prefsResult = await supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle();
 
     let profile = profileResult.data;
     let prefs = prefsResult.data;
     const profileError = profileResult.error;
-    const prefsError = prefsResult.error;
+
+    if (profileError) {
+      console.error("[Auth Debug] Supabase profile error on select", {
+        code: profileError.code,
+        message: profileError.message,
+        details: profileError.details,
+        hint: profileError.hint
+      });
+      throw new Error('Failed to fetch profile: ' + profileError.message);
+    }
+    
+    console.info("[Auth Debug] profile fetch result", { hasProfile: !!profile, error: profileError });
 
     const googleName = user.user_metadata?.full_name || user.user_metadata?.name;
     const googleAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
-    const emailPrefix = user.email?.split('@')[0];
+    const emailPrefix = user.email?.split('@')[0] || 'user';
 
-    if (profileError && profileError.code === 'PGRST116') {
+    // Step 2: If no profile, attempt to create
+    if (!profile) {
+      console.info("[Auth Debug] creating profile", { userId: user.id });
+      
       const newProfile = {
         id: user.id,
-        username: emailPrefix || 'user',
+        username: emailPrefix,
         display_name: googleName || emailPrefix || 'New User',
         avatar_url: googleAvatar || '',
         bio: '',
@@ -215,29 +233,63 @@ export function AppProvider({ children }: { children: ReactNode }) {
         taste_score: 50,
         onboarding_completed: false
       };
-      const { data: insertedProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert(newProfile)
-        .select()
-        .single();
-      
-      if (insertError) throw new Error('Failed to create profile: ' + insertError.message);
-      profile = insertedProfile;
-    } else if (profileError) {
-      throw new Error('Failed to fetch profile: ' + profileError.message);
-    }
 
-    if (prefsError && prefsError.code === 'PGRST116') {
-      const { data: insertedPrefs, error: insertPrefsError } = await supabase
-        .from('user_preferences')
-        .insert({ user_id: user.id, genres: [], moods: [] })
-        .select()
-        .single();
-      if (!insertPrefsError) {
-        prefs = insertedPrefs;
+      const insertResult = await supabase.from('profiles').insert(newProfile).select().maybeSingle();
+      
+      let insertError = insertResult.error;
+      profile = insertResult.data;
+
+      // Handle username unique constraint violation (23505 on username)
+      if (insertError?.code === '23505' && insertError?.message?.includes('username')) {
+        console.warn("[Auth Debug] Username conflict, retrying with random suffix");
+        const uniqueSuffix = Math.floor(Math.random() * 10000).toString();
+        const retryProfile = { ...newProfile, username: `${emailPrefix}${uniqueSuffix}` };
+        const retryInsert = await supabase.from('profiles').insert(retryProfile).select().maybeSingle();
+        insertError = retryInsert.error;
+        profile = retryInsert.data;
+      }
+
+      // Handle duplicate profile id (already exists, maybe due to race condition or RLS blocking select)
+      if (insertError?.code === '23505' && insertError?.message?.includes('profiles_pkey')) {
+        console.warn("[Auth Debug] Profile already exists (duplicate key). Refetching by ID.");
+        const refetch = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+        if (refetch.data) {
+           profile = refetch.data;
+           insertError = null;
+        } else {
+           throw new Error('Profile exists but cannot be read. Please check RLS policies for public.profiles.');
+        }
+      }
+
+      console.info("[Auth Debug] profile create result", { hasProfile: !!profile, error: insertError });
+
+      if (insertError) {
+        console.error("[Auth Debug] Supabase profile error on insert", {
+          code: insertError.code,
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint
+        });
+        throw new Error('Failed to create profile: ' + insertError.message);
+      }
+      
+      // If we STILL don't have a profile after successful insert/refetch (should never happen)
+      if (!profile) {
+        throw new Error('Profile was neither fetched nor created correctly.');
       }
     }
 
+    // Step 3: Handle preferences if missing
+    if (!prefs && !prefsResult.error) {
+      const { data: insertedPrefs } = await supabase
+        .from('user_preferences')
+        .insert({ user_id: user.id, genres: [], moods: [] })
+        .select()
+        .maybeSingle();
+      if (insertedPrefs) prefs = insertedPrefs;
+    }
+
+    // Step 4: Auto-sync Google Metadata if needed
     let needsUpdate = false;
     const updates: any = {};
     if ((!profile.display_name || profile.display_name === 'User' || profile.display_name === 'New User') && googleName) {
@@ -250,8 +302,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       profile.avatar_url = googleAvatar;
       needsUpdate = true;
     }
+    
+    // We only update if necessary, fire-and-forget to not block hydration
     if (needsUpdate) {
-      await supabase.from('profiles').update(updates).eq('id', profile.id);
+      supabase.from('profiles').update(updates).eq('id', profile.id).then();
     }
 
     const finalDisplayName = profile.display_name && profile.display_name !== 'User' ? profile.display_name : (googleName || emailPrefix || 'User');
@@ -675,17 +729,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           isOnboarded: !!profileData.onboarding_completed,
           userPreferences: profileData.prefs || prev.userPreferences,
           loading: false,
-          authStatus: 'authenticated_ready'
+          authStatus: 'authenticated_ready',
+          authError: undefined
         }));
         
         refreshData(session.user.id);
       } catch (err: any) {
-        console.error('[Auth] Profile error:', err);
+        console.error('[Auth Debug] Profile error catch block:', err);
         if (err?.message?.includes('JWT') || err?.message?.includes('unauthorized') || err?.status === 401) {
           supabase.auth.signOut().catch(() => {});
           setState(prev => ({ ...prev, loading: false, authStatus: 'unauthenticated' }));
         } else {
-          setState(prev => ({ ...prev, loading: false, authStatus: 'error' }));
+          setState(prev => ({ ...prev, loading: false, authStatus: 'error', authError: err?.message || 'Unknown profile fetch error' }));
         }
       }
     });
@@ -693,8 +748,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const safetyTimeout = setTimeout(() => {
       setState(prev => {
         if (prev.loading && prev.authStatus !== 'error') {
-          console.warn('[Auth] Timeout reached. Setting error state.');
-          return { ...prev, loading: false, authStatus: 'error' };
+          console.warn('[Auth Debug] Timeout reached. Setting error state.');
+          return { ...prev, loading: false, authStatus: 'error', authError: 'Timeout waiting for profile sync' };
         }
         return prev;
       });
@@ -704,6 +759,52 @@ export function AppProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
       clearTimeout(safetyTimeout);
     };
+  }, [refreshData]);
+
+  const retryAuthSync = useCallback(async () => {
+    console.log('[Auth Debug] retryAuthSync start');
+    setState(prev => ({ ...prev, loading: true, authStatus: 'authenticated_loading_profile', authError: undefined }));
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('[Auth Debug] getSession in retry', { hasSession: !!session, userId: session?.user?.id, sessionError });
+      
+      if (!session?.user) {
+        throw new Error('No active session found during retry');
+      }
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('[Auth Debug] getUser in retry', { hasUser: !!user, userId: user?.id, userError });
+
+      if (!user) {
+        throw new Error('No active user found during retry');
+      }
+
+      const profileData = await fetchOrCreateProfile(user);
+      
+      setState(prev => ({
+        ...prev,
+        currentUser: {
+          id: profileData.id,
+          username: profileData.username,
+          displayName: profileData.displayName,
+          avatarUrl: profileData.avatarUrl,
+          bio: profileData.bio,
+          tasteArchetype: profileData.tasteArchetype,
+          createdAt: profileData.createdAt,
+        },
+        isOnboarded: !!profileData.onboarding_completed,
+        userPreferences: profileData.prefs || prev.userPreferences,
+        loading: false,
+        authStatus: 'authenticated_ready',
+        authError: undefined
+      }));
+      
+      await refreshData(user.id);
+      console.log('[Auth Debug] retryAuthSync success');
+    } catch (err: any) {
+      console.error('[Auth Debug] retryAuthSync failed:', err);
+      setState(prev => ({ ...prev, loading: false, authStatus: 'error', authError: err?.message || 'Retry failed' }));
+    }
   }, [refreshData]);
 
   const addToast = useCallback((message: string, options?: { type?: 'success' | 'error' | 'info', onUndo?: () => void }) => {
@@ -1604,6 +1705,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getGroupRecommendations, getPendingForUser, getUserBadges: getUserBadgesFn,
     getViewerContext, getActions,
     leaderboard: mockLeaderboard, refreshData, enterDemoMode,
+    retryAuthSync
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

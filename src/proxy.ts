@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from 'next/server'
  * 1. Refreshes expired access tokens using the refresh token cookie
  * 2. Writes the updated session back to cookies so client components can read it
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })

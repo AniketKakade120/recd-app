@@ -21,7 +21,7 @@ const navItems = [
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const normalizedPathname = pathname.replace(/\/$/, '') || '/';
-  const { authStatus, currentUser, openRecommendModal, isOnboarded, logout, refreshData } = useApp();
+  const { authStatus, authError, currentUser, openRecommendModal, isOnboarded, logout, retryAuthSync } = useApp();
   const [mounted, setMounted] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -74,10 +74,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const handleRetry = async () => {
     setRetrying(true);
     try {
-      // In a real scenario, we might want to tell context to restart the auth flow.
-      // But just refreshing data might work if session exists.
-      await refreshData();
-      // Alternatively, the user can just reload the page.
+      await retryAuthSync();
     } catch (err) {
       console.error('[AppShell] Retry profile hydration failed:', err);
     } finally {
@@ -117,19 +114,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="relative w-full max-w-md bg-surface/40 backdrop-blur-xl border border-border/80 rounded-[32px] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col items-center">
           
           {/* Pulsing Cinema Red status ring */}
-          <div className="relative mb-8 flex items-center justify-center">
+          <div className="relative mb-6 flex items-center justify-center">
             <div className="absolute w-24 h-24 rounded-full bg-cinema-red/10 animate-ping duration-1000" />
             <div className="w-16 h-16 rounded-full bg-cinema-red/20 border border-cinema-red/50 flex items-center justify-center shadow-[0_0_30px_rgba(229,9,20,0.3)]">
               <svg viewBox="0 0 24 24" width="28" height="28" className="text-cinema-red animate-pulse"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/></svg>
             </div>
           </div>
 
-          <Logo variant="square" size="md" className="mb-6 opacity-90" />
+          <Logo variant="square" size="md" className="mb-4 opacity-90" />
           
           <h2 className="text-2xl font-bold text-bone font-editorial mb-3 tracking-wide">Stamping Connection Error</h2>
-          <p className="text-muted text-sm leading-relaxed max-w-xs mb-8">
-            We are having trouble syncing your profile. This is usually due to a temporary database delay.
+          <p className="text-muted text-sm leading-relaxed max-w-xs mb-2">
+            We are having trouble syncing your profile.
           </p>
+          
+          {authError && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-6 w-full max-w-sm text-left">
+              <p className="text-xs text-red-400 font-mono break-words">{authError}</p>
+            </div>
+          )}
 
           <button 
             onClick={handleRetry}
