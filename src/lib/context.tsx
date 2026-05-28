@@ -757,15 +757,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // Timeout to catch stuck initialization (e.g. Supabase navigator.locks hang on reload)
     const safetyTimeout = setTimeout(() => {
       setState(prev => {
+        if (prev.authStatus === 'initializing') {
+          console.error('[Auth Debug] Supabase onAuthStateChange never fired. Lock is likely stuck.');
+          return { 
+            ...prev, 
+            loading: false, 
+            authStatus: 'error', 
+            authError: 'Browser session locked. Please click "Sign Out & Escape" below to clear your cookies and sign in again.' 
+          };
+        }
         if (prev.loading && prev.authStatus !== 'error') {
-          console.warn('[Auth Debug] Timeout reached. Setting error state.');
+          console.warn('[Auth Debug] Timeout reached during profile fetch.');
           return { ...prev, loading: false, authStatus: 'error', authError: 'Timeout waiting for profile sync' };
         }
         return prev;
       });
-    }, 25000);
+    }, 8000);
 
     return () => {
       subscription.unsubscribe();
