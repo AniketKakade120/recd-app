@@ -1083,7 +1083,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       } catch (err: any) {
         console.error('Failed to save recommendation:', err);
-        addToast(`FK Error: ${err?.message}. CurrentUser ID: ${state.currentUser?.id}. Target: ${rec.recommendedToUserIds?.[0]}`, { type: 'error' });
+        addToast(err?.message || String(err), { type: 'error' });
         return; // CRITICAL: Do not fall through to mock fallback if DB fails!
       }
     }
