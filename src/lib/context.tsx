@@ -1139,8 +1139,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         refreshData();
         return;
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to save rating:', err);
+        addToast(`Rating failed: ${err?.message}`, { type: 'error' });
+        return; // DO NOT FALL THROUGH TO MOCK STATE
       }
     }
 
