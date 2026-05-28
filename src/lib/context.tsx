@@ -97,7 +97,7 @@ interface AppContextType extends AppState {
   updateGroup: (groupId: string, data: Partial<Group>) => void;
   deleteGroup: (groupId: string) => void;
   joinGroup: (groupId: string) => void;
-  sendCrewRequest: (receiverId: string, message?: string) => Promise<void>;
+  sendCrewRequest: (receiverId: string, message?: string) => Promise<{ success: boolean; error?: string; alreadyConnected?: boolean; data?: any }>;
   acceptCrewRequest: (requestId: string) => Promise<void>;
   rejectCrewRequest: (requestId: string) => Promise<void>;
   cancelCrewRequest: (requestId: string) => Promise<void>;

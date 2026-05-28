@@ -29,7 +29,7 @@ export default function AddToCrewButton({ userId, username, className = '' }: Ad
 
   const state = getConnectionState(userId);
 
-  const handleAction = async (action: () => Promise<void>) => {
+  const handleAction = async (action: () => Promise<any>) => {
     setIsLoading(true);
     await action();
     setIsLoading(false);
