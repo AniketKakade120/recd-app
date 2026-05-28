@@ -1041,7 +1041,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
              cast_data: title.cast || [],
              director_data: title.directorOrCreatorProfile || {},
              watch_providers: title.platformAvailability || []
-           }, { onConflict: 'id' });
+           }, { onConflict: 'id', ignoreDuplicates: true });
            
            if (titleError) throw titleError;
         }
@@ -1682,7 +1682,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           cast_data: title.cast || [],
           director_data: title.directorOrCreatorProfile || {},
           watch_providers: title.platformAvailability || []
-        }, { onConflict: 'id' });
+        }, { onConflict: 'id', ignoreDuplicates: true });
       }
       
       await supabase
