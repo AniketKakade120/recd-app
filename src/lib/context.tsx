@@ -189,8 +189,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     console.info("[Auth Debug] fetching profile", { userId: user.id });
 
     // Step 1: Attempt to read existing profile
-    const profileResult = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-    const prefsResult = await supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle();
+    const profileResult = await withTimeout(
+      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+      5000,
+      'profiles select query'
+    );
+    
+    const prefsResult = await withTimeout(
+      supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle(),
+      5000,
+      'preferences select query'
+    );
 
     let profile = profileResult.data;
     let prefs = prefsResult.data;
@@ -227,7 +236,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         onboarding_completed: false
       };
 
-      const insertResult = await supabase.from('profiles').insert(newProfile).select().maybeSingle();
+      const insertResult = await withTimeout(
+        supabase.from('profiles').insert(newProfile).select().maybeSingle(),
+        5000,
+        'profiles insert query'
+      );
       
       let insertError = insertResult.error;
       profile = insertResult.data;
@@ -237,7 +250,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.warn("[Auth Debug] Username conflict, retrying with random suffix");
         const uniqueSuffix = Math.floor(Math.random() * 10000).toString();
         const retryProfile = { ...newProfile, username: `${emailPrefix}${uniqueSuffix}` };
-        const retryInsert = await supabase.from('profiles').insert(retryProfile).select().maybeSingle();
+        const retryInsert = await withTimeout(
+          supabase.from('profiles').insert(retryProfile).select().maybeSingle(),
+          5000,
+          'profiles retry insert query'
+        );
         insertError = retryInsert.error;
         profile = retryInsert.data;
       }
@@ -245,7 +262,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Handle duplicate profile id (already exists, maybe due to race condition or RLS blocking select)
       if (insertError?.code === '23505' && insertError?.message?.includes('profiles_pkey')) {
         console.warn("[Auth Debug] Profile already exists (duplicate key). Refetching by ID.");
-        const refetch = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+        const refetch = await withTimeout(
+          supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+          5000,
+          'profiles refetch query'
+        );
         if (refetch.data) {
            profile = refetch.data;
            insertError = null;
@@ -274,11 +295,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     // Step 3: Handle preferences if missing
     if (!prefs && !prefsResult.error) {
-      const { data: insertedPrefs } = await supabase
-        .from('user_preferences')
-        .insert({ user_id: user.id, genres: [], moods: [] })
-        .select()
-        .maybeSingle();
+      const { data: insertedPrefs } = await withTimeout(
+        supabase
+          .from('user_preferences')
+          .insert({ user_id: user.id, genres: [], moods: [] })
+          .select()
+          .maybeSingle(),
+        5000,
+        'preferences insert query'
+      );
       if (insertedPrefs) prefs = insertedPrefs;
     }
 
