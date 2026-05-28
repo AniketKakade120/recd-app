@@ -21,7 +21,7 @@ const navItems = [
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const normalizedPathname = pathname.replace(/\/$/, '') || '/';
-  const { isAuthenticated, currentUser, loading, openRecommendModal, isOnboarded, logout, refreshData } = useApp();
+  const { authStatus, currentUser, openRecommendModal, isOnboarded, logout, refreshData } = useApp();
   const [mounted, setMounted] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -34,53 +34,52 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!mounted || loading) return;
+    if (!mounted) return;
 
     const isPublicRoute = ['/', '/login', '/signup', '/onboarding', '/auth/callback', '/api/auth/callback'].includes(normalizedPathname) || normalizedPathname.startsWith('/list/') || normalizedPathname.startsWith('/invite/');
     
-    // 0. Wait for profile to be fully loaded if authenticated
-    if (isAuthenticated && !currentUser && !isPublicRoute) {
-      console.log('[Rec\'d Shell] Auth exists but profile missing, waiting...');
-      return;
+    if (authStatus === 'initializing' || authStatus === 'authenticated_loading_profile') {
+      return; // Still loading, wait before routing
     }
     
-    console.log(`[Rec'd Shell] Path: ${pathname}, Normalized: ${normalizedPathname}, Auth: ${isAuthenticated}, Onboarded: ${isOnboarded}`);
+    console.log(`[AppShell] Path: ${pathname}, AuthStatus: ${authStatus}, Onboarded: ${isOnboarded}`);
     
-    // 1. If not authenticated and not on a public route, send to landing
-    // We give a small 2s buffer after mount to allow hydration to settle
-    const hydrationBufferPassed = Date.now() - (window as any).__mountedTime > 2000;
-    if (!isAuthenticated && !isPublicRoute && hydrationBufferPassed) {
-      console.log('[Rec\'d Shell] Not authenticated, redirecting to landing...');
+    // 1. Unauthenticated -> go to landing if on protected route
+    const hydrationBufferPassed = Date.now() - (window as any).__mountedTime > 1500;
+    if (authStatus === 'unauthenticated' && !isPublicRoute && hydrationBufferPassed) {
+      console.log('[AppShell] Unauthenticated, redirecting to landing...');
       router.push('/');
       return;
     }
     
-    // 2. If authenticated but NOT onboarded, and not already on onboarding, send to onboarding
-    // Wait until currentUser profile is loaded to prevent redirecting to a blank screen
-    if (isAuthenticated && currentUser && !isOnboarded && normalizedPathname !== '/onboarding' && !normalizedPathname.startsWith('/list/') && !normalizedPathname.startsWith('/invite/')) {
-      console.log('[Rec\'d Shell] Redirecting to onboarding...');
-      router.push('/onboarding');
-      return;
+    // 2. Authenticated Ready -> handle onboarding vs home
+    if (authStatus === 'authenticated_ready' && currentUser) {
+      if (!isOnboarded && normalizedPathname !== '/onboarding' && !normalizedPathname.startsWith('/list/') && !normalizedPathname.startsWith('/invite/')) {
+        console.log('[AppShell] Redirecting to onboarding...');
+        router.push('/onboarding');
+        return;
+      }
+      if (isOnboarded && ['/', '/login', '/signup', '/onboarding'].includes(normalizedPathname)) {
+        console.log('[AppShell] Redirecting to home...');
+        router.push('/home');
+      }
     }
-
-    // 3. If authenticated AND onboarded, and on a landing/login/signup/onboarding page, send to home
-    if (isAuthenticated && currentUser && isOnboarded && ['/', '/login', '/signup', '/onboarding'].includes(normalizedPathname)) {
-      console.log('[Rec\'d Shell] Redirecting to home...');
-      router.push('/home');
-    }
-  }, [mounted, loading, isAuthenticated, isOnboarded, pathname, normalizedPathname, router]);
+  }, [mounted, authStatus, currentUser, isOnboarded, pathname, normalizedPathname, router]);
 
   const isPublicRoute = ['/', '/login', '/signup', '/onboarding', '/auth/callback', '/api/auth/callback'].includes(normalizedPathname) || normalizedPathname.startsWith('/list/') || normalizedPathname.startsWith('/invite/');
-  const isSyncFailure = isAuthenticated && !currentUser && !loading && !isPublicRoute;
+  const isSyncFailure = authStatus === 'error';
 
-  console.log(`[Rec'd Shell] Path: ${pathname}, Normalized: ${normalizedPathname}, Public: ${isPublicRoute}, Loading: ${loading}, Auth: ${isAuthenticated}, SyncFailure: ${isSyncFailure}`);
+  console.log(`[AppShell] Render - Path: ${pathname}, Public: ${isPublicRoute}, AuthStatus: ${authStatus}`);
 
   const handleRetry = async () => {
     setRetrying(true);
     try {
+      // In a real scenario, we might want to tell context to restart the auth flow.
+      // But just refreshing data might work if session exists.
       await refreshData();
+      // Alternatively, the user can just reload the page.
     } catch (err) {
-      console.error('[Rec\'d Recovery] Retry profile hydration failed:', err);
+      console.error('[AppShell] Retry profile hydration failed:', err);
     } finally {
       setTimeout(() => setRetrying(false), 1000);
     }
@@ -91,12 +90,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       await logout();
       router.push('/');
     } catch (err) {
-      console.error('[Rec\'d Recovery] Sign out failed:', err);
+      console.error('[AppShell] Sign out failed:', err);
     }
   };
 
-  // Show loader if we are currently loading the context state
-  const shouldShowLoader = loading && (!isPublicRoute || pathname === '/onboarding');
+  // Show loader if we are initializing a protected route, or actively loading a profile
+  const shouldShowLoader = 
+    (authStatus === 'initializing' && (!isPublicRoute || pathname === '/onboarding')) || 
+    (authStatus === 'authenticated_loading_profile');
   
   if (shouldShowLoader) {
     return (
@@ -156,7 +157,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const noShell = !isAuthenticated || ['/', '/login', '/signup', '/onboarding', '/auth/callback', '/api/auth/callback'].includes(pathname) || pathname.startsWith('/list/');
+  const noShell = authStatus !== 'authenticated_ready' || ['/', '/login', '/signup', '/onboarding', '/auth/callback', '/api/auth/callback'].includes(pathname) || pathname.startsWith('/list/');
   if (noShell) {
     return <main className="min-h-screen flex flex-col">{children}</main>;
   }

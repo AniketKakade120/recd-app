@@ -55,10 +55,13 @@ const demoUser: User = {
   createdAt: new Date().toISOString(),
 };
 
+export type AuthStatus = 'initializing' | 'unauthenticated' | 'authenticated_loading_profile' | 'authenticated_ready' | 'error';
+
 interface AppState {
   currentUser: User | null;
   isAuthenticated: boolean;
   isOnboarded: boolean;
+  authStatus: AuthStatus;
   recommendations: Recommendation[];
   ratings: Rating[];
   badges: Badge[];
@@ -153,6 +156,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     currentUser: null,
     isAuthenticated: false,
     isOnboarded: false, // We will evaluate this per user in onAuthStateChange
+    authStatus: 'initializing',
     recommendations: mockRecommendations,
     ratings: mockRatings,
     badges: mockBadges,
@@ -178,6 +182,100 @@ export function AppProvider({ children }: { children: ReactNode }) {
     giveVerdictModalData: null,
   });
 
+  // Fix stale closure for refreshData
+  const currentUserRef = React.useRef<User | null>(null);
+  React.useEffect(() => {
+    currentUserRef.current = state.currentUser;
+  }, [state.currentUser]);
+
+  // Dedicated helper to fetch or create a user profile safely
+  const fetchOrCreateProfile = async (user: any) => {
+    const [profileResult, prefsResult] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('user_preferences').select('*').eq('user_id', user.id).single()
+    ]);
+
+    let profile = profileResult.data;
+    let prefs = prefsResult.data;
+    const profileError = profileResult.error;
+    const prefsError = prefsResult.error;
+
+    const googleName = user.user_metadata?.full_name || user.user_metadata?.name;
+    const googleAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+    const emailPrefix = user.email?.split('@')[0];
+
+    if (profileError && profileError.code === 'PGRST116') {
+      const newProfile = {
+        id: user.id,
+        username: emailPrefix || 'user',
+        display_name: googleName || emailPrefix || 'New User',
+        avatar_url: googleAvatar || '',
+        bio: '',
+        taste_archetype: 'Thriller Dealer',
+        taste_score: 50,
+        onboarding_completed: false
+      };
+      const { data: insertedProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert(newProfile)
+        .select()
+        .single();
+      
+      if (insertError) throw new Error('Failed to create profile: ' + insertError.message);
+      profile = insertedProfile;
+    } else if (profileError) {
+      throw new Error('Failed to fetch profile: ' + profileError.message);
+    }
+
+    if (prefsError && prefsError.code === 'PGRST116') {
+      const { data: insertedPrefs, error: insertPrefsError } = await supabase
+        .from('user_preferences')
+        .insert({ user_id: user.id, genres: [], moods: [] })
+        .select()
+        .single();
+      if (!insertPrefsError) {
+        prefs = insertedPrefs;
+      }
+    }
+
+    let needsUpdate = false;
+    const updates: any = {};
+    if ((!profile.display_name || profile.display_name === 'User' || profile.display_name === 'New User') && googleName) {
+      updates.display_name = googleName;
+      profile.display_name = googleName;
+      needsUpdate = true;
+    }
+    if (!profile.avatar_url && googleAvatar) {
+      updates.avatar_url = googleAvatar;
+      profile.avatar_url = googleAvatar;
+      needsUpdate = true;
+    }
+    if (needsUpdate) {
+      await supabase.from('profiles').update(updates).eq('id', profile.id);
+    }
+
+    const finalDisplayName = profile.display_name && profile.display_name !== 'User' ? profile.display_name : (googleName || emailPrefix || 'User');
+    const finalAvatarUrl = profile.avatar_url || googleAvatar || '';
+
+    return {
+      id: profile.id,
+      username: profile.username || emailPrefix || 'user',
+      displayName: finalDisplayName,
+      avatarUrl: finalAvatarUrl,
+      bio: profile.bio || '',
+      tasteArchetype: profile.taste_archetype as any || 'Thriller Dealer',
+      createdAt: profile.created_at,
+      onboarding_completed: profile.onboarding_completed,
+      prefs: prefs ? {
+        genres: prefs.genres || [],
+        moods: prefs.moods || [],
+        formats: prefs.formats || [],
+        languages: prefs.languages || [],
+        platforms: prefs.platforms || [],
+      } : undefined
+    };
+  };
+
   const mapDbTitleToTitle = (dbTitle: any): Title => ({
     id: dbTitle.id,
     tmdbId: dbTitle.id,
@@ -202,7 +300,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Accepts an optional userId so it can be called from onAuthStateChange before
   // state.currentUser is set (kills stale closure bug). Falls back to state.currentUser.
   const refreshData = useCallback(async (overrideUserId?: string) => {
-    let userId = overrideUserId || state.currentUser?.id;
+    let userId = overrideUserId || currentUserRef.current?.id;
     
     // RECOVERY MODE: If we have no userId (e.g. currentUser failed to load and user clicked Retry),
     // attempt to fetch the session directly.
@@ -517,216 +615,86 @@ export function AppProvider({ children }: { children: ReactNode }) {
         currentUser: demoUser,
         isAuthenticated: true,
         loading: false,
+        authStatus: 'authenticated_ready'
       }));
       return;
     }
 
     // Listen to Auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`[Rec'd Auth] Event: ${event}`, session?.user?.email);
+      console.log(`[Auth] Auth event: ${event}`);
       
+      // Handle TOKEN_REFRESHED separately to avoid spinning loader if already logged in
+      if (event === 'TOKEN_REFRESHED' && session?.user) {
+        if (currentUserRef.current) {
+          return; // Profile already exists, token refresh doesn't need to block UI
+        }
+      }
+
       if (!session?.user) {
         if (event === 'SIGNED_OUT') {
-          console.log('[Rec\'d Auth] User signed out.');
-          setState(prev => ({
-            ...prev,
-            currentUser: null,
-            isAuthenticated: false,
-            isOnboarded: false,
-            loading: false,
-          }));
+          // Handled explicitly by logout(), but double-check here
+          setState(prev => ({ ...prev, currentUser: null, isAuthenticated: false, isOnboarded: false, loading: false, authStatus: 'unauthenticated' }));
         } else if (event === 'INITIAL_SESSION') {
-          // INITIAL_SESSION can fire before cookies are ready (race with middleware).
-          // Attempt a getSession() recovery to pick up cookies the middleware just wrote.
-          console.log('[Rec\'d Auth] INITIAL_SESSION: no session in event. Attempting recovery...');
+          console.log('[Auth] getSession result (INITIAL_SESSION): null. Attempting recovery...');
           try {
             const { data: { session: recoveredSession } } = await supabase.auth.getSession();
             if (recoveredSession?.user) {
-              console.log('[Rec\'d Auth] Session recovered via getSession:', recoveredSession.user.email);
-              // Re-enter the auth handler by NOT returning — the onAuthStateChange
-              // will fire again with the recovered session. Just keep loading=true.
-              return;
+              console.log('[Auth] Session recovered via getSession');
+              return; // re-enter
             }
           } catch (e) {
-            console.warn('[Rec\'d Auth] getSession recovery failed:', e);
+            console.warn('[Auth] getSession recovery failed:', e);
           }
-          // No session even after recovery — genuinely no active session.
-          console.log('[Rec\'d Auth] No session after recovery. Setting loading=false.');
-          setState(prev => ({ ...prev, loading: false }));
+          setState(prev => ({ ...prev, loading: false, authStatus: 'unauthenticated' }));
         }
         return;
       }
 
-      // Optimistic Update: Set authenticated immediately
-      // Set loading to true while we fetch the profile to prevent the AppShell Connection Error screen flash
-      setState(prev => ({
-        ...prev,
-        isAuthenticated: true,
-        loading: true,
-      }));
+      // We have a session
+      if (event !== 'TOKEN_REFRESHED') {
+        setState(prev => ({ ...prev, isAuthenticated: true, loading: true, authStatus: 'authenticated_loading_profile' }));
+      }
 
       try {
-        // Fetch real profile details and preferences in parallel
-        const [profileResult, prefsResult] = await Promise.all([
-          supabase.from('profiles').select('*').eq('id', session.user.id).single(),
-          supabase.from('user_preferences').select('*').eq('user_id', session.user.id).single()
-        ]);
-
-        let profile = profileResult.data;
-        let prefs = prefsResult.data;
-        const profileError = profileResult.error;
-        const prefsError = prefsResult.error;
-
-        const googleName = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
-        const googleAvatar = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
-        const emailPrefix = session.user.email?.split('@')[0];
-
-        // 1. Self-healing fallback: If profile is missing in the database, insert it
-        if (profileError && profileError.code === 'PGRST116') {
-          console.log('[Rec\'d Auth] Profile row missing in database. Self-healing insert...');
-          const newProfile = {
-            id: session.user.id,
-            username: emailPrefix || 'user',
-            display_name: googleName || emailPrefix || 'New User',
-            avatar_url: googleAvatar || '',
-            bio: '',
-            taste_archetype: 'Thriller Dealer',
-            taste_score: 50,
-            onboarding_completed: false
-          };
-          const { data: insertedProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert(newProfile)
-            .select()
-            .single();
-
-          if (insertError) {
-            console.error('[Rec\'d Auth] Self-healing profile creation failed:', insertError.message);
-          } else {
-            console.log('[Rec\'d Auth] Self-healing profile created successfully.');
-            profile = insertedProfile;
-          }
-        } else if (profileError) {
-          console.error('[Rec\'d Auth] Error fetching profile:', profileError.message);
-        }
-
-        // 2. Self-healing fallback: If user preferences is missing in the database, insert it
-        if (prefsError && prefsError.code === 'PGRST116') {
-          console.log('[Rec\'d Auth] User preferences missing in database. Self-healing insert...');
-          const { data: insertedPrefs, error: insertPrefsError } = await supabase
-            .from('user_preferences')
-            .insert({ user_id: session.user.id, genres: [], moods: [] })
-            .select()
-            .single();
-
-          if (insertPrefsError) {
-            console.error('[Rec\'d Auth] Self-healing preferences creation failed:', insertPrefsError.message);
-          } else {
-            console.log('[Rec\'d Auth] Self-healing preferences created successfully.');
-            prefs = insertedPrefs;
-          }
-        }
-
-        if (profile) {
-          console.log(`[Rec'd Auth] Profile found. Onboarded: ${profile.onboarding_completed}`);
-          
-          // AUTO-SYNC: If the profile has placeholder info, sync it with Google metadata
-          let needsUpdate = false;
-          const updates: any = {};
-
-          if ((!profile.display_name || profile.display_name === 'User' || profile.display_name === 'New User') && googleName) {
-            updates.display_name = googleName;
-            profile.display_name = googleName; // Update local ref
-            needsUpdate = true;
-          }
-          if (!profile.avatar_url && googleAvatar) {
-            updates.avatar_url = googleAvatar;
-            profile.avatar_url = googleAvatar; // Update local ref
-            needsUpdate = true;
-          }
-
-          if (needsUpdate) {
-            console.log('[Rec\'d Auth] Syncing Google metadata to profile...', updates);
-            const { error: syncError } = await supabase.from('profiles').update(updates).eq('id', profile.id);
-            if (syncError) {
-              console.error('[Rec\'d Auth] Error syncing Google metadata to database:', syncError);
-            }
-          }
-
-          // Bulletproof fallback chain for Display Name & Avatar
-          const finalDisplayName = profile.display_name && profile.display_name !== 'User'
-            ? profile.display_name 
-            : (googleName || emailPrefix || 'User');
-            
-          const finalAvatarUrl = profile.avatar_url || googleAvatar || '';
-
-          const dbOnboarded = !!profile.onboarding_completed;
-          setState(prev => ({
-            ...prev,
-            currentUser: {
-              id: profile.id,
-              username: profile.username || emailPrefix || 'user',
-              displayName: finalDisplayName,
-              avatarUrl: finalAvatarUrl,
-              bio: profile.bio || '',
-              tasteArchetype: profile.taste_archetype as any || 'Thriller Dealer',
-              createdAt: profile.created_at,
-            },
-            isOnboarded: dbOnboarded,
-            userPreferences: prefs ? {
-              genres: prefs.genres || [],
-              moods: prefs.moods || [],
-              formats: prefs.formats || [],
-              languages: prefs.languages || [],
-              platforms: prefs.platforms || [],
-            } : prev.userPreferences,
-            loading: false,
-          }));
-
-          // Hydrate app data now that we have a confirmed userId — pass it directly
-          // to avoid the stale closure issue where state.currentUser is still null.
-          refreshData(session.user.id);
-        } else {
-          console.log('[Rec\'d Auth] No profile record found — trigger might be slow or failed.');
-          // Create a placeholder user to unstick the shell and allow onboarding
-          setState(prev => ({ 
-            ...prev, 
-            currentUser: {
-              id: session.user.id,
-              username: emailPrefix || 'newuser',
-              displayName: googleName || emailPrefix || 'New User',
-              avatarUrl: googleAvatar || '',
-              bio: '',
-              tasteArchetype: 'Thriller Dealer',
-              createdAt: new Date().toISOString(),
-            },
-            isOnboarded: false, 
-            loading: false 
-          }));
-          // Still try to hydrate social data even for new users
-          refreshData(session.user.id);
-        }
+        console.log('[Auth] Fetching profile');
+        const profileData = await fetchOrCreateProfile(session.user);
+        console.log('[Auth] Profile ready');
+        
+        setState(prev => ({
+          ...prev,
+          currentUser: {
+            id: profileData.id,
+            username: profileData.username,
+            displayName: profileData.displayName,
+            avatarUrl: profileData.avatarUrl,
+            bio: profileData.bio,
+            tasteArchetype: profileData.tasteArchetype,
+            createdAt: profileData.createdAt,
+          },
+          isOnboarded: !!profileData.onboarding_completed,
+          userPreferences: profileData.prefs || prev.userPreferences,
+          loading: false,
+          authStatus: 'authenticated_ready'
+        }));
+        
+        refreshData(session.user.id);
       } catch (err: any) {
-        console.error('Background profile fetch error:', err);
-        // Force logout if the JWT/session is completely invalid to break connection loop
+        console.error('[Auth] Profile error:', err);
         if (err?.message?.includes('JWT') || err?.message?.includes('unauthorized') || err?.status === 401) {
-          console.warn('[Rec\'d Auth] Invalid credentials/session detected. Clearing local session...');
           supabase.auth.signOut().catch(() => {});
+          setState(prev => ({ ...prev, loading: false, authStatus: 'unauthenticated' }));
+        } else {
+          setState(prev => ({ ...prev, loading: false, authStatus: 'error' }));
         }
-        setState(prev => ({ ...prev, loading: false }));
       }
     });
 
-    // Safety timeout to ensure loading doesn't stay true forever (e.g. network issues)
-    // Increased to 25s for MVP launch to account for cold-start Supabase delays
     const safetyTimeout = setTimeout(() => {
       setState(prev => {
-        if (prev.loading) {
-          console.warn('[Rec\'d] Auth/Profile took too long to load. Resolving loading spinner.');
-          return { 
-            ...prev, 
-            loading: false
-          };
+        if (prev.loading && prev.authStatus !== 'error') {
+          console.warn('[Auth] Timeout reached. Setting error state.');
+          return { ...prev, loading: false, authStatus: 'error' };
         }
         return prev;
       });
@@ -826,20 +794,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       currentUser: demoUser,
       isAuthenticated: true,
       isOnboarded: false,
+      authStatus: 'authenticated_ready',
       loading: false
     }));
   }, []);
 
   const logout = useCallback(async () => {
-    // Clear local state first for instant UI response
-    setState(prev => ({ 
-      ...prev, 
-      currentUser: null, 
-      isAuthenticated: false, 
-      isOnboarded: false,
-      loading: false 
-    }));
-    // Then await Supabase signOut to ensure cookies are cleared before next login
+    console.log('[Auth] Logout started');
+    
+    // STEP 1: Await Supabase signOut first so cookies clear fully
     try {
       if (isSupabaseConfigured && supabase) {
         await supabase.auth.signOut();
@@ -847,6 +810,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Error during logout:', err);
     }
+    
+    // STEP 2: Clear all React state
+    setState(prev => ({ 
+      ...prev, 
+      currentUser: null, 
+      isAuthenticated: false, 
+      isOnboarded: false,
+      authStatus: 'unauthenticated',
+      loading: false,
+      recommendations: mockRecommendations,
+      ratings: mockRatings,
+      groups: mockGroups,
+      watchlist: mockWatchlist,
+      watchlistLists: [],
+      crewConnections: [],
+      crewRequests: [],
+      activity: mockActivity,
+      notifications: [],
+      userPreferences: { genres: [], moods: [], formats: [], languages: [], platforms: [] },
+    }));
+    
+    console.log('[Auth] Logout complete');
   }, []);
 
   const completeOnboarding = useCallback(async (data: any = { onboarding_completed: true }) => {
