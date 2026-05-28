@@ -1038,13 +1038,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const title = state.titles.find(t => t.id === rec.titleId);
       if (title) await ensureTitleExistsInDb(title);
 
-      const { success, error } = await saveRecommendation(rec, rec.recommendedToUserIds || []);
-      
-      if (success) {
+      // Use local client instead of server action
+      try {
+        const { data, error: recError } = await supabase
+          .from('recommendations')
+          .insert({
+            title_id: rec.titleId,
+            group_id: rec.groupId || null,
+            recommended_by: rec.recommendedBy,
+            reason: rec.reason,
+            confidence_score: rec.confidenceScore,
+            mood_tags: rec.moodTags,
+            primary_stamp: rec.primaryStamp,
+            status: 'verdict_pending',
+            recommended_to_group: rec.recommendedToGroup
+          })
+          .select()
+          .single();
+
+        if (recError) throw recError;
+
+        // Link to target users if direct rec
+        const targetUserIds = rec.recommendedToUserIds || [];
+        if (targetUserIds.length > 0) {
+          const targets = targetUserIds.map(userId => ({
+            recommendation_id: data.id,
+            user_id: userId
+          }));
+
+          const { error: targetError } = await supabase
+            .from('recommendation_targets')
+            .insert(targets);
+
+          if (targetError) throw targetError;
+        }
+
         refreshData();
         return;
-      } else {
-        console.error('Failed to save recommendation:', error);
+      } catch (err) {
+        console.error('Failed to save recommendation:', err);
       }
     }
 
@@ -1075,13 +1107,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addRating = useCallback(async (rating: Rating) => {
     if (isSupabaseConfigured && supabase) {
-      const { success, error } = await saveRating(rating);
+      try {
+        const { data, error } = await supabase
+          .from('ratings')
+          .insert({
+            recommendation_id: rating.recommendationId,
+            rated_by: rating.ratedBy,
+            content_rating: rating.contentRating,
+            recommendation_result: rating.recommendationResult,
+            stamp: rating.stamp,
+            comment: rating.comment
+          })
+          .select()
+          .single();
 
-      if (success) {
+        if (error) throw error;
+
+        // Update recommendation state
+        await supabase
+          .from('recommendations')
+          .update({ status: 'verdict_given' })
+          .eq('id', rating.recommendationId);
+
         refreshData();
         return;
-      } else {
-        console.error('Failed to save rating:', error);
+      } catch (err) {
+        console.error('Failed to save rating:', err);
       }
     }
 
@@ -1444,11 +1495,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addToWatchlist(newItem);
 
     if (isSupabaseConfigured && supabase) {
-      const { success, error } = await saveWatchlistItem(state.currentUser.id, titleId);
-      if (success) {
+      try {
+        const { error } = await supabase
+          .from('watchlist_items')
+          .insert({
+            user_id: state.currentUser.id,
+            title_id: titleId,
+            added_by: 'self'
+          });
+
+        if (error) throw error;
         refreshData();
-      } else {
-        console.error('Failed to add to watchlist:', error);
+      } catch (err) {
+        console.error('Failed to add to watchlist:', err);
       }
     }
   }, [state.currentUser, addToWatchlist, refreshData]);
@@ -1472,19 +1531,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...prev,
       watchlistLists: [newList, ...prev.watchlistLists]
     }));
-
     if (isSupabaseConfigured && supabase && state.currentUser) {
-      const { success, data: dbList, error } = await createWatchlistListDb(state.currentUser.id, data);
-      if (success && dbList) {
-        // Swap out the temporary ID for the real DB ID
+      try {
+        const { data: dbList, error } = await supabase
+          .from('watchlist_lists')
+          .insert({
+            user_id: state.currentUser.id,
+            name: data.name || 'Untitled List',
+            description: data.description || null,
+            privacy: data.privacy || 'private',
+            cover_style: data.coverStyle || 'gradient',
+            title_ids: []
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        
         setState(prev => ({
           ...prev,
-          watchlistLists: prev.watchlistLists.map(l => l.id === id ? dbList : l)
+          watchlistLists: prev.watchlistLists.map(l => l.id === id ? {
+            id: dbList.id,
+            userId: dbList.user_id,
+            name: dbList.name,
+            description: dbList.description,
+            privacy: dbList.privacy,
+            coverStyle: dbList.cover_style,
+            titleIds: dbList.title_ids || [],
+            createdAt: dbList.created_at,
+            updatedAt: dbList.updated_at
+          } : l)
         }));
+        
         refreshData();
         return { id: dbList.id };
+      } catch (err) {
+        console.error('Failed to save watchlist list:', err);
+        return { id: null, error: err instanceof Error ? err.message : 'Database error' };
       }
-      return { id: null, error: typeof error === 'string' ? error : (error as any)?.message || 'Database error' };
     }
 
     return { id };
@@ -1500,9 +1584,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
 
     if (isSupabaseConfigured && supabase) {
-      await updateWatchlistListDb(listId, data);
-      refreshData();
+      try {
+        await supabase
+          .from('watchlist_lists')
+          .update({
+            name: data.name,
+            description: data.description,
+            privacy: data.privacy,
+            cover_style: data.coverStyle
+          })
+          .eq('id', listId);
+      } catch (err) {
+        console.error('Failed to update watchlist list:', err);
+      }
     }
+    refreshData();
   }, [refreshData]);
 
   const deleteWatchlistList = useCallback(async (listId: string) => {
@@ -1513,9 +1609,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
 
     if (isSupabaseConfigured && supabase) {
-      await deleteWatchlistListDb(listId);
-      refreshData();
+      try {
+        await supabase.from('watchlist_lists').delete().eq('id', listId);
+      } catch (err) {
+        console.error('Failed to delete watchlist list:', err);
+      }
     }
+    refreshData();
   }, [refreshData]);
 
   const addTitleToList = useCallback(async (titleId: string, listId: string) => {
@@ -1636,8 +1736,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     if (item && isSupabaseConfigured && supabase && state.currentUser) {
-      // Delete from main watchlist table
-      await deleteWatchlistItem(state.currentUser.id, item.titleId);
+      // Delete from main watchlist table using client
+      try {
+        await supabase
+          .from('watchlist_items')
+          .delete()
+          .eq('user_id', state.currentUser.id)
+          .eq('title_id', item.titleId);
+      } catch (err) {
+        console.error('Failed to remove from watchlist:', err);
+      }
       
       // Also explicitly delete from all list tables to ensure DB consistency
       // (in case there's no cascade delete configured)
