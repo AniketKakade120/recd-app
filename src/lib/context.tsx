@@ -685,34 +685,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      if (!session?.user) {
+      let activeSession = session;
+
+      if (!activeSession?.user) {
         if (event === 'SIGNED_OUT') {
-          // Handled explicitly by logout(), but double-check here
           setState(prev => ({ ...prev, currentUser: null, isAuthenticated: false, isOnboarded: false, loading: false, authStatus: 'unauthenticated' }));
+          return;
         } else if (event === 'INITIAL_SESSION') {
-          console.log('[Auth] getSession result (INITIAL_SESSION): null. Attempting recovery...');
+          console.log('[Auth Debug] getSession result (INITIAL_SESSION): null. Attempting recovery...');
           try {
             const { data: { session: recoveredSession } } = await supabase.auth.getSession();
             if (recoveredSession?.user) {
-              console.log('[Auth] Session recovered via getSession');
-              return; // re-enter
+              console.log('[Auth Debug] Session recovered via getSession');
+              activeSession = recoveredSession;
             }
           } catch (e) {
-            console.warn('[Auth] getSession recovery failed:', e);
+            console.warn('[Auth Debug] getSession recovery failed:', e);
           }
-          setState(prev => ({ ...prev, loading: false, authStatus: 'unauthenticated' }));
         }
+      }
+
+      if (!activeSession?.user) {
+        setState(prev => ({ ...prev, loading: false, authStatus: 'unauthenticated' }));
         return;
       }
 
-      // We have a session
+      // We have an active session
       if (event !== 'TOKEN_REFRESHED') {
         setState(prev => ({ ...prev, isAuthenticated: true, loading: true, authStatus: 'authenticated_loading_profile' }));
       }
 
       try {
-        console.log('[Auth] Fetching profile');
-        const profileData = await fetchOrCreateProfile(session.user);
+        console.log('[Auth Debug] Fetching profile');
+        const profileData = await fetchOrCreateProfile(activeSession.user);
         console.log('[Auth] Profile ready');
         
         setState(prev => ({
