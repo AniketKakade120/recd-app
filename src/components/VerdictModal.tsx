@@ -380,8 +380,14 @@ export default function VerdictModal({ recommendationId, isOpen, onClose }: Verd
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-0 sm:p-4 bg-background/90 backdrop-blur-md">
-      <div className="w-full h-full sm:h-auto sm:max-w-3xl bg-surface border-x sm:border border-border sm:rounded-[40px] shadow-2xl flex flex-col relative overflow-hidden">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-background/90 backdrop-blur-md" 
+        onClick={onClose} 
+      />
+
+      <div className="relative z-10 w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-3xl bg-surface border-x sm:border border-border sm:rounded-[40px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
         
         {/* Close Button */}
         <button 
