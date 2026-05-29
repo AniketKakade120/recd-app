@@ -237,31 +237,22 @@ export default function HomePage() {
             </section>
           )}
 
-          {/* Find Your Crew */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-base font-bold text-bone">Find Your Crew</h2>
-                <p className="text-xs text-muted mt-0.5">Join groups, meet your people, and start sharing great picks.</p>
-              </div>
-              <Link href="/groups" className="text-xs text-cinema-red hover:text-cinema-red/80 transition-colors shrink-0 ml-4 font-medium">View all groups →</Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {MOCK_GROUPS.map(g => (
-                <div key={g.name} className="rounded-2xl bg-surface border border-border overflow-hidden card-hover flex flex-col group">
-                  <div className={`h-20 ${g.gradient} relative`}>
-                    <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
-                    <div className="absolute bottom-0 left-4 translate-y-1/2 w-11 h-11 rounded-xl bg-ink border-2 border-surface flex items-center justify-center text-lg shadow-lg z-10">{g.emoji}</div>
-                  </div>
-                  <div className="p-5 pt-8 flex flex-col flex-1">
-                    <h3 className="font-bold text-bone text-[15px] mb-1">{g.name}</h3>
-                    <p className="text-xs text-muted mb-3 flex-1 leading-relaxed line-clamp-2">{g.desc}</p>
-                    <p className="text-[11px] text-bone/60 font-medium mb-3">{g.members} members</p>
-                    <Link href="/groups" className="w-full py-2 bg-cinema-red/10 border border-cinema-red/20 text-cinema-red text-xs font-bold rounded-lg text-center hover:bg-cinema-red/15 transition-colors btn-press">Join group</Link>
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Build Your Crew */}
+          <section className="rounded-[24px] bg-gradient-to-br from-cinema-red/10 via-surface to-surface border border-cinema-red/20 p-8 md:p-12 text-center relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-64 h-64 bg-cinema-red/10 blur-[80px] rounded-full translate-x-1/2 -translate-y-1/2" />
+             <div className="relative z-10">
+                <h2 className="text-2xl font-bold text-bone font-editorial mb-3 tracking-tight">Great taste is better together.</h2>
+                <p className="text-sm text-muted max-w-md mx-auto mb-8 leading-relaxed">
+                  Rec'd is built for private circles. Invite your friends to start sharing and debating what's actually worth watching.
+                </p>
+                <button 
+                  onClick={() => setInviteOpen(true)}
+                  className="px-8 py-3.5 bg-cinema-red text-bone font-black uppercase tracking-widest rounded-xl hover:bg-cinema-red/90 transition-all btn-press shadow-xl shadow-cinema-red/20 text-xs inline-flex items-center gap-2"
+                >
+                  <IconPlus />
+                  Invite Friends
+                </button>
+             </div>
           </section>
         </div>
 
