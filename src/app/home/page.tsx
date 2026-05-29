@@ -22,12 +22,7 @@ const IconPlus = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 );
 
-/* ─── Mock Groups ──────────────────────────────────────────── */
-const MOCK_GROUPS = [
-  { name: 'Film Chaos Club', desc: 'Unpredictable picks. Great conversations.', members: '12.4k', gradient: 'poster-gradient-2', emoji: '🎬' },
-  { name: 'Slow Burn Club', desc: 'Deep stories. Strong characters. No rush.', members: '8.7k', gradient: 'poster-gradient-3', emoji: '🕯️' },
-  { name: 'Comfort Watchers', desc: 'Feel-good picks for every mood.', members: '15.2k', gradient: 'poster-gradient-4', emoji: '☕' },
-];
+
 
 export default function HomePage() {
   const { currentUser, tasteScore, activity, titles, recommendations, ratings, getUser, getTitle, crewConnections, watchlist, openRecommendModal } = useApp();
@@ -238,11 +233,13 @@ export default function HomePage() {
           )}
 
           {/* Build Your Crew */}
-          <section className="rounded-[24px] bg-gradient-to-br from-cinema-red/10 via-surface to-surface border border-cinema-red/20 p-8 md:p-12 text-center relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-64 h-64 bg-cinema-red/10 blur-[80px] rounded-full translate-x-1/2 -translate-y-1/2" />
-             <div className="relative z-10">
+          <section className="rounded-[24px] bg-gradient-to-br from-cinema-red/10 via-surface to-surface border border-cinema-red/20 p-8 md:p-10 relative overflow-hidden flex flex-col md:flex-row items-center gap-8">
+             <div className="absolute top-0 right-0 w-64 h-64 bg-cinema-red/20 blur-[100px] rounded-full translate-x-1/3 -translate-y-1/3" />
+             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cinema-red/10 blur-[80px] rounded-full -translate-x-1/3 translate-y-1/3" />
+             
+             <div className="relative z-10 flex-1 text-center md:text-left">
                 <h2 className="text-2xl font-bold text-bone font-editorial mb-3 tracking-tight">Great taste is better together.</h2>
-                <p className="text-sm text-muted max-w-md mx-auto mb-8 leading-relaxed">
+                <p className="text-sm text-muted max-w-md mx-auto md:mx-0 mb-8 leading-relaxed">
                   Rec'd is built for private circles. Invite your friends to start sharing and debating what's actually worth watching.
                 </p>
                 <button 
@@ -252,6 +249,29 @@ export default function HomePage() {
                   <IconPlus />
                   Invite Friends
                 </button>
+             </div>
+
+             <div className="relative z-10 w-full max-w-[240px] aspect-square flex items-center justify-center shrink-0">
+               {/* Decorative Graphic */}
+               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cinema-red/20 via-transparent to-transparent opacity-80 blur-2xl" />
+               
+               <div className="absolute transform -translate-x-10 translate-y-8 z-10 animate-in fade-in zoom-in duration-700 delay-100 shadow-xl rounded-full ring-2 ring-surface">
+                  <UserAvatar name="A" size="md" />
+               </div>
+               <div className="absolute transform z-30 animate-in fade-in zoom-in duration-700 shadow-2xl rounded-full ring-4 ring-surface">
+                  <UserAvatar name="M" size="lg" />
+               </div>
+               <div className="absolute transform translate-x-12 -translate-y-10 z-20 animate-in fade-in zoom-in duration-700 delay-200 shadow-xl rounded-full ring-2 ring-surface">
+                  <UserAvatar name="S" size="sm" />
+               </div>
+               
+               {/* Floating Badges */}
+               <div className="absolute transform -translate-x-16 -translate-y-6 bg-surface border border-white/10 rounded-full p-2 text-cinema-red shadow-lg animate-in fade-in zoom-in duration-700 delay-300 hover:scale-110 transition-transform">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+               </div>
+               <div className="absolute transform translate-x-16 translate-y-6 bg-surface border border-white/10 rounded-full p-2 text-cinema-red shadow-lg animate-in fade-in zoom-in duration-700 delay-500 hover:scale-110 transition-transform">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
+               </div>
              </div>
           </section>
         </div>
