@@ -1273,8 +1273,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ...memberIds.map(id => ({ group_id: group.id, user_id: id, role: 'member' }))
         ];
         
-        await supabase.from('group_members').insert(members);
+        const { error: memberError } = await supabase.from('group_members').insert(members);
+        
+        if (memberError) {
+          console.error('Failed to insert group members:', memberError);
+          addToast(`Member Error: ${memberError.message}`, { type: 'error' });
+          return;
+        }
+
         refreshData();
+        return;
+      } else {
+        console.error('Failed to create group:', error);
+        addToast(`Group Error: ${error.message}`, { type: 'error' });
         return;
       }
     }
