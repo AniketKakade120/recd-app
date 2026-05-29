@@ -56,10 +56,10 @@ export default function AddToListModal({ isOpen, onClose, titleId }: AddToListMo
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6">
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={onClose} />
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
+      <div className="absolute inset-0 bg-ink/80 backdrop-blur-md" onClick={onClose} />
       
-      <div className="relative w-full max-w-md bg-surface border-t sm:border border-border rounded-t-[32px] sm:rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
+      <div className="relative z-10 w-full max-w-md bg-surface border-t sm:border border-border rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-300 max-h-[90vh] flex flex-col">
         <div className="p-6 sm:p-8">
           {!success ? (
             <>

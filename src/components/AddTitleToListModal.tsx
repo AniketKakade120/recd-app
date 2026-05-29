@@ -30,14 +30,14 @@ export default function AddTitleToListModal({ isOpen, onClose, list }: AddTitleT
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
       <div 
-        className="absolute inset-0 bg-background/80 backdrop-blur-md animate-in fade-in duration-300" 
+        className="absolute inset-0 bg-ink/80 backdrop-blur-md" 
         onClick={onClose} 
       />
       
       <div 
-        className="relative w-full max-w-lg bg-surface border border-border rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+        className="relative z-10 w-full max-w-lg bg-surface border border-border rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
       >
         <div className="p-8 pb-4">
           <div className="flex items-center justify-between mb-6">

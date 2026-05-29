@@ -68,7 +68,7 @@ export default function RecommendationCard({ recommendation: rec, compact = fals
 
   if (collapsed) {
     return (
-      <Link href={linkHref} className="block">
+      <Link href={linkHref} className="block active:scale-[0.98] transition-transform">
         <div className="rounded-xl bg-surface border border-border p-3 card-hover flex items-center gap-4 group">
           <div className={`w-10 h-14 shrink-0 ${!title.posterUrl ? `poster-gradient-${title.posterGradient}` : 'bg-surface'} rounded-md overflow-hidden relative shadow-sm`}>
              {title.posterUrl && <img src={title.posterUrl} alt={title.title} className="absolute inset-0 w-full h-full object-cover" />}
@@ -88,7 +88,7 @@ export default function RecommendationCard({ recommendation: rec, compact = fals
   }
 
   return (
-    <div className="rounded-xl bg-surface border border-border p-4 card-hover flex gap-4 group relative overflow-hidden">
+    <div className="rounded-xl bg-surface/80 backdrop-blur-md border border-border p-4 card-hover flex gap-4 group relative overflow-hidden active:scale-[0.98] transition-transform">
       <Link href={linkHref} className="shrink-0 relative z-10">
         <div className={`w-[100px] sm:w-[120px] aspect-[2/3] rounded-lg overflow-hidden bg-surface relative`}>
           <div className={`absolute inset-0 poster-gradient-${title.posterGradient || '1'} opacity-60`} />

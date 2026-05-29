@@ -58,10 +58,10 @@ export default function EditPreferencesModal({ isOpen, onClose }: EditPreference
   const currentTabData = tabs.find(t => t.id === activeTab)!;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center">
-      <div className="absolute inset-0 bg-ink/80 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-300">
+      <div className="absolute inset-0 bg-ink/80 backdrop-blur-md" onClick={onClose} />
       
-      <div className="relative w-full md:max-w-xl bg-surface border border-border rounded-t-[32px] md:rounded-[32px] p-8 slide-up md:mx-4 max-h-[90vh] flex flex-col">
+      <div className="relative z-10 w-full md:max-w-xl bg-surface border border-border rounded-t-3xl md:rounded-3xl p-8 animate-in slide-in-from-bottom-8 duration-300 max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between mb-8 shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-bone font-editorial">Taste Profile</h2>

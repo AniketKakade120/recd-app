@@ -91,15 +91,15 @@ export default function GiveVerdictModal() {
   const isSaved = watchlist.some(w => w.titleId === title.id);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-ink/90 backdrop-blur-md"
+        className="absolute inset-0 bg-ink/80 backdrop-blur-md"
         onClick={closeGiveVerdictModal}
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-lg bg-surface border border-border shadow-2xl rounded-3xl flex flex-col max-h-[90vh] overflow-hidden zoom-in-95 duration-200">
+      <div className="relative z-10 w-full max-w-lg bg-surface border border-border shadow-2xl rounded-3xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
         
         {/* Header */}
         <div className="flex justify-between items-center p-5 border-b border-border bg-ink/50">

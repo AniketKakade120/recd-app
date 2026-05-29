@@ -35,8 +35,8 @@ export default function GroupCard({ group, showJoin }: GroupCardProps) {
 
   return (
     <>
-    <Link href={`/groups/${group.id}`} className="block group">
-      <div className="rounded-[32px] bg-surface border border-border hover:border-border-strong card-hover h-full flex flex-col relative overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500">
+    <Link href={`/groups/${group.id}`} className="block group transition-transform duration-300 active:scale-[0.98]">
+      <div className="rounded-[32px] bg-surface/80 backdrop-blur-md border border-border hover:border-border-strong card-hover h-full flex flex-col relative overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500">
         
         {/* Cover Image Banner */}
         <div className={`h-32 w-full relative ${!group.coverImage ? `poster-gradient-${(group.avatarGradient % 10) + 1}` : ''}`}>

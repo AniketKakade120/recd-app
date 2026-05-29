@@ -45,9 +45,9 @@ export default function InviteModal({ isOpen, onClose, groupName }: InviteModalP
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center">
-      <div className="absolute inset-0 bg-ink/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full md:max-w-md bg-surface border border-border rounded-t-2xl md:rounded-2xl p-6 slide-up md:mx-4 overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-300">
+      <div className="absolute inset-0 bg-ink/80 backdrop-blur-md" onClick={onClose} />
+      <div className="relative z-10 w-full md:max-w-md bg-surface border border-border rounded-t-3xl md:rounded-3xl p-6 overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
         
         {/* Glow Effect */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-cinema-red/10 blur-3xl rounded-full translate-x-10 -translate-y-10" />

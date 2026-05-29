@@ -84,13 +84,13 @@ export default function GroupModal({ isOpen, onClose, group }: GroupModalProps) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
       <div 
-        className="absolute inset-0 bg-background/80 backdrop-blur-md animate-in fade-in duration-300" 
+        className="absolute inset-0 bg-ink/80 backdrop-blur-md" 
         onClick={onClose} 
       />
       
-      <div className="relative w-full max-w-lg h-[85vh] max-h-[800px] bg-surface border border-white/5 rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 flex flex-col">
+      <div className="relative z-10 w-full max-w-lg h-[85vh] max-h-[90vh] bg-surface border border-border rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 flex flex-col">
         
         {/* Progress Bar - Fixed at top */}
         <div className="flex-none w-full h-1 bg-white/5">

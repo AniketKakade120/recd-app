@@ -151,10 +151,10 @@ export default function CreateListModal({ isOpen, onClose, list, preselectedTitl
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-background/90 backdrop-blur-md animate-in fade-in duration-500" onClick={onClose} />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
+      <div className="absolute inset-0 bg-ink/80 backdrop-blur-md" onClick={onClose} />
       
-      <div className="relative w-full max-w-2xl h-[85vh] max-h-[800px] bg-surface border border-border rounded-[40px] overflow-hidden shadow-2xl animate-in zoom-in slide-in-from-bottom-8 duration-500 flex flex-col">
+      <div className="relative z-10 w-full max-w-2xl h-[85vh] max-h-[90vh] bg-surface border border-border rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 flex flex-col">
         {/* Step Indicator (Only for creation) */}
         {!list && (
           <div className="flex-none flex px-10 pt-10 pb-4 gap-2">
