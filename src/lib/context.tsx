@@ -645,9 +645,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
           recoveredIsOnboarded = !!myProfileRecord.onboarding_completed;
         }
 
+        // Dynamically calculate taste score based on actual DB records
+        let hydratedTasteScore = prev.tasteScore;
+        if (recoveredCurrentUser) {
+          const myRatingsReceived = dbRatings.filter(r => {
+            const rec = dbRecs.find(re => re.id === r.recommendationId);
+            return rec?.recommendedBy === recoveredCurrentUser!.id && r.ratedBy !== recoveredCurrentUser!.id;
+          });
+
+          const myTotalSent = dbRecs.filter(r => r.recommendedBy === recoveredCurrentUser!.id).length;
+
+          const impacts = myRatingsReceived.map((rating, idx) => {
+            const rec = dbRecs.find(re => re.id === rating.recommendationId);
+            const impact = calculateRecommendationImpact({
+              contentRating: rating.contentRating,
+              recommendationResult: rating.recommendationResult as any
+            });
+            return {
+              id: `imp-${idx}`,
+              recommendationId: rating.recommendationId,
+              recommenderId: rec!.recommendedBy,
+              receiverId: rating.ratedBy,
+              contentRating: rating.contentRating,
+              contentRatingScore: impact.contentRatingScore,
+              recommendationResult: rating.recommendationResult,
+              recommendationResultScore: impact.recommendationResultScore,
+              impactScore: impact.impactScore,
+              createdAt: rating.createdAt || new Date().toISOString()
+            };
+          });
+
+          hydratedTasteScore = calculateTasteScore({
+            userId: recoveredCurrentUser.id,
+            ratingsReceived: impacts as any,
+            totalSent: myTotalSent,
+            scope: 'global'
+          });
+
+          recoveredCurrentUser = {
+            ...recoveredCurrentUser,
+            tasteScore: hydratedTasteScore.score
+          };
+        }
+
         return {
           ...prev,
           currentUser: recoveredCurrentUser,
+          tasteScore: hydratedTasteScore,
           isOnboarded: recoveredIsOnboarded,
           titles: dbTitles.length > 0 ? [...dbTitles, ...mockTitles.filter(mt => !dbTitles.some(dt => dt.id === mt.id))] : prev.titles,
           recommendations: dbRecs,
