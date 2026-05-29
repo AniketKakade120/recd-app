@@ -65,7 +65,7 @@ export default function GroupModal({ isOpen, onClose, group }: GroupModalProps) 
       addToast('Group updated successfully');
     } else {
       const newGroup: Group = {
-        id: `group-${Date.now()}`,
+        id: crypto.randomUUID(),
         name,
         vibe,
         description,
