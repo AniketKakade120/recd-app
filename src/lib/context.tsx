@@ -1606,13 +1606,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
             description: data.description || null,
             privacy: data.privacy || 'private',
             cover_style: data.coverStyle || 'gradient',
-            title_ids: []
+            share_slug: Math.random().toString(36).substring(2, 10)
           })
           .select()
           .single();
 
         if (error) throw error;
         
+        const finalTitleIds = data.titleIds || [];
+        if (finalTitleIds.length > 0) {
+          const { error: itemsError } = await supabase
+            .from('watchlist_list_items')
+            .insert(finalTitleIds.map(tId => ({
+              list_id: dbList.id,
+              title_id: tId
+            })));
+          if (itemsError) console.error('Failed to insert initial list items', itemsError);
+        }
+
         setState(prev => ({
           ...prev,
           watchlistLists: prev.watchlistLists.map(l => l.id === id ? {
@@ -1622,7 +1633,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             description: dbList.description,
             privacy: dbList.privacy,
             coverStyle: dbList.cover_style,
-            titleIds: dbList.title_ids || [],
+            titleIds: finalTitleIds,
             createdAt: dbList.created_at,
             updatedAt: dbList.updated_at
           } : l)
