@@ -22,6 +22,7 @@ export default function ListDetailPage({ params }: { params: Promise<{ listId: s
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [activeTab, setActiveTab] = useState<'movies' | 'watched'>('movies');
   
   const list = watchlistLists.find(l => l.id === listId);
   const creator = list ? getUser(list.userId) : null;
@@ -49,6 +50,14 @@ export default function ListDetailPage({ params }: { params: Promise<{ listId: s
       };
     });
   }, [list, watchlist]);
+
+  const filteredItems = useMemo(() => {
+    if (!list) return [];
+    if (activeTab === 'watched') {
+      return listItems.filter(item => list.watchedTitleIds?.includes(item.titleId));
+    }
+    return listItems.filter(item => !list.watchedTitleIds?.includes(item.titleId));
+  }, [list, listItems, activeTab]);
 
   if (!list) {
     return (
@@ -209,10 +218,21 @@ export default function ListDetailPage({ params }: { params: Promise<{ listId: s
           </div>
 
           {/* Titles Grid */}
-          <div className="flex items-center justify-between mb-10 border-b border-white/5 pb-6">
-             <h2 className="text-xl font-bold text-bone font-editorial">
-               The Collection
-             </h2>
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 border-b border-white/5 pb-6 gap-6">
+             <div className="flex items-center gap-6">
+                <button 
+                  onClick={() => setActiveTab('movies')}
+                  className={`text-xl font-bold font-editorial transition-all ${activeTab === 'movies' ? 'text-bone' : 'text-muted hover:text-bone/80'}`}
+                >
+                  Movies
+                </button>
+                <button 
+                  onClick={() => setActiveTab('watched')}
+                  className={`text-xl font-bold font-editorial transition-all ${activeTab === 'watched' ? 'text-bone' : 'text-muted hover:text-bone/80'}`}
+                >
+                  Watched
+                </button>
+             </div>
              <div className="flex items-center gap-6">
                 <button className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-bone transition-colors">By Date Added</button>
                 <button className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-bone transition-colors">Grid View</button>
@@ -220,10 +240,10 @@ export default function ListDetailPage({ params }: { params: Promise<{ listId: s
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-             {listItems.map(item => (
+             {filteredItems.map(item => (
                <ListTitleCard key={item.id} item={item} list={list} />
              ))}
-             {listItems.length === 0 && (
+             {filteredItems.length === 0 && (
                <div className="col-span-full py-32 flex flex-col items-center text-center">
                   <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center text-bone/10 mb-8 border border-white/5 border-dashed">
                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M12 8v8m-4-4h8"/></svg>

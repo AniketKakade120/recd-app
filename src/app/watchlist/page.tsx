@@ -11,28 +11,18 @@ import { getWatchlistItemType } from '@/lib/logic/action-system';
 export default function WatchlistPage() {
   const { watchlist, watchlistLists, currentUser } = useApp();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'all' | 'lists' | 'from_crew' | 'pending' | 'stamped' | 'saved_by_me'>('all');
+  const [activeTab, setActiveTab] = useState<'lists' | 'saved_by_me'>('lists');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const filteredItems = useMemo(() => {
     switch (activeTab) {
-      case 'all': return watchlist;
-      case 'from_crew': return watchlist.filter(i => i.addedBy === 'recommendation' || i.addedBy === 'group');
-      case 'pending': return watchlist.filter(i => i.verdictState === 'verdict_pending');
-      case 'stamped': return watchlist.filter(i => i.verdictState === 'verdict_given' && i.stamp);
       case 'saved_by_me': return watchlist.filter(i => i.addedBy === 'self');
       default: return watchlist;
     }
   }, [watchlist, activeTab]);
 
-
-
   const tabs = [
-    { id: 'all', label: 'All' },
     { id: 'lists', label: 'Lists' },
-    { id: 'from_crew', label: 'From Crew' },
-    { id: 'pending', label: 'Pending Verdicts' },
-    { id: 'stamped', label: 'Stamped' },
     { id: 'saved_by_me', label: 'Saved by Me' },
   ];
 

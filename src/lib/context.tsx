@@ -127,6 +127,8 @@ interface AppContextType extends AppState {
   deleteWatchlistList: (listId: string) => Promise<void>;
   addTitleToList: (titleId: string, listId: string) => Promise<void>;
   removeTitleFromList: (listId: string, titleId: string) => Promise<void>;
+  markAsWatchedInList: (listId: string, titleId: string) => Promise<void>;
+  unmarkAsWatchedInList: (listId: string, titleId: string) => Promise<void>;
   moveToList: (itemId: string, listId: string) => void;
   removeFromWatchlist: (id: string) => Promise<void>;
   updatePreferences: (data: Partial<UserPreferences>) => Promise<void>;
@@ -519,6 +521,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         coverStyle: l.cover_style,
         coverImage: l.cover_image,
         titleIds: listItemsResult.data ? listItemsResult.data.filter((item: any) => item.list_id === l.id).map((item: any) => item.title_id) : [],
+        watchedTitleIds: listItemsResult.data ? listItemsResult.data.filter((item: any) => item.list_id === l.id && item.watched).map((item: any) => item.title_id) : [],
         createdAt: l.created_at,
         updatedAt: l.updated_at
       })) : [];
@@ -1587,6 +1590,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       privacy: data.privacy || 'private',
       coverStyle: data.coverStyle || 'gradient',
       titleIds: data.titleIds || [],
+      watchedTitleIds: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -1634,6 +1638,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             privacy: dbList.privacy,
             coverStyle: dbList.cover_style,
             titleIds: finalTitleIds,
+            watchedTitleIds: [],
             createdAt: dbList.created_at,
             updatedAt: dbList.updated_at
           } : l)
@@ -1699,7 +1704,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setState(prev => {
       const updatedLists = prev.watchlistLists.map(list => {
         if (list.id === listId && !list.titleIds.includes(titleId)) {
-          return { ...list, titleIds: [...list.titleIds, titleId], updatedAt: new Date().toISOString() };
+          return { ...list, titleIds: [...list.titleIds, titleId], watchedTitleIds: list.watchedTitleIds || [], updatedAt: new Date().toISOString() };
         }
         return list;
       });
@@ -1772,7 +1777,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // 1. Optimistic update
     setState(prev => {
       const updatedLists = prev.watchlistLists.map(l => 
-        l.id === listId ? { ...l, titleIds: l.titleIds.filter(id => id !== titleId), updatedAt: new Date().toISOString() } : l
+        l.id === listId ? { ...l, titleIds: l.titleIds.filter(id => id !== titleId), watchedTitleIds: (l.watchedTitleIds || []).filter(id => id !== titleId), updatedAt: new Date().toISOString() } : l
       );
       
       const updatedWatchlist = prev.watchlist.map(item => {
@@ -1795,6 +1800,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [refreshData]);
 
+  const markAsWatchedInList = useCallback(async (listId: string, titleId: string) => {
+    setState(prev => {
+      const updatedLists = prev.watchlistLists.map(l => 
+        l.id === listId && !l.watchedTitleIds?.includes(titleId)
+          ? { ...l, watchedTitleIds: [...(l.watchedTitleIds || []), titleId], updatedAt: new Date().toISOString() }
+          : l
+      );
+      return { ...prev, watchlistLists: updatedLists };
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      await supabase
+        .from('watchlist_list_items')
+        .update({ watched: true })
+        .eq('list_id', listId)
+        .eq('title_id', titleId);
+      refreshData();
+    }
+  }, [refreshData]);
+
+  const unmarkAsWatchedInList = useCallback(async (listId: string, titleId: string) => {
+    setState(prev => {
+      const updatedLists = prev.watchlistLists.map(l => 
+        l.id === listId
+          ? { ...l, watchedTitleIds: (l.watchedTitleIds || []).filter(id => id !== titleId), updatedAt: new Date().toISOString() }
+          : l
+      );
+      return { ...prev, watchlistLists: updatedLists };
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      await supabase
+        .from('watchlist_list_items')
+        .update({ watched: false })
+        .eq('list_id', listId)
+        .eq('title_id', titleId);
+      refreshData();
+    }
+  }, [refreshData]);
+
   const moveToList = useCallback((itemId: string, listId: string) => {
     setState(prev => {
       const updatedWatchlist = prev.watchlist.map(item => {
@@ -1807,7 +1852,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const item = prev.watchlist.find(i => i.id === itemId);
       const updatedLists = prev.watchlistLists.map(list => {
         if (list.id === listId && item && !list.titleIds.includes(item.titleId)) {
-          return { ...list, titleIds: [...list.titleIds, item.titleId], updatedAt: new Date().toISOString() };
+          return { ...list, titleIds: [...list.titleIds, item.titleId], watchedTitleIds: list.watchedTitleIds || [], updatedAt: new Date().toISOString() };
         }
         return list;
       });
@@ -1825,7 +1870,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       
       const updatedLists = prev.watchlistLists.map(l => {
         if (targetTitleId && l.titleIds.includes(targetTitleId)) {
-          return { ...l, titleIds: l.titleIds.filter(tid => tid !== targetTitleId), updatedAt: new Date().toISOString() };
+          return { ...l, titleIds: l.titleIds.filter(tid => tid !== targetTitleId), watchedTitleIds: (l.watchedTitleIds || []).filter(tid => tid !== targetTitleId), updatedAt: new Date().toISOString() };
         }
         return l;
       });
@@ -2015,6 +2060,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteWatchlistList,
     addTitleToList,
     removeTitleFromList,
+    markAsWatchedInList,
+    unmarkAsWatchedInList,
     moveToList,
     removeFromWatchlist,
     updatePreferences,

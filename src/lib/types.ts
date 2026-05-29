@@ -428,6 +428,7 @@ export interface WatchlistList {
   coverStyle: 'collage' | 'gradient' | 'poster_stack';
   coverImage?: string;
   titleIds: string[];
+  watchedTitleIds: string[];
   createdAt: string;
   updatedAt: string;
 }

@@ -14,13 +14,14 @@ interface ListTitleCardProps {
 }
 
 export default function ListTitleCard({ item, list }: ListTitleCardProps) {
-  const { getTitle, getUser, removeTitleFromList, addToast, addTitleToList, openRecommendModal, openGiveVerdictModal } = useApp();
+  const { getTitle, getUser, removeTitleFromList, addToast, addTitleToList, openRecommendModal, openGiveVerdictModal, markAsWatchedInList, unmarkAsWatchedInList } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [showVerdictModal, setShowVerdictModal] = useState(false);
   const router = useRouter();
   
   const title = getTitle(item.titleId);
   const recommender = item.recommendedBy ? getUser(item.recommendedBy) : null;
+  const isWatched = list.watchedTitleIds?.includes(item.titleId) || false;
 
   if (!title) return null;
 
@@ -129,27 +130,45 @@ export default function ListTitleCard({ item, list }: ListTitleCardProps) {
 
         <div className="mt-auto space-y-3">
           {/* Action Row */}
-          <div className="grid grid-cols-1 gap-2 pt-3 border-t border-white/5 pointer-events-auto">
+          <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5 pointer-events-auto">
              {item.verdictState === 'verdict_pending' ? (
                <button 
                  onClick={handleVerdictAction}
-                 className="w-full py-2 bg-cinema-red text-bone text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-cinema-red/90 transition-all btn-press"
+                 className="py-2 bg-cinema-red text-bone text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-cinema-red/90 transition-all btn-press"
                >
-                 Give Verdict
+                 Verdict
                </button>
              ) : item.verdictState === 'verdict_given' ? (
                <button 
                  onClick={handleVerdictAction}
-                 className="w-full py-2 bg-white/5 border border-white/10 text-bone text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-white/10 transition-all"
+                 className="py-2 bg-white/5 border border-white/10 text-bone text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-white/10 transition-all"
                >
-                 View Verdict
+                 Verdict
                </button>
              ) : (
                <button 
                  onClick={handleVerdictAction}
-                 className="w-full py-2 bg-white/5 border border-white/10 text-bone text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-white/10 transition-all"
+                 className="py-2 bg-white/5 border border-white/10 text-bone text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-white/10 transition-all"
                >
                  View
+               </button>
+             )}
+
+             {isWatched ? (
+               <button 
+                 onClick={(e) => { e.preventDefault(); unmarkAsWatchedInList(list.id, title.id); }}
+                 className="py-2 bg-bone text-ink text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-bone/90 transition-all btn-press flex items-center justify-center gap-1.5"
+               >
+                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
+                 Watched
+               </button>
+             ) : (
+               <button 
+                 onClick={(e) => { e.preventDefault(); markAsWatchedInList(list.id, title.id); }}
+                 className="py-2 bg-white/5 border border-white/10 text-bone text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-white/10 transition-all btn-press flex items-center justify-center gap-1.5"
+               >
+                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                 Mark Watched
                </button>
              )}
           </div>
