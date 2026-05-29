@@ -49,7 +49,7 @@ export default function RecommendModal() {
       setSuccess(false);
       setSubmitting(false);
     }
-  }, [recommendModalOpen, initTitleId, initGroupId, initRecipientId, getTitle]);
+  }, [recommendModalOpen]); // Only run when modal is opened/closed
 
   if (!recommendModalOpen) return null;
 
