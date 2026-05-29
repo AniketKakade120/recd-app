@@ -75,12 +75,19 @@ export interface ActionSet {
  * Returns the CTA matrix for a recommendation based on receiver status and viewer role
  */
 export function getRecommendationActions(
-  verdictState: VerdictState,
-  role: ViewerRole
+  ctx: ViewerContext
 ): ActionSet {
+  // If the user has rated this, they should always see View/Edit Verdict
+  if (ctx.viewerRole === 'ratedReceiver' || ctx.hasRated) {
+    return {
+      primary: { label: 'View Verdict', action: 'view_verdict', variant: 'primary' },
+      secondary: { label: 'Edit Verdict', action: 'edit_verdict', variant: 'secondary' }
+    };
+  }
+
   // Recommenders see outcome
-  if (role === 'recommender') {
-    if (verdictState === 'verdict_given') {
+  if (ctx.viewerRole === 'recommender') {
+    if (ctx.verdictState === 'verdict_given') {
       return {
         primary: { label: 'View Verdict', action: 'view_verdict', variant: 'primary' }
       };
@@ -92,8 +99,8 @@ export function getRecommendationActions(
   }
 
   // Outsiders or Group Members (not the target)
-  if (role === 'outsider' || role === 'groupMember') {
-    if (verdictState === 'verdict_given') {
+  if (ctx.viewerRole === 'outsider' || ctx.viewerRole === 'groupMember') {
+    if (ctx.verdictState === 'verdict_given') {
       return {
         primary: { label: 'View Verdict', action: 'view_verdict', variant: 'primary' }
       };
@@ -105,7 +112,8 @@ export function getRecommendationActions(
   }
 
   // Receivers (The core loop: Give vs View)
-  switch (verdictState) {
+  // At this point, we know they are a receiver but haven't rated it yet.
+  switch (ctx.verdictState) {
     case 'verdict_pending':
       return {
         primary: { label: 'Give Verdict', action: 'rate', variant: 'primary' },
@@ -114,10 +122,9 @@ export function getRecommendationActions(
     
     case 'verdict_given':
       return {
-        primary: { label: 'View Verdict', action: 'view_verdict', variant: 'primary' },
-        secondary: { label: 'Edit Verdict', action: 'edit_verdict', variant: 'secondary' }
+        primary: { label: 'Give Verdict', action: 'rate', variant: 'primary' },
+        secondary: { label: 'Save', action: 'save', variant: 'secondary' }
       };
-    
     default:
       return {
         primary: { label: 'View Details', action: 'view_details', variant: 'primary' }

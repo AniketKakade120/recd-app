@@ -39,8 +39,9 @@ export default function ProfilePage() {
   const badges = getUserBadges(currentUser.id);
   const given = recommendations.filter(r => r.recommendedBy === currentUser.id);
   const received = recommendations.filter(r => r.recommendedToUserIds?.includes(currentUser.id));
-  const pending = received.filter(r => r.verdictState === 'verdict_pending');
-  const givenVerdicts = received.filter(r => r.verdictState === 'verdict_given');
+  const myRatedRecIds = new Set(ratings.filter(rat => rat.ratedBy === currentUser.id).map(rat => rat.recommendationId));
+  const pending = received.filter(r => !myRatedRecIds.has(r.id));
+  const givenVerdicts = received.filter(r => myRatedRecIds.has(r.id));
   const rated = ratings.filter(r => r.ratedBy === currentUser.id);
   const myGroupIds = groupMembers.filter(gm => gm.userId === currentUser.id).map(gm => gm.groupId);
   const myGroups = groups.filter(g => myGroupIds.includes(g.id));
@@ -325,7 +326,7 @@ export default function ProfilePage() {
                                 <p className="text-xs text-muted mb-2">from {fromUser?.displayName}</p>
                               </div>
                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-white/5 bg-white/5 text-muted">
-                                 {rec.verdictState === 'verdict_given' ? 'Verdict Given' : 'Verdict Pending'}
+                                 {myRatedRecIds.has(rec.id) ? 'Verdict Given' : 'Verdict Pending'}
                                </span>
                             </div>
                             <p className="text-sm text-bone/80 italic line-clamp-1 mb-auto leading-relaxed">&ldquo;{rec.reason}&rdquo;</p>

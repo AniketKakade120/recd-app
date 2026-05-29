@@ -2044,7 +2044,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getActions = useCallback((rec: Recommendation): ActionSet => {
     const context = getViewerContext(rec);
-    return getRecommendationActions(context.verdictState, context.viewerRole);
+    return getRecommendationActions(context);
   }, [getViewerContext]);
 
   const value: AppContextType = {

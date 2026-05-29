@@ -19,7 +19,6 @@ export default function GroupsPage() {
 
   const myGroupIds = groupMembers.filter(gm => gm.userId === currentUser?.id).map(gm => gm.groupId);
   const myGroups = groups.filter(g => myGroupIds.includes(g.id));
-  const discoverGroups = mockGroups.filter(g => g.privacy === 'public' && !myGroupIds.includes(g.id));
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,19 +105,7 @@ export default function GroupsPage() {
         </section>
       )}
 
-      {/* Discover Groups */}
-      <section className="space-y-8">
-        <div className="flex items-end justify-between px-1">
-          <div>
-            <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Discover Crews</h2>
-            <p className="text-xs text-muted mt-1">Public communities you might vibe with.</p>
-          </div>
-          <span className="text-[10px] font-black text-muted uppercase tracking-widest">{discoverGroups.length} Open</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-          {discoverGroups.map(g => <GroupCard key={g.id} group={g} showJoin />)}
-        </div>
-      </section>
+
 
       {groups.length === 0 && !showCreateModal && (
         <div className="py-32 text-center bg-surface/50 border border-white/5 border-dashed rounded-[40px]">

@@ -30,7 +30,7 @@ const MOCK_GROUPS = [
 ];
 
 export default function HomePage() {
-  const { currentUser, tasteScore, activity, titles, recommendations, getUser, getTitle, crewConnections, watchlist, openRecommendModal } = useApp();
+  const { currentUser, tasteScore, activity, titles, recommendations, ratings, getUser, getTitle, crewConnections, watchlist, openRecommendModal } = useApp();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [popularPicks, setPopularPicks] = useState<Title[]>([]);
   const [forceToggle, setForceToggle] = useState<null | boolean>(null);
@@ -60,12 +60,14 @@ export default function HomePage() {
   // forceToggle allows user to override for testing
   const isFirstTimeUser = forceToggle !== null ? forceToggle : !hasRecommendations;
 
+  const myRatedRecIds = new Set(ratings.filter(rat => rat.ratedBy === currentUser.id).map(rat => rat.recommendationId));
+
   const pendingVerdicts = recommendations.filter(r =>
-    r.recommendedToUserIds?.includes(currentUser.id) && r.verdictState === 'verdict_pending'
+    r.recommendedToUserIds?.includes(currentUser.id) && !myRatedRecIds.has(r.id)
   );
   const crewIds = crewConnections.map(c => c.crewMemberId);
   const crewRecommendations = recommendations.filter(r =>
-    crewIds.includes(r.recommendedBy) && (r.recommendedToUserIds?.includes(currentUser.id) || r.recommendedToGroup)
+    crewIds.includes(r.recommendedBy) && (r.recommendedToUserIds?.includes(currentUser.id) || r.recommendedToGroup) && !myRatedRecIds.has(r.id)
   );
   const percentile = Math.max(1, 100 - Math.floor(tasteScore.score / 1.1));
 
