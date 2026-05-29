@@ -25,12 +25,7 @@ export default function WatchlistPage() {
     }
   }, [watchlist, activeTab]);
 
-  const stats = [
-    { label: 'Total Picks', value: watchlist.length },
-    { label: 'Lists', value: watchlistLists.length },
-    { label: 'From Crew', value: watchlist.filter(i => i.addedBy === 'recommendation').length },
-    { label: 'Pending', value: watchlist.filter(i => i.verdictState === 'verdict_pending').length },
-  ];
+
 
   const tabs = [
     { id: 'all', label: 'All' },
@@ -69,15 +64,7 @@ export default function WatchlistPage() {
           </div>
         </div>
 
-        {/* Stats Strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
-           {stats.map(stat => (
-             <div key={stat.label} className="bg-surface border border-border p-6 rounded-3xl">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted mb-2">{stat.label}</p>
-                <p className="text-3xl font-bold text-bone">{stat.value}</p>
-             </div>
-           ))}
-        </div>
+
 
         {/* Navigation Tabs */}
         <div className="relative mb-10 border-b border-white/5 px-1">
