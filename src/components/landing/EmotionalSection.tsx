@@ -34,7 +34,7 @@ export default function EmotionalSection() {
         </motion.div>
 
         {/* The emotional exchange */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
+        <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 md:scale-125 md:mt-16 mb-8 origin-top">
           
           {/* Recommendation note */}
           <motion.div

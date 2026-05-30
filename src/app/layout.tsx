@@ -3,6 +3,7 @@ import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/lib/context";
 import AppShell from "@/components/AppShell";
+import Footer from "@/components/Footer";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-sans)" }}>
         <AppProvider>
           <AppShell>{children}</AppShell>
+          <Footer />
         </AppProvider>
       </body>
     </html>

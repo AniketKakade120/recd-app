@@ -6,11 +6,11 @@ import { motion, useScroll, useTransform, useSpring, MotionValue, useInView } fr
 import Logo from '@/components/Logo';
 import { useApp } from '@/lib/context';
 import MovieCard from '@/components/MovieCard';
-import StampBadge from '@/components/StampBadge';
+import EmptyStateMessage from '@/components/EmptyStateMessage';
+import HeaderWrapper from '@/components/HeaderWrapper';
 import UserAvatar from '@/components/UserAvatar';
 import type { Title } from '@/lib/types';
 import EmotionalSection from '@/components/landing/EmotionalSection';
-import ListsSection from '@/components/landing/ListsSection';
 import { Star, Share2, Play, ShieldCheck, MessageCircle, Send, Eye, Target, Users, Bookmark, Rocket } from 'lucide-react';
 
 // --- MOCK DATA ---
@@ -265,7 +265,7 @@ export default function LandingPage() {
       <main className="relative pt-20">
         
         {/* SEC 1: HERO */}
-        <section className="relative min-h-[100dvh] flex flex-col justify-center pt-24 pb-16 px-6 overflow-hidden">
+        <section className="relative min-h-[100dvh] flex flex-col justify-start pt-12 pb-16 px-6 overflow-hidden">
           {/* Background effects */}
           <div className="absolute inset-0 pointer-events-none -z-10">
             <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-cinema-red/8 rounded-full blur-[180px]" />
@@ -274,7 +274,7 @@ export default function LandingPage() {
 
           <div className="relative z-10 max-w-[1440px] mx-auto w-full">
             {/* Hero copy */}
-            <div className="text-center mb-16 max-w-4xl mx-auto mt-10">
+            <div className="text-center mb-12 max-w-4xl mx-auto mt-4">
               <motion.h1
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -294,26 +294,12 @@ export default function LandingPage() {
               >
                 Recommend movies and shows to the people they were meant for. They watch, rate, stamp, and tell you how it landed.
               </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <button
-                  onMouseEnter={playStampSound}
-                  onClick={handleGetStarted}
-                  className="px-10 py-4 bg-cinema-red text-bone text-xs font-black uppercase tracking-[0.2em] rounded-xl hover:bg-cinema-red/90 transition-all duration-300 shadow-[0_0_40px_rgba(234,51,51,0.2)] hover:shadow-[0_0_60px_rgba(234,51,51,0.35)] btn-press"
-                >
-                  Get Started
-                </button>
-              </motion.div>
             </div>
 
             {/* Cinematic Product Image Mockup */}
             <motion.div 
               style={{ y: heroY, scale: heroScale }}
-              className="relative w-full max-w-[900px] mx-auto z-20 perspective-[2000px]"
+              className="relative w-full max-w-[1200px] mx-auto z-20 perspective-[2000px]"
             >
               <motion.div
                 animate={{ y: [0, -15, 0], rotateX: [0, 2, -2, 0] }}
@@ -338,15 +324,14 @@ export default function LandingPage() {
         </section>
 
         {/* SEC 2: PROBLEM */}
-        <section className="min-h-screen py-20 px-6 relative border-t border-white/5 bg-gradient-to-b from-ink to-surface/30">
+        <section className="pt-32 pb-24 px-6 relative">
           <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-20">
-            <div className="lg:w-1/2 space-y-8 z-20">
-              <h2 className="text-4xl md:text-6xl font-bold font-editorial leading-tight">
-                “Trust me, bro” is not a recommendation system.
+            <div className="lg:w-1/2 space-y-6 z-20 lg:pr-10">
+              <h2 className="text-4xl md:text-6xl font-bold font-editorial leading-[1.1]">
+                “Trust me, bro”<br />
+                is not a recommendation<br />
+                system.
               </h2>
-              <p className="text-lg text-muted leading-relaxed max-w-lg">
-                Your group chat is full of movie suggestions, screenshots, and forgotten watchlists. Rec’d Club turns loose picks into real verdicts.
-              </p>
             </div>
             <div className="lg:w-1/2 relative h-[500px] w-full flex items-center justify-center">
               <div className="absolute inset-0 z-30 opacity-90 scale-110 pointer-events-none">
@@ -364,7 +349,7 @@ export default function LandingPage() {
         </section>
 
         {/* SEC 3: HOW IT WORKS */}
-        <section id="how-it-works" className="min-h-screen py-20 px-6 border-t border-white/5 bg-ink">
+        <section id="how-it-works" className="py-24 px-6 relative">
           <div className="max-w-6xl mx-auto">
             <div className="mb-20 text-center max-w-3xl mx-auto">
               <h2 className="text-5xl md:text-7xl font-bold font-editorial mb-6">Send the pick.<br/>Wait for the stamp.</h2>
@@ -403,7 +388,7 @@ export default function LandingPage() {
         </section>
 
         {/* SEC 4: PANELS */}
-        <section ref={panelsRef} className="min-h-screen py-20 px-6 border-t border-white/5 bg-gradient-to-b from-surface/20 to-ink">
+        <section ref={panelsRef} className="py-24 px-6 relative">
           <div className="max-w-[1440px] mx-auto text-center">
             <h2 className="text-5xl md:text-7xl font-bold font-editorial mb-20">Recommendations<br/>with receipts.</h2>
             <div className="flex flex-col md:flex-row gap-8 justify-center items-center opacity-90 scale-95">
@@ -473,7 +458,7 @@ export default function LandingPage() {
         <EmotionalSection />
 
         {/* SEC 5: TASTE MATCH */}
-        <section ref={matchRef} className="min-h-screen py-20 px-6 border-t border-white/5 bg-ink">
+        <section ref={matchRef} className="py-24 px-6 relative">
           <div className="max-w-6xl mx-auto text-center">
             <h2 className="text-5xl md:text-7xl font-bold font-editorial mb-6">A great movie can still be a bad rec.</h2>
             <p className="text-lg text-muted max-w-2xl mx-auto mb-32">Taste Match shows how likely a title is to land.</p>
@@ -559,7 +544,7 @@ export default function LandingPage() {
         </section>
 
         {/* SEC 6: TASTE SCORE */}
-        <section ref={scoreRef} id="taste-score" className="py-24 px-6 border-t border-white/5 bg-gradient-to-b from-ink to-surface/20">
+        <section ref={scoreRef} id="taste-score" className="py-24 px-6 relative">
           <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-16">
             <div className="md:w-1/2 space-y-6">
               <h2 className="text-5xl md:text-7xl font-bold font-editorial leading-tight">Taste Score is built, not claimed.</h2>
@@ -594,40 +579,65 @@ export default function LandingPage() {
         </section>
 
         {/* SEC 7: CREWS */}
-        <section id="crews" className="py-24 px-6 border-t border-white/5 bg-surface/30">
+        <section id="crews" className="py-24 px-6 relative">
           <div className="max-w-6xl mx-auto text-center">
             <h2 className="text-5xl md:text-7xl font-bold font-editorial mb-6">Your group chat, but with better memory.</h2>
             <div className="flex flex-wrap justify-center gap-6 mt-20">
               {[
-                { name: 'Film Chaos Club', count: 24, stamp: 'Crew Pick' },
-                { name: 'Slow Burn Club', count: 12, stamp: 'Worth It' },
+                { name: 'Film Chaos Club', count: 24, privacy: 'private', vibe: 'Movie chaos', description: 'We watch weird movies and debate them endlessly.', gradient: 3, avatarGradient: 5 },
+                { name: 'Slow Burn Club', count: 12, privacy: 'public', vibe: 'Prestige drama', description: 'Only movies over 2.5 hours allowed.', gradient: 8, avatarGradient: 2 },
               ].map((crew, i) => (
-                <div key={crew.name} className="w-[300px] bg-ink border border-white/10 rounded-[32px] p-8 text-left shadow-2xl hover:border-cinema-red/30 transition-colors">
-                  <div className="flex -space-x-3 mb-8">
-                    <UserAvatar name="A" size="sm" className="border-2 border-ink" />
-                    <UserAvatar name="B" size="sm" className="border-2 border-ink" />
-                    <UserAvatar name="C" size="sm" className="border-2 border-ink" />
+                <div key={crew.name} className="w-[340px] text-left group">
+                  <div className="rounded-[32px] bg-surface/80 backdrop-blur-md border border-white/5 hover:border-white/20 h-[380px] flex flex-col relative overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer">
+                    
+                    {/* Cover Image Banner */}
+                    <div className={`h-32 w-full relative poster-gradient-${crew.gradient}`}>
+                      <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/20 to-transparent" />
+                    </div>
+
+                    {/* Card Content Area */}
+                    <div className="px-6 pb-6 pt-0 flex flex-col flex-1 relative z-10 -mt-12">
+                      <div className="flex items-end justify-between mb-4">
+                        <div className={`w-20 h-20 rounded-[24px] shadow-2xl border-4 border-surface poster-gradient-${crew.avatarGradient} shrink-0`} />
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border border-white/10 bg-ink text-muted/60">
+                          {crew.privacy}
+                        </span>
+                      </div>
+                      
+                      <h3 className="font-bold text-xl text-bone tracking-tight group-hover:text-cinema-red transition-colors duration-300">{crew.name}</h3>
+                      <p className="text-[10px] text-cinema-red font-black tracking-[0.2em] uppercase mt-2">{crew.vibe}</p>
+
+                      <p className="text-sm text-bone/60 mt-4 mb-5 line-clamp-2 leading-relaxed flex-1 italic">&ldquo;{crew.description}&rdquo;</p>
+
+                      <div className="flex items-center justify-between mt-auto pt-5 border-t border-white/5">
+                        <div className="flex items-center gap-3">
+                          <div className="flex -space-x-2">
+                             <UserAvatar name="A" size="sm" className="border-2 border-surface" />
+                             <UserAvatar name="B" size="sm" className="border-2 border-surface" />
+                             <UserAvatar name="C" size="sm" className="border-2 border-surface" />
+                          </div>
+                          <span className="text-[10px] font-bold text-muted uppercase tracking-widest">{crew.count} members</span>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
-                  <h3 className="text-xl font-bold text-bone mb-2 font-editorial">{crew.name}</h3>
-                  <p className="text-xs text-muted mb-6 uppercase tracking-widest font-bold">{crew.count} verdicts</p>
-                  <StampBadge stamp={crew.stamp as any} size="xs" />
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <ListsSection />
 
         {/* SEC 8: FINAL CTA */}
-        <section className="relative min-h-[60vh] py-32 px-6 border-t border-white/5 bg-gradient-to-b from-ink to-cinema-red/10 overflow-hidden flex flex-col items-center justify-center text-center">
+        <section className="relative min-h-[60vh] py-32 px-6 bg-gradient-to-b from-ink to-cinema-red/10 overflow-hidden flex flex-col items-center justify-center text-center">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cinema-red/20 rounded-full blur-[150px] pointer-events-none" />
           <div className="absolute top-10 left-10 opacity-20 hidden lg:block scale-75 pointer-events-none"><MovieCard title={MOCK_TITLES.eeao} /></div>
           <div className="absolute bottom-10 right-10 opacity-20 hidden lg:block scale-75 pointer-events-none"><MovieCard title={MOCK_TITLES.spiderman} /></div>
           
           <div className="relative z-10 max-w-3xl mx-auto">
-            <h2 className="text-6xl md:text-8xl font-bold font-editorial text-bone leading-[0.9] mb-6">
-              Start the club.<br/>Send the first rec.
+            <h2 className="text-5xl md:text-7xl font-bold font-editorial text-bone leading-[1.1] tracking-tight mb-6 max-w-4xl mx-auto">
+              Send your first recommendation.
             </h2>
             <button 
               onMouseEnter={playStampSound}
