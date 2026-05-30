@@ -6,8 +6,7 @@ import { motion, useScroll, useTransform, useSpring, MotionValue, useInView } fr
 import Logo from '@/components/Logo';
 import { useApp } from '@/lib/context';
 import MovieCard from '@/components/MovieCard';
-import EmptyStateMessage from '@/components/EmptyStateMessage';
-import HeaderWrapper from '@/components/HeaderWrapper';
+
 import UserAvatar from '@/components/UserAvatar';
 import type { Title } from '@/lib/types';
 import EmotionalSection from '@/components/landing/EmotionalSection';
