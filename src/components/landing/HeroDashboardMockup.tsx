@@ -166,7 +166,7 @@ export default function HeroDashboardMockup() {
                     initial={{ strokeDasharray: 283, strokeDashoffset: 283 }}
                     animate={{ strokeDashoffset: 283 - (283 * 0.98) }}
                     transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
-                    style={{ dropShadow: '0 0 10px rgba(234,51,51,0.5)' }}
+                    style={{ filter: 'drop-shadow(0 0 10px rgba(234,51,51,0.5))' }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
