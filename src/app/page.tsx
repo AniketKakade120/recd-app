@@ -9,6 +9,8 @@ import MovieCard from '@/components/MovieCard';
 import StampBadge from '@/components/StampBadge';
 import UserAvatar from '@/components/UserAvatar';
 import type { Title } from '@/lib/types';
+import EmotionalSection from '@/components/landing/EmotionalSection';
+import ListsSection from '@/components/landing/ListsSection';
 import { Star, Share2, Play, ShieldCheck, MessageCircle, Send, Eye, Target, Users, Bookmark, Rocket } from 'lucide-react';
 
 // --- MOCK DATA ---
@@ -263,62 +265,76 @@ export default function LandingPage() {
       <main className="relative pt-20">
         
         {/* SEC 1: HERO */}
-        {/* We use the physical stamp image as a massive cinematic backdrop */}
-        <section className="relative min-h-[80vh] flex flex-col items-center justify-center pt-20 pb-20 px-6 overflow-hidden">
+        <section className="relative min-h-[100dvh] flex flex-col justify-center pt-24 pb-16 px-6 overflow-hidden">
+          {/* Background effects */}
           <div className="absolute inset-0 pointer-events-none -z-10">
-            {/* The user's incredible physical stamp image */}
-            <div className="absolute inset-0 bg-[url('/stamp-hero.jpg')] bg-cover bg-center bg-no-repeat opacity-30 mix-blend-screen scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-b from-ink/50 via-ink/80 to-ink" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cinema-red/10 rounded-full blur-[120px] opacity-60 mix-blend-screen" />
+            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-cinema-red/8 rounded-full blur-[180px]" />
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
           </div>
 
-          <div className="relative z-10 text-center max-w-4xl mx-auto mb-16 mt-10">
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="text-6xl md:text-8xl lg:text-[110px] font-bold font-editorial leading-[0.9] tracking-tight mb-8"
-            >
-              Every recommendation gets a <span className="italic text-cinema-red pr-4">verdict.</span>
-            </motion.h1>
-            
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="text-lg md:text-xl text-muted max-w-2xl mx-auto leading-relaxed mb-10"
-            >
-              Recommend movies and shows to your crew. Watch, rate, stamp, and find out whose taste actually lands.
-            </motion.p>
-          </div>
-
-          {/* Floating Hero Visual */}
-          <motion.div 
-            style={{ y: heroY, scale: heroScale }}
-            className="relative w-full max-w-[320px] mx-auto z-20 perspective-1000"
-          >
-            <motion.div
-              animate={{ y: [0, -15, 0], rotateY: [0, 5, -5, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="relative z-10"
-            >
-              <div className="pointer-events-none">
-                <MovieCard title={MOCK_TITLES.perks} />
-              </div>
-              
-              <motion.div 
-                animate={{ y: [0, 10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute -left-12 top-1/4 p-2 bg-surface/80 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl flex items-center gap-3"
+          <div className="relative z-10 max-w-[1440px] mx-auto w-full">
+            {/* Hero copy */}
+            <div className="text-center mb-16 max-w-4xl mx-auto mt-10">
+              <motion.h1
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                className="text-5xl sm:text-6xl md:text-7xl lg:text-[88px] font-bold font-editorial leading-[0.95] tracking-tight mb-6"
               >
-                <UserAvatar name="Aniket" size="sm" />
-                <div className="pr-2">
-                  <p className="text-[10px] text-muted uppercase tracking-widest font-bold">Rec'd by</p>
-                  <p className="text-xs font-bold text-bone">Aniket</p>
-                </div>
+                Every movie rec{' '}
+                <br className="hidden sm:block" />
+                gets a <span className="italic text-cinema-red pr-2">verdict.</span>
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                className="text-base sm:text-lg text-bone/50 max-w-xl mx-auto leading-relaxed mb-8"
+              >
+                Recommend movies and shows to the people they were meant for. They watch, rate, stamp, and tell you how it landed.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <button
+                  onMouseEnter={playStampSound}
+                  onClick={handleGetStarted}
+                  className="px-10 py-4 bg-cinema-red text-bone text-xs font-black uppercase tracking-[0.2em] rounded-xl hover:bg-cinema-red/90 transition-all duration-300 shadow-[0_0_40px_rgba(234,51,51,0.2)] hover:shadow-[0_0_60px_rgba(234,51,51,0.35)] btn-press"
+                >
+                  Get Started
+                </button>
+              </motion.div>
+            </div>
+
+            {/* Cinematic Product Image Mockup */}
+            <motion.div 
+              style={{ y: heroY, scale: heroScale }}
+              className="relative w-full max-w-[900px] mx-auto z-20 perspective-[2000px]"
+            >
+              <motion.div
+                animate={{ y: [0, -15, 0], rotateX: [0, 2, -2, 0] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                className="relative z-10 w-full"
+              >
+                <div className="absolute inset-0 bg-cinema-red/20 blur-[100px] scale-90" />
+                <div className="absolute -inset-1 bg-gradient-to-t from-cinema-red/40 to-transparent rounded-[32px] blur-sm opacity-50" />
+                
+                <img 
+                  src="/app_mockup.png" 
+                  alt="Rec'd Club App" 
+                  className="relative w-full h-auto rounded-[24px] md:rounded-[32px] border border-white/10 shadow-[0_20px_100px_rgba(0,0,0,0.8)] object-cover" 
+                />
+
+                {/* Cinematic highlights on the image edge */}
+                <div className="absolute inset-0 rounded-[24px] md:rounded-[32px] ring-1 ring-inset ring-white/20 pointer-events-none" />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
               </motion.div>
             </motion.div>
-          </motion.div>
+          </div>
         </section>
 
         {/* SEC 2: PROBLEM */}
@@ -453,6 +469,8 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        <EmotionalSection />
 
         {/* SEC 5: TASTE MATCH */}
         <section ref={matchRef} className="min-h-screen py-20 px-6 border-t border-white/5 bg-ink">
@@ -598,6 +616,8 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        <ListsSection />
 
         {/* SEC 8: FINAL CTA */}
         <section className="relative min-h-[60vh] py-32 px-6 border-t border-white/5 bg-gradient-to-b from-ink to-cinema-red/10 overflow-hidden flex flex-col items-center justify-center text-center">
