@@ -594,18 +594,42 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
           </div>
 
           {/* SECTION: WHERE TO WATCH */}
-          <div className="rounded-[32px] bg-surface border border-white/5 p-8 shadow-xl">
-             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/60 mb-6">Available on</h3>
-            <div className="flex flex-wrap gap-4 items-center">
+          <div className="rounded-[32px] bg-[#151515] p-6 sm:p-8 shadow-xl flex flex-col">
+             <h3 className="text-xl font-bold text-bone mb-5">Available on</h3>
+            <div className="flex flex-col gap-3">
               {title.platformAvailability && title.platformAvailability.length > 0 ? (
                 title.platformAvailability.map((platform, i) => (
-                  <div key={i}>
-                    <PlatformLogo platformName={platform.platformName} logoUrl={platform.logoUrl} />
-                  </div>
+                  <a 
+                    key={i}
+                    href={platform.url || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2 rounded-2xl hover:bg-white/5 transition-colors group/link"
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* We use a container for the logo to make it a consistent squircle shape like the mockup */}
+                      <div className="w-12 h-12 bg-ink border border-white/5 rounded-xl flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                        <PlatformLogo platformName={platform.platformName} logoUrl={platform.logoUrl} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-bone font-bold text-[15px]">{platform.platformName}</span>
+                        <span className="text-muted/80 text-[13px] font-medium">Subscription</span>
+                      </div>
+                    </div>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted/50 group-hover/link:text-bone mr-2 transition-colors">
+                      <path d="M7 17l9.2-9.2M17 17V7H7"/>
+                    </svg>
+                  </a>
                 ))
               ) : (
-                <p className="text-xs text-muted italic font-medium">Not available right now.</p>
+                <p className="text-[13px] text-muted italic font-medium px-2">Not available right now.</p>
               )}
+            </div>
+            
+            <div className="mt-8 text-center">
+              <button className="text-[13px] text-muted/80 hover:text-bone font-semibold transition-colors">
+                Broken Link? Report
+              </button>
             </div>
           </div>
 

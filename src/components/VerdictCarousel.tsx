@@ -102,7 +102,7 @@ export default function VerdictCarousel({ recommendations: recs }: VerdictCarous
         <div className="relative w-full rounded-2xl overflow-hidden border border-white/5 bg-[#0a0a0a] min-h-[400px] flex flex-col justify-end shadow-2xl">
           
           {/* Background Image with Key for smooth switching */}
-          <div key={title.id} className="absolute inset-0 transition-opacity duration-700 animate-in fade-in">
+          <Link href={`/title/${title.id}`} key={title.id} className="absolute inset-0 transition-opacity duration-700 animate-in fade-in cursor-pointer z-0">
             {/* Always show gradient as base */}
             <div className={`absolute inset-0 opacity-40 poster-gradient-${title.posterGradient || '1'}`} />
             
@@ -114,7 +114,7 @@ export default function VerdictCarousel({ recommendations: recs }: VerdictCarous
                 onError={() => setImageError(true)}
               />
             )}
-          </div>
+          </Link>
 
           {/* Gradients */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
@@ -131,9 +131,11 @@ export default function VerdictCarousel({ recommendations: recs }: VerdictCarous
               </span>
             </div>
 
-            <h2 className="text-4xl sm:text-6xl font-bold text-bone font-editorial mb-3 leading-none tracking-tight">
-              {title.title}
-            </h2>
+            <Link href={`/title/${title.id}`} className="block w-fit group/title">
+              <h2 className="text-4xl sm:text-6xl font-bold text-bone font-editorial mb-3 leading-none tracking-tight group-hover/title:text-cinema-red transition-colors">
+                {title.title}
+              </h2>
+            </Link>
 
             <p className="text-muted text-sm sm:text-base font-medium mb-6 flex items-center gap-2">
               <span>{title.releaseYear}</span>
