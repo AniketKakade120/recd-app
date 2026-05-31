@@ -87,12 +87,11 @@ function GlobalRedStamp({ progress }: { progress: MotionValue<number> }) {
 
   const opacity = useTransform(progress, [0, 0.9, 0.98, 1], [1, 1, 0.5, 0]);
 
-  const [storyStage, setStoryStage] = useState({ label: "Watch This", icon: Play });
+  const [storyStage, setStoryStage] = useState<{label: string, icon: any}>({ label: "Rec'd Club", icon: null });
   
   useEffect(() => {
     const unsub = progress.on("change", (v) => {
-      if (v < 0.15) setStoryStage({ label: "Watch This", icon: Play });
-      else if (v < 0.28) setStoryStage({ label: "Group Chat", icon: MessageCircle });
+      if (v < 0.28) setStoryStage({ label: "Rec'd Club", icon: null });
       else if (v < 0.42) setStoryStage({ label: "Send Rec", icon: Send });
       else if (v < 0.56) setStoryStage({ label: "The Verdict", icon: ShieldCheck });
       else if (v < 0.70) setStoryStage({ label: "Taste Match", icon: Target });
@@ -112,8 +111,8 @@ function GlobalRedStamp({ progress }: { progress: MotionValue<number> }) {
     >
       <div className="relative group">
         <div className="absolute inset-0 bg-cinema-red/50 blur-xl rounded-full" />
-        <div className="relative flex items-center gap-3 px-6 py-3 bg-cinema-red rounded-full shadow-[0_0_40px_rgba(234,51,51,0.8)] border border-white/20">
-           <CurrentIcon size={18} className="text-bone" />
+        <div className={`relative flex items-center ${CurrentIcon ? 'gap-3 px-6' : 'px-8'} py-3 bg-cinema-red rounded-full shadow-[0_0_40px_rgba(234,51,51,0.8)] border border-white/20`}>
+           {CurrentIcon && <CurrentIcon size={18} className="text-bone" />}
            <span className="font-bold text-xs uppercase tracking-widest text-bone whitespace-nowrap">
              {storyStage.label}
            </span>
