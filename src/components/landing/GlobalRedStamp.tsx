@@ -30,8 +30,7 @@ export default function GlobalRedStamp({ progress }: GlobalRedStampProps) {
   
   useEffect(() => {
     const unsub = progress.on("change", (v) => {
-      if (v < 0.15) setStoryStage({ label: "Watch This" });
-      else if (v < 0.28) setStoryStage({ label: "Group Chat" });
+      if (v < 0.28) setStoryStage({ label: "Rec'd Club" });
       else if (v < 0.42) setStoryStage({ label: "Send Rec" });
       else if (v < 0.56) setStoryStage({ label: "The Verdict" });
       else if (v < 0.70) setStoryStage({ label: "Taste Match" });
