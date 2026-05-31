@@ -42,7 +42,6 @@ export default function ExplorePage() {
   
   // Filters
   const [activeGenres, setActiveGenres] = useState<string[]>([]);
-  const [activeMoods, setActiveMoods] = useState<string[]>([]);
   const [activePlatforms, setActivePlatforms] = useState<string[]>([]);
   const [activeLanguages, setActiveLanguages] = useState<string[]>([]);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
@@ -53,12 +52,11 @@ export default function ExplorePage() {
 
   const clearFilters = () => {
     setActiveGenres([]);
-    setActiveMoods([]);
     setActivePlatforms([]);
     setActiveLanguages([]);
   };
 
-  const isFiltering = search || activeGenres.length > 0 || activeMoods.length > 0 || activePlatforms.length > 0 || activeLanguages.length > 0;
+  const isFiltering = search || activeGenres.length > 0 || activePlatforms.length > 0 || activeLanguages.length > 0;
 
   const [searchResults, setSearchResults] = useState<Title[]>([]);
   const [trendingTmdb, setTrendingTmdb] = useState<Title[]>([]);
@@ -182,20 +180,22 @@ export default function ExplorePage() {
       return;
     }
 
-    const genre = activeGenres[0]; // TMDB API takes single genre/platform in my current simple discover route
-    const platform = activePlatforms[0];
-    const language = activeLanguages[0];
+    const genreParam = activeGenres.length > 0 ? activeGenres.join(',') : null;
+    const platformParam = activePlatforms.length > 0 ? activePlatforms.join(',') : null;
+    // Map full language names to codes for TMDB
+    const languageCodes = activeLanguages.map(l => LANGUAGE_NAME_TO_CODE[l]).filter(Boolean);
+    const languageParam = languageCodes.length > 0 ? languageCodes.join(',') : null;
 
-    if (!genre && !platform && !language) {
+    if (!genreParam && !platformParam && !languageParam) {
       setDiscoverResults([]);
       return;
     }
 
     setIsSearching(true);
     let url = `/api/tmdb/discover?`;
-    if (genre) url += `genre=${encodeURIComponent(genre)}&`;
-    if (platform) url += `platform=${encodeURIComponent(platform)}&`;
-    if (language) url += `language=${encodeURIComponent(language)}&`;
+    if (genreParam) url += `genre=${encodeURIComponent(genreParam)}&`;
+    if (platformParam) url += `platform=${encodeURIComponent(platformParam)}&`;
+    if (languageParam) url += `language=${encodeURIComponent(languageParam)}&`;
 
     fetch(url)
       .then(res => res.json())
@@ -223,15 +223,15 @@ export default function ExplorePage() {
     
     return sourceTitles.filter((t: Title) => {
       const matchesSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
-      const matchesGenre = activeGenres.length === 0 || t.genres.some((g: string) => activeGenres.includes(g));
-      const matchesPlatform = activePlatforms.length === 0 || t.platforms?.some((p: string) => activePlatforms.includes(p));
-      const targetLangCode = activeLanguages.length > 0 ? LANGUAGE_NAME_TO_CODE[activeLanguages[0]] : null;
-      const matchesLanguage = !targetLangCode || t.language === targetLangCode;
-      const matchesMood = activeMoods.length === 0 || recommendations.some(r => r.titleId === t.id && r.moodTags?.some((m: string) => activeMoods.includes(m)));
+      const matchesGenre = activeGenres.length === 0 || (t.genres && t.genres.some((g: string) => activeGenres.includes(g)));
+      const matchesPlatform = activePlatforms.length === 0 || (t.platforms && t.platforms.some((p: string) => activePlatforms.includes(p)));
       
-      return matchesSearch && matchesGenre && matchesPlatform && matchesMood && matchesLanguage;
+      const activeLanguageCodes = activeLanguages.map(l => LANGUAGE_NAME_TO_CODE[l]).filter(Boolean);
+      const matchesLanguage = activeLanguageCodes.length === 0 || (t.language && activeLanguageCodes.includes(t.language));
+      
+      return matchesSearch && matchesGenre && matchesPlatform && matchesLanguage;
     });
-  }, [titles, searchResults, discoverResults, search, activeGenres, activeMoods, activePlatforms, activeLanguages, recommendations, isFiltering]);
+  }, [titles, searchResults, discoverResults, search, activeGenres, activePlatforms, activeLanguages, isFiltering]);
 
   // --- Static Shelves Data Generation (Fallbacks) ---
   const trendingTitles = trendingTmdb.length > 0 ? trendingTmdb : [...titles].sort((a, b) => (b.externalRating || 0) - (a.externalRating || 0)).slice(0, 10);
@@ -306,7 +306,7 @@ export default function ExplorePage() {
           <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
             <button onClick={() => setFilterDrawerOpen(!filterDrawerOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border bg-ink text-muted hover:text-bone transition-colors">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/></svg>
-              Filters {(activeGenres.length + activeMoods.length + activePlatforms.length + activeLanguages.length) > 0 && `(${activeGenres.length + activeMoods.length + activePlatforms.length + activeLanguages.length})`}
+              Filters {(activeGenres.length + activePlatforms.length + activeLanguages.length) > 0 && `(${activeGenres.length + activePlatforms.length + activeLanguages.length})`}
             </button>
             {['Drama', 'Thriller', 'Comedy'].map(g => (
               <FilterChip key={g} label={g} active={activeGenres.includes(g)} onClick={() => toggleFilter(activeGenres, setActiveGenres, g)} />
@@ -334,12 +334,6 @@ export default function ExplorePage() {
               <p className="text-xs text-muted mb-2">Genres</p>
               <div className="flex flex-wrap gap-2">
                 {ALL_GENRES.slice(0, 10).map(g => <FilterChip key={g} label={g} active={activeGenres.includes(g)} onClick={() => toggleFilter(activeGenres, setActiveGenres, g)} />)}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-muted mb-2">Moods</p>
-              <div className="flex flex-wrap gap-2">
-                {MOODS.map(m => <FilterChip key={m} label={m} active={activeMoods.includes(m)} onClick={() => toggleFilter(activeMoods, setActiveMoods, m)} />)}
               </div>
             </div>
             <div>

@@ -20,13 +20,22 @@ const PROVIDER_MAP: Record<string, number> = {
   'Hulu': 15,
   'Max': 384,
   'Peacock': 386,
+  'JioHotstar': 122,
+  'SonyLIV': 237,
+  'ZEE5': 232,
+  'AHA': 532,
+  'YouTube': 192,
+  'MUBI': 11,
+  'Theatre': 315, // Actually, we might need a separate API param for theaters, but we can map to some provider or ignore
+  'Apple TV': 2,
 };
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const genre = searchParams.get('genre');
   const platform = searchParams.get('platform');
-  const region = searchParams.get('region') || 'US';
+  const language = searchParams.get('language');
+  const region = searchParams.get('region') || 'IN'; // Default to IN
 
   if (!TMDB_API_KEY) {
     return NextResponse.json({ error: 'TMDB API key not configured' }, { status: 500 });
@@ -36,17 +45,23 @@ export async function GET(request: Request) {
     let url = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&sort_by=popularity.desc&include_adult=false&include_video=false&page=1`;
 
     if (genre) {
-      const genreId = GENRE_MAP[genre];
-      if (genreId) {
-        url += `&with_genres=${genreId}`;
+      const genreIds = genre.split(',').map(g => GENRE_MAP[g.trim()]).filter(Boolean).join('|');
+      if (genreIds) {
+        url += `&with_genres=${genreIds}`;
       }
     }
 
     if (platform) {
-      const providerId = PROVIDER_MAP[platform];
-      if (providerId) {
-        url += `&with_watch_providers=${providerId}&watch_region=${region}`;
+      const providerIds = platform.split(',').map(p => PROVIDER_MAP[p.trim()]).filter(Boolean).join('|');
+      if (providerIds) {
+        url += `&with_watch_providers=${providerIds}&watch_region=${region}`;
       }
+    }
+    
+    if (language) {
+      // TMDB language codes are like 'hi', 'en', 'ta'. The UI passes language codes OR names, we should assume the UI sends comma separated codes or we can map them.
+      // Assuming the UI will pass the language codes if we format it correctly.
+      url += `&with_original_language=${encodeURIComponent(language.replace(/,/g, '|'))}`;
     }
 
     const response = await fetch(url);
