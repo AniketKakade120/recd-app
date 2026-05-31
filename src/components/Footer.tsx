@@ -14,16 +14,16 @@ export default function Footer() {
   }
 
   return (
-    <footer className="w-full bg-ink border-t border-white/5 py-24 px-6 sm:px-12 mt-auto relative z-20">
+    <footer className="w-full bg-ink border-t border-white/5 py-12 px-6 sm:px-12 mt-auto relative z-20">
       <div className="max-w-[1440px] mx-auto flex flex-col items-center text-center">
         
         {/* Large Logo */}
-        <div className="mb-12">
+        <div className="mb-8">
           <Logo variant="square" size="lg" className="mx-auto" />
         </div>
 
         {/* Navigation Links */}
-        <div className="flex flex-wrap justify-center gap-6 md:gap-10 text-sm font-semibold text-bone mb-10">
+        <div className="flex flex-wrap justify-center gap-6 md:gap-10 text-sm font-semibold text-bone mb-8">
           <Link href="/home" className="hover:text-cinema-red transition-colors">Home</Link>
           <Link href="/explore" className="hover:text-cinema-red transition-colors">Explore</Link>
           <Link href="/groups" className="hover:text-cinema-red transition-colors">Groups</Link>
@@ -32,7 +32,7 @@ export default function Footer() {
         </div>
 
         {/* Social Icons */}
-        <div className="flex items-center justify-center gap-6 text-bone/40 mb-16">
+        <div className="flex items-center justify-center gap-6 text-bone/40 mb-8">
           {/* Globe/Website */}
           <Link href="#" className="hover:text-bone transition-colors">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
