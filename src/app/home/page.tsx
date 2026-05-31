@@ -25,7 +25,7 @@ const IconPlus = () => (
 
 
 export default function HomePage() {
-  const { currentUser, tasteScore, activity, titles, recommendations, ratings, getUser, getTitle, crewConnections, watchlist, openRecommendModal } = useApp();
+  const { currentUser, userPreferences, tasteScore, activity, titles, recommendations, ratings, getUser, getTitle, crewConnections, watchlist, openRecommendModal } = useApp();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [popularPicks, setPopularPicks] = useState<Title[]>([]);
   const [forceToggle, setForceToggle] = useState<null | boolean>(null);
