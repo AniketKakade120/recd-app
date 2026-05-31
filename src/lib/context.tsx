@@ -1719,17 +1719,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
           return i;
         });
-      } else if (prev.currentUser) {
-        updatedWatchlist.unshift({
-          id: `wl-${Date.now()}`,
-          userId: prev.currentUser.id,
-          titleId,
-          addedBy: 'self',
-          listIds: [listId],
-          verdictState: 'none',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
       }
 
       return { ...prev, watchlistLists: updatedLists, watchlist: updatedWatchlist };
@@ -1762,12 +1751,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await supabase
         .from('watchlist_list_items')
         .upsert({ list_id: listId, title_id: titleId }, { onConflict: 'list_id,title_id' });
-      
-      if (state.currentUser) {
-        await supabase
-          .from('watchlist_items')
-          .upsert({ user_id: state.currentUser.id, title_id: titleId, added_by: 'self' }, { onConflict: 'user_id,title_id' });
-      }
       
       refreshData();
     }
