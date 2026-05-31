@@ -9,32 +9,23 @@ interface LogoProps {
 }
 
 export default function Logo({ className = '', variant = 'horizontal', size = 'md' }: LogoProps) {
+  // Map sizes to Tailwind widths for images instead of text sizes
   const sizeClasses = {
-    sm: variant === 'horizontal' ? 'text-lg' : 'text-xl',
-    md: variant === 'horizontal' ? 'text-2xl' : 'text-3xl',
-    lg: variant === 'horizontal' ? 'text-3xl' : 'text-5xl',
-    xl: variant === 'horizontal' ? 'text-5xl' : 'text-7xl',
+    sm: variant === 'horizontal' ? 'w-24' : 'w-12',
+    md: variant === 'horizontal' ? 'w-32' : 'w-16',
+    lg: variant === 'horizontal' ? 'w-48' : 'w-32',
+    xl: variant === 'horizontal' ? 'w-64' : 'w-48',
   };
 
-  const LogoText = () => (
-    <span className={`font-editorial font-bold tracking-tight text-bone leading-none ${sizeClasses[size]} ${className}`}>
-      {variant === 'horizontal' ? (
-        <span className="flex items-center gap-[0.2em]">
-          <span>Rec<span className="text-cinema-red">&apos;</span>d</span>
-          <span>Club</span>
-        </span>
-      ) : (
-        <span className="flex flex-col items-center">
-          <span>Rec<span className="text-cinema-red">&apos;</span>d</span>
-          <span className="mt-[0.1em]">Club</span>
-        </span>
-      )}
-    </span>
-  );
+  const imageSrc = variant === 'horizontal' ? '/main-logo.png' : '/stacked-logo.png';
 
   return (
-    <div className="inline-block">
-      <LogoText />
+    <div className={`inline-block ${className}`}>
+      <img 
+        src={imageSrc} 
+        alt="Rec'd Club Logo" 
+        className={`${sizeClasses[size]} h-auto object-contain`} 
+      />
     </div>
   );
 }
