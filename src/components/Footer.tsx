@@ -19,7 +19,7 @@ export default function Footer() {
         
         {/* Large Logo */}
         <div className="mb-8">
-          <Logo variant="square" size="lg" className="mx-auto" />
+          <img src="/logo.png" alt="Rec'd Club" className="mx-auto w-32 h-auto" />
         </div>
 
         {/* Navigation Links */}
