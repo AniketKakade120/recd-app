@@ -26,7 +26,7 @@ export default function GlobalRedStamp({ progress }: GlobalRedStampProps) {
 
   const opacity = useTransform(progress, [0, 0.9, 0.98, 1], [1, 1, 0.5, 0]);
 
-  const [storyStage, setStoryStage] = useState({ label: "Watch This" });
+  const [storyStage, setStoryStage] = useState({ label: "Rec'd Club" });
   
   useEffect(() => {
     const unsub = progress.on("change", (v) => {
