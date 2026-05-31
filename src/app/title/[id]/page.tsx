@@ -277,8 +277,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
 
   const extRatings = title.externalRatings || { 
     imdb: title.externalRating, 
-    tmdb: title.externalRating ? parseFloat((title.externalRating - 0.4).toFixed(1)) : undefined,
-    rt: title.externalRating ? `${Math.min(100, Math.round(title.externalRating * 10 + 4))}%` : undefined
+    tmdb: title.externalRating ? parseFloat((title.externalRating - 0.4).toFixed(1)) : undefined 
   };
   const mockSynopsis = title.overview || "A remote harbor town becomes the center of a quiet mystery after a stranger arrives with a secret that changes everyone around him.";
 
@@ -645,10 +644,6 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
               <div className="flex justify-between items-center group">
                 <div className="px-3 py-1.5 bg-[#01b4e4] text-white text-[11px] font-black rounded-lg tracking-widest uppercase">TMDB</div>
                 <span className="text-4xl font-bold font-editorial text-bone leading-none">{extRatings.tmdb || '6.4'}</span>
-              </div>
-              <div className="flex justify-between items-center group">
-                <div className="px-3 py-1.5 bg-[#fa320a] text-white text-[11px] font-black rounded-lg tracking-widest uppercase">RT</div>
-                <span className="text-4xl font-bold font-editorial text-bone leading-none">{extRatings.rt || '82%'}</span>
               </div>
             </div>
             <div className="mt-10 pt-6 border-t border-white/5">
