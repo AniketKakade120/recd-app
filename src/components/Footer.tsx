@@ -19,12 +19,12 @@ export default function Footer() {
       <div className="max-w-[1440px] mx-auto">
         
         {/* Top Section: Links Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-10 md:gap-8 mb-20">
+        <div className="flex flex-col md:flex-row justify-between gap-10 md:gap-8 mb-20">
           
           {/* Brand Column */}
-          <div className="col-span-2 lg:col-span-2 flex flex-col items-start pr-8">
+          <div className="flex flex-col items-start md:max-w-sm pr-8">
             <Logo variant="horizontal" size="sm" className="mb-6" />
-            <p className="text-sm text-bone/50 max-w-sm leading-relaxed mb-8">
+            <p className="text-sm text-bone/50 leading-relaxed mb-8">
               Good taste travels person to person. Turn loose picks from your group chat into real, verifiable recommendations.
             </p>
             <div className="flex items-center gap-5 text-bone/40">
@@ -43,34 +43,14 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Product Column */}
-          <div className="flex flex-col gap-4">
-            <h4 className="text-bone font-bold text-sm tracking-wide mb-2">Product</h4>
+          {/* Navigation Column */}
+          <div className="flex flex-col md:items-end gap-4 md:pr-12">
+            <h4 className="text-bone font-bold text-sm tracking-wide mb-2">Navigation</h4>
+            <Link href="/home" className="text-sm text-bone/50 hover:text-bone transition-colors">Home</Link>
             <Link href="/explore" className="text-sm text-bone/50 hover:text-bone transition-colors">Explore</Link>
             <Link href="/groups" className="text-sm text-bone/50 hover:text-bone transition-colors">Groups</Link>
             <Link href="/watchlist" className="text-sm text-bone/50 hover:text-bone transition-colors">Watchlist</Link>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">Taste Score</Link>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">Changelog</Link>
-          </div>
-
-          {/* Resources Column */}
-          <div className="flex flex-col gap-4">
-            <h4 className="text-bone font-bold text-sm tracking-wide mb-2">Resources</h4>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">Help Center</Link>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">Community</Link>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">Blog</Link>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">Creator Program</Link>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">API Docs</Link>
-          </div>
-
-          {/* Company Column */}
-          <div className="flex flex-col gap-4">
-            <h4 className="text-bone font-bold text-sm tracking-wide mb-2">Company</h4>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">About Us</Link>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">Careers</Link>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">Manifesto</Link>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">Brand Assets</Link>
-            <Link href="#" className="text-sm text-bone/50 hover:text-bone transition-colors">Contact</Link>
+            <Link href="/profile" className="text-sm text-bone/50 hover:text-bone transition-colors">Profile</Link>
           </div>
 
         </div>
