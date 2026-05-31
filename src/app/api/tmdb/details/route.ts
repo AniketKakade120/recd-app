@@ -80,10 +80,29 @@ export async function GET(request: Request) {
     const providerRegion = data['watch/providers']?.results?.['IN'] || data['watch/providers']?.results?.['US'];
     const providers = providerRegion?.flatrate || [];
     const platforms = providers.map((p: any) => p.provider_name);
+    
+    // Helper to generate search URLs since TMDB doesn't give direct deep links
+    const getPlatformUrl = (platformName: string, movieTitle: string) => {
+      const q = encodeURIComponent(movieTitle);
+      const name = platformName.toLowerCase();
+      if (name.includes('netflix')) return `https://www.netflix.com/search?q=${q}`;
+      if (name.includes('prime') || name.includes('amazon')) return `https://www.amazon.com/s?k=${q}&i=instant-video`;
+      if (name.includes('apple')) return `https://tv.apple.com/search?q=${q}`;
+      if (name.includes('disney')) return `https://www.disneyplus.com/search?q=${q}`;
+      if (name.includes('max') || name.includes('hbo')) return `https://play.max.com/search?q=${q}`;
+      if (name.includes('hulu')) return `https://www.hulu.com/search?q=${q}`;
+      if (name.includes('youtube')) return `https://www.youtube.com/results?search_query=${q}`;
+      if (name.includes('mubi')) return `https://mubi.com/search?query=${q}`;
+      return `https://www.google.com/search?q=${q}+on+${encodeURIComponent(platformName)}`;
+    };
+
+    const titleStr = isMovie ? data.title : data.name;
+
     const platformAvailability = providers.map((p: any) => ({
       platformName: p.provider_name,
       logoUrl: `${TMDB_IMAGE_BASE_URL}/w92${p.logo_path}`,
-      region: data['watch/providers']?.results?.['IN'] ? 'IN' : 'US'
+      region: data['watch/providers']?.results?.['IN'] ? 'IN' : 'US',
+      url: getPlatformUrl(p.provider_name, titleStr)
     }));
 
     const title = {
