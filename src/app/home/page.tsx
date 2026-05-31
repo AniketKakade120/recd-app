@@ -146,9 +146,9 @@ export default function HomePage() {
           >
             <div className="flex items-center gap-2">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted group-hover:text-bone transition-colors">Your Crew</p>
-              <ChevronDown size={14} className={`text-muted transition-transform duration-300 ${crewCollapsed ? '-rotate-90' : 'rotate-0'}`} />
+              <span className="text-[10px] font-bold text-cinema-red px-1.5 py-0.5 rounded bg-cinema-red/10 border border-cinema-red/20">{crewIds.length}</span>
             </div>
-            <span className="text-[10px] font-bold text-cinema-red px-1.5 py-0.5 rounded bg-cinema-red/10 border border-cinema-red/20">{crewIds.length}</span>
+            <ChevronDown size={14} className={`text-muted transition-transform duration-300 ${crewCollapsed ? '-rotate-90' : 'rotate-0'}`} />
           </button>
           
           <div className={`space-y-3 transition-all duration-300 origin-top overflow-hidden ${crewCollapsed ? 'h-0 opacity-0 mb-0' : 'h-auto opacity-100'}`}>
@@ -178,7 +178,7 @@ export default function HomePage() {
       <div className="rounded-2xl bg-surface border border-border p-5">
         <button 
           onClick={() => setActivityCollapsed(!activityCollapsed)} 
-          className="w-full flex items-center gap-2 mb-4 group"
+          className="w-full flex items-center justify-between mb-4 group"
         >
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted group-hover:text-bone transition-colors">Crew Activity</p>
           <ChevronDown size={14} className={`text-muted transition-transform duration-300 ${activityCollapsed ? '-rotate-90' : 'rotate-0'}`} />
