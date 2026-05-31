@@ -15,6 +15,8 @@ export interface User {
   reputationLabel?: string;
   favoriteGenres?: Genre[];
   favoriteMoods?: Mood[];
+  preferredPlatforms?: StreamingPlatform[];
+  preferences?: UserPreferences;
   profileVisibility?: 'public' | 'crew_only' | 'private';
   createdAt: string;
 }

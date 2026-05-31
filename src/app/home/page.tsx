@@ -29,6 +29,8 @@ export default function HomePage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [popularPicks, setPopularPicks] = useState<Title[]>([]);
   const [forceToggle, setForceToggle] = useState<null | boolean>(null);
+  const [genreRows, setGenreRows] = useState<Record<string, Title[]>>({});
+  const [platformRows, setPlatformRows] = useState<Record<string, Title[]>>({});
 
   useEffect(() => {
     async function fetchPopular() {
@@ -42,6 +44,35 @@ export default function HomePage() {
     }
     fetchPopular();
   }, []);
+
+  useEffect(() => {
+    // Only run if we have a user
+    if (!currentUser) return;
+    
+    // Provide fallback mock data if preferences are empty (e.g. they skipped onboarding)
+    const genres = userPreferences?.genres?.length > 0 ? userPreferences.genres : ['Sci-Fi', 'Thriller'];
+    const platforms = userPreferences?.platforms?.length > 0 ? userPreferences.platforms : ['Netflix', 'Prime Video'];
+
+    genres.forEach(async (genre) => {
+      try {
+        const res = await fetch(`/api/tmdb/discover?genre=${encodeURIComponent(genre)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setGenreRows(prev => ({ ...prev, [genre]: data }));
+        }
+      } catch (e) { console.error('Failed to fetch genre', genre, e); }
+    });
+
+    platforms.forEach(async (platform) => {
+      try {
+        const res = await fetch(`/api/tmdb/discover?platform=${encodeURIComponent(platform)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPlatformRows(prev => ({ ...prev, [platform]: data }));
+        }
+      } catch (e) { console.error('Failed to fetch platform', platform, e); }
+    });
+  }, [currentUser, userPreferences]);
 
   if (!currentUser) return null;
 
@@ -189,6 +220,45 @@ export default function HomePage() {
               <VerdictCarousel recommendations={pendingVerdicts} />
             </section>
           )}
+
+          {/* Personalized Dynamic Rows */}
+          {Object.entries(genreRows).map(([genre, movies]) => {
+            if (movies.length === 0) return null;
+            return (
+              <section key={`genre-${genre}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-bold text-bone">Because you like {genre}</h2>
+                  <Link href="/explore" className="text-xs text-muted hover:text-bone transition-colors font-medium">Explore all</Link>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+                  {movies.map(movie => (
+                    <div key={movie.id} className="w-[180px] shrink-0 snap-start">
+                      <MovieCard title={movie} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+
+          {Object.entries(platformRows).map(([platform, movies]) => {
+            if (movies.length === 0) return null;
+            return (
+              <section key={`platform-${platform}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-bold text-bone">Trending on {platform}</h2>
+                  <Link href="/explore" className="text-xs text-muted hover:text-bone transition-colors font-medium">Explore all</Link>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+                  {movies.map(movie => (
+                    <div key={movie.id} className="w-[180px] shrink-0 snap-start">
+                      <MovieCard title={movie} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
 
           {/* From Your Crew */}
           {crewRecommendations.length > 0 && (
