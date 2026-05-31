@@ -78,7 +78,12 @@ export async function GET(request: Request) {
 
     // Extract watch providers (Default to India 'IN', fallback to US)
     const providerRegion = data['watch/providers']?.results?.['IN'] || data['watch/providers']?.results?.['US'];
-    const providers = providerRegion?.flatrate || [];
+    const flatrate = providerRegion?.flatrate || [];
+    const free = providerRegion?.free || [];
+    const ads = providerRegion?.ads || [];
+    
+    const allProviders = [...flatrate, ...free, ...ads];
+    const providers = Array.from(new Map(allProviders.map((p: any) => [p.provider_id, p])).values());
     const platforms = providers.map((p: any) => p.provider_name);
     
     // Helper to generate search URLs since TMDB doesn't give direct deep links
