@@ -10,7 +10,7 @@ import InviteModal from '@/components/InviteModal';
 import StarterActivationHub from '@/components/StarterActivationHub';
 import { useState, useEffect } from 'react';
 import { formatRelativeTime } from '@/lib/utils';
-import { Search } from 'lucide-react';
+import { Search, ChevronDown } from 'lucide-react';
 import MovieCard from '@/components/MovieCard';
 import type { Title } from '@/lib/types';
 
@@ -31,6 +31,8 @@ export default function HomePage() {
   const [forceToggle, setForceToggle] = useState<null | boolean>(null);
   const [genreRows, setGenreRows] = useState<Record<string, Title[]>>({});
   const [platformRows, setPlatformRows] = useState<Record<string, Title[]>>({});
+  const [crewCollapsed, setCrewCollapsed] = useState(false);
+  const [activityCollapsed, setActivityCollapsed] = useState(false);
 
   useEffect(() => {
     async function fetchPopular() {
@@ -138,11 +140,18 @@ export default function HomePage() {
       {/* Actual Crew List */}
       {crewIds.length > 0 && (
         <div className="rounded-2xl bg-surface border border-border p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted">Your Crew</p>
+          <button 
+            onClick={() => setCrewCollapsed(!crewCollapsed)} 
+            className="w-full flex items-center justify-between mb-4 group"
+          >
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted group-hover:text-bone transition-colors">Your Crew</p>
+              <ChevronDown size={14} className={`text-muted transition-transform duration-300 ${crewCollapsed ? '-rotate-90' : 'rotate-0'}`} />
+            </div>
             <span className="text-[10px] font-bold text-cinema-red px-1.5 py-0.5 rounded bg-cinema-red/10 border border-cinema-red/20">{crewIds.length}</span>
-          </div>
-          <div className="space-y-3">
+          </button>
+          
+          <div className={`space-y-3 transition-all duration-300 origin-top overflow-hidden ${crewCollapsed ? 'h-0 opacity-0 mb-0' : 'h-auto opacity-100'}`}>
             {crewIds.slice(0, 4).map(id => {
               const friend = getUser(id);
               if (!friend) return null;
@@ -167,31 +176,39 @@ export default function HomePage() {
 
       {/* Crew Activity Card */}
       <div className="rounded-2xl bg-surface border border-border p-5">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-4">Crew Activity</p>
-        {activity.length > 0 ? (
-          <div className="space-y-3.5">
-            {activity.slice(0, 5).map(act => {
-              const user = getUser(act.userId);
-              const title = act.titleId ? getTitle(act.titleId) : undefined;
-              return (
-                <div key={act.id} className="flex items-start gap-3 group">
-                  <UserAvatar name={user?.displayName || 'U'} size="sm" />
-                  <div className="flex-1 min-w-0 pt-0.5">
-                    <p className="text-[13px] text-bone/90 line-clamp-2 leading-snug font-medium">{act.message}</p>
-                    <p className="text-[11px] text-muted mt-1" suppressHydrationWarning>{formatRelativeTime(act.createdAt)}</p>
+        <button 
+          onClick={() => setActivityCollapsed(!activityCollapsed)} 
+          className="w-full flex items-center gap-2 mb-4 group"
+        >
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted group-hover:text-bone transition-colors">Crew Activity</p>
+          <ChevronDown size={14} className={`text-muted transition-transform duration-300 ${activityCollapsed ? '-rotate-90' : 'rotate-0'}`} />
+        </button>
+        <div className={`transition-all duration-300 origin-top overflow-hidden ${activityCollapsed ? 'h-0 opacity-0' : 'h-auto opacity-100'}`}>
+          {activity.length > 0 ? (
+            <div className="space-y-3.5">
+              {activity.slice(0, 5).map(act => {
+                const user = getUser(act.userId);
+                const title = act.titleId ? getTitle(act.titleId) : undefined;
+                return (
+                  <div key={act.id} className="flex items-start gap-3 group">
+                    <UserAvatar name={user?.displayName || 'U'} size="sm" />
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <p className="text-[13px] text-bone/90 line-clamp-2 leading-snug font-medium">{act.message}</p>
+                      <p className="text-[11px] text-muted mt-1" suppressHydrationWarning>{formatRelativeTime(act.createdAt)}</p>
+                    </div>
+                    {title && <div className={`w-7 h-11 shrink-0 rounded poster-gradient-${title.posterGradient}`} />}
                   </div>
-                  {title && <div className={`w-7 h-11 shrink-0 rounded poster-gradient-${title.posterGradient}`} />}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-sm text-bone font-medium mb-1">No crew activity yet.</p>
-            <p className="text-xs text-muted mb-4">Invite friends or join a group to get things moving.</p>
-            <Link href="/explore" className="inline-block px-5 py-2 bg-ink border border-border text-bone text-xs font-semibold rounded-lg hover:bg-surface transition-colors btn-press">Explore more picks</Link>
-          </div>
-        )}
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-bone font-medium mb-1">No crew activity yet.</p>
+              <p className="text-xs text-muted mb-4">Invite friends or join a group to get things moving.</p>
+              <Link href="/explore" className="inline-block px-5 py-2 bg-ink border border-border text-bone text-xs font-semibold rounded-lg hover:bg-surface transition-colors btn-press">Explore more picks</Link>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
