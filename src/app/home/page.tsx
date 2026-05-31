@@ -99,7 +99,7 @@ export default function HomePage() {
 
   /* ─── Sidebar ───────────────────── */
   const renderSidebar = () => (
-    <div className="space-y-5">
+    <div className="space-y-5 sticky top-24">
       {/* Taste Score Card */}
       {isFirstTimeUser ? (
         <div className="rounded-2xl bg-surface border border-border p-6 text-center">
