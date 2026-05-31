@@ -12,7 +12,7 @@ const GENRE_MAP: Record<string, number> = {
   'Thriller': 53, 'War': 10752, 'Western': 37,
 };
 
-const PROVIDER_MAP: Record<string, number> = {
+const PROVIDER_MAP: Record<string, number | string> = {
   'Netflix': 8,
   'Prime Video': 119, // or 9
   'Disney+': 337,
@@ -20,7 +20,7 @@ const PROVIDER_MAP: Record<string, number> = {
   'Hulu': 15,
   'Max': 384,
   'Peacock': 386,
-  'JioHotstar': 122,
+  'JioHotstar': '122|220', // Both Disney+ Hotstar (122) and JioCinema (220)
   'SonyLIV': 237,
   'ZEE5': 232,
   'AHA': 532,
