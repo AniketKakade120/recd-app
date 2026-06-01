@@ -13,7 +13,7 @@ interface VerdictCarouselProps {
 }
 
 export default function VerdictCarousel({ recommendations: recs }: VerdictCarouselProps) {
-  const { getTitle, getUser, getViewerContext, getActions, updateVerdictState, addToWatchlist, currentUser, addToast, openGiveVerdictModal } = useApp();
+  const { getTitle, getUser, getViewerContext, getActions, updateVerdictState, addToWatchlist, addTitleToWatchlist, currentUser, addToast, openGiveVerdictModal } = useApp();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showStep0, setShowStep0] = useState(false);
   const [notYetView, setNotYetView] = useState(false);
@@ -49,18 +49,7 @@ export default function VerdictCarousel({ recommendations: recs }: VerdictCarous
         break;
       case 'save':
         if (title) {
-          addToWatchlist({
-            id: `wl-${Date.now()}`,
-            userId: currentUser?.id || 'user-1',
-            titleId: title.id,
-            addedFromRecommendationId: currentRec.id,
-            recommendedBy: currentRec.recommendedBy,
-            addedBy: 'recommendation',
-            listIds: [],
-            verdictState: 'verdict_pending',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          });
+          addTitleToWatchlist(title.id);
           nextSlide();
         }
         break;
@@ -185,18 +174,7 @@ export default function VerdictCarousel({ recommendations: recs }: VerdictCarous
                       <div className="flex gap-2">
                         <button 
                           onClick={() => {
-                            addToWatchlist({
-                              id: `wl-${Date.now()}`,
-                              userId: currentUser?.id || '',
-                              titleId: title.id,
-                              addedFromRecommendationId: currentRec.id,
-                              recommendedBy: currentRec.recommendedBy,
-                              addedBy: 'recommendation',
-                              listIds: [],
-                              verdictState: 'verdict_pending',
-                              createdAt: new Date().toISOString(),
-                              updatedAt: new Date().toISOString(),
-                            });
+                            addTitleToWatchlist(title.id);
                             addToast(`Added ${title.title} to watchlist.`, { type: 'success' });
                             nextSlide();
                           }}

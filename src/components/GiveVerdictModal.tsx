@@ -17,6 +17,7 @@ export default function GiveVerdictModal() {
     addRating, 
     addToast,
     addToWatchlist,
+    addTitleToWatchlist,
     watchlist
   } = useApp();
 
@@ -163,17 +164,7 @@ export default function GiveVerdictModal() {
                       Yes, give verdict
                     </button>
                     <button onClick={() => { 
-                      if (!isSaved) addToWatchlist({
-                        id: `wl-${Date.now()}`,
-                        userId: currentUser?.id || '',
-                        titleId: title.id,
-                        addedBy: 'recommendation',
-                        addedFromRecommendationId: recommendation.id,
-                        listIds: [],
-                        verdictState: 'verdict_pending',
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                      } as any);
+                      if (!isSaved) addTitleToWatchlist(title.id);
                       closeGiveVerdictModal(); 
                     }}
                       className="w-full py-4 bg-white/5 text-bone border border-white/10 rounded-xl font-semibold btn-press hover:bg-white/10">
