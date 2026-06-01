@@ -95,7 +95,7 @@ export default function TopNavSearch() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search movies & shows..."
-          className={`flex-1 bg-transparent text-sm text-bone placeholder:text-muted/50 focus:outline-none outline-none border-0 focus:border-transparent focus:ring-0 transition-opacity duration-300 h-10 ${
+          className={`flex-1 !bg-transparent text-sm text-bone placeholder:text-muted/50 !outline-none !border-0 focus:!border-transparent focus:!ring-0 !ring-0 transition-opacity duration-300 h-10 ${
             expanded ? 'opacity-100 pr-3' : 'opacity-0 w-0 pr-0'
           }`}
         />
