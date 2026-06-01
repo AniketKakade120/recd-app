@@ -149,7 +149,7 @@ export default function OnboardingPage() {
           <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out pb-2">
             <p className="text-sm text-cinema-red uppercase tracking-widest font-bold mb-4">Step 1 of {TOTAL}</p>
             <h1 className="text-4xl sm:text-6xl font-bold text-bone font-editorial mb-4 sm:mb-6">Choose your taste archetype.</h1>
-            <p className="text-lg sm:text-xl text-muted mb-4 sm:mb-8 max-w-2xl leading-relaxed">Pick the kind of watcher you are. Your crew will know what kind of recommendations to expect from you.</p>
+            <p className="text-lg sm:text-xl text-muted mb-4 sm:mb-8 max-w-2xl leading-relaxed">Pick the kind of watcher you are. Your crew will know what kind of recommendations to expect from you. <span className="text-cinema-red/80 font-medium">(You can only select one)</span></p>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-5xl mb-4 sm:mb-6">
               {TASTE_ARCHETYPES.map(type => (
