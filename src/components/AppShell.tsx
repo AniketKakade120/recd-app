@@ -199,6 +199,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Right Actions - Absolute positioned to keep nav centered */}
           <div className="absolute right-0 flex items-center gap-4">
+            <Link href="/explore" className="p-2 text-muted hover:text-bone hover:bg-surface/50 rounded-lg transition-colors btn-press flex items-center gap-2" title="Search">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </Link>
+
             <button onClick={() => setInviteOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-bone hover:bg-surface/50 transition-colors btn-press">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
@@ -250,10 +254,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Mobile Top Nav (Logo only) */}
-      <header className="md:hidden flex items-center justify-center border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-40 py-3.5">
+      {/* Mobile Top Nav */}
+      <header className="md:hidden flex items-center justify-between border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-40 py-3.5 px-4">
+        {/* Invisible spacer for center alignment */}
+        <div className="w-8" />
         <Link href="/home" className="flex items-center shrink-0">
           <Logo variant="horizontal" size="sm" />
+        </Link>
+        <Link href="/explore" className="p-2 -mr-2 text-muted hover:text-bone rounded-lg transition-colors btn-press">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </Link>
       </header>
 
