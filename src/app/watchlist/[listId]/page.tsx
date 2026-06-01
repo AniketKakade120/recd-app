@@ -218,22 +218,24 @@ export default function ListDetailPage({ params }: { params: Promise<{ listId: s
           </div>
 
           {/* Titles Grid */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 border-b border-white/5 pb-6 gap-6">
-             <div className="flex items-center gap-6">
+          <div className="relative mb-10 border-b border-white/5 px-1 flex flex-col md:flex-row md:items-center justify-between">
+             <div className="flex items-center gap-8 overflow-x-auto pb-px scrollbar-hide">
                 <button 
                   onClick={() => setActiveTab('movies')}
-                  className={`text-xl font-bold font-editorial transition-all ${activeTab === 'movies' ? 'text-bone' : 'text-muted hover:text-bone/80'}`}
+                  className={`relative py-4 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'movies' ? 'text-bone' : 'text-muted hover:text-bone/60'}`}
                 >
                   Movies
+                  {activeTab === 'movies' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-cinema-red shadow-[0_0_12px_rgba(234,51,51,0.5)] rounded-full" />}
                 </button>
                 <button 
                   onClick={() => setActiveTab('watched')}
-                  className={`text-xl font-bold font-editorial transition-all ${activeTab === 'watched' ? 'text-bone' : 'text-muted hover:text-bone/80'}`}
+                  className={`relative py-4 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'watched' ? 'text-bone' : 'text-muted hover:text-bone/60'}`}
                 >
                   Watched
+                  {activeTab === 'watched' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-cinema-red shadow-[0_0_12px_rgba(234,51,51,0.5)] rounded-full" />}
                 </button>
              </div>
-             <div className="flex items-center gap-6">
+             <div className="flex items-center gap-6 mt-4 md:mt-0 mb-4 md:mb-0">
                 <button className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-bone transition-colors">By Date Added</button>
                 <button className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-bone transition-colors">Grid View</button>
              </div>
