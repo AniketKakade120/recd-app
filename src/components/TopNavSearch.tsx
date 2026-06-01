@@ -60,7 +60,7 @@ export default function TopNavSearch() {
   const handleSelect = (title: Title) => {
     setExpanded(false);
     setQuery('');
-    router.push(`/title/${title.id}`);
+    router.push(`/title/${title.id}?type=${title.type}`);
   };
 
   return (
