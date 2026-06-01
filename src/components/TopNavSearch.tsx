@@ -109,31 +109,31 @@ export default function TopNavSearch() {
 
       {/* Results Dropdown */}
       {expanded && (query.length >= 2 || results.length > 0) && (
-        <div className="absolute top-full right-0 mt-2 w-[300px] sm:w-[350px] z-50 rounded-2xl bg-surface border border-border shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="max-h-[350px] overflow-y-auto divide-y divide-border/30">
+        <div className="absolute top-full right-0 mt-2 w-[300px] sm:w-[350px] z-50 rounded-2xl bg-ink border border-border shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="max-h-[400px] overflow-y-auto py-2">
             {results.length > 0 ? (
               results.map((title) => (
                 <button
                   key={title.id}
                   onClick={() => handleSelect(title)}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-ink/50 transition-colors group text-left"
+                  className="w-full flex items-center gap-4 px-4 py-3 hover:bg-white/5 transition-colors text-left"
                 >
-                  <div className={`w-10 h-14 rounded-md overflow-hidden shrink-0 bg-ink ${!title.posterUrl ? `poster-gradient-${title.posterGradient}` : ''}`}>
+                  <div className={`w-12 h-16 rounded-xl overflow-hidden shrink-0 bg-surface/50`}>
                     {title.posterUrl && (
                       <img src={title.posterUrl} alt={title.title} className="w-full h-full object-cover" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-bold text-bone truncate group-hover:text-cinema-red transition-colors">{title.title}</h4>
-                    <p className="text-[10px] text-muted mt-0.5">
+                    <h4 className="text-[15px] font-bold text-bone truncate">{title.title}</h4>
+                    <p className="text-xs text-muted mt-1">
                       {title.releaseYear} • {title.format}
                     </p>
                   </div>
                 </button>
               ))
             ) : query.length >= 2 && !loading ? (
-              <div className="p-4 text-center">
-                <p className="text-xs text-muted">No titles found for "{query}"</p>
+              <div className="p-6 text-center">
+                <p className="text-sm text-muted">No titles found for "{query}"</p>
               </div>
             ) : null}
           </div>
