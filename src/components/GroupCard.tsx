@@ -35,13 +35,13 @@ export default function GroupCard({ group, showJoin }: GroupCardProps) {
 
   return (
     <>
-    <Link href={`/groups/${group.id}`} className="block group transition-transform duration-300 active:scale-[0.98]">
-      <div className="rounded-[32px] bg-surface/80 backdrop-blur-md border border-border hover:border-border-strong card-hover h-full flex flex-col relative overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500">
+    <Link href={`/groups/${group.id}`} className="block group h-full">
+      <div className="group relative bg-surface border border-border rounded-2xl overflow-hidden transition-all duration-300 hover:border-border-strong hover:shadow-2xl flex flex-col h-full">
         
         {/* Cover Image Banner */}
-        <div className={`h-32 w-full relative ${!group.coverImage ? `poster-gradient-${(group.avatarGradient % 10) + 1}` : ''}`}>
-          {group.coverImage && <img src={group.coverImage} alt="Cover" className="w-full h-full object-cover" />}
-          <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/20 to-transparent" />
+        <div className={`h-24 w-full relative ${!group.coverImage ? `poster-gradient-${(group.avatarGradient % 10) + 1}` : 'bg-surface'}`}>
+          {group.coverImage && <img src={group.coverImage} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />}
+          <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
           
           {/* Admin Menu */}
           <div className="absolute top-4 right-4 z-20">
