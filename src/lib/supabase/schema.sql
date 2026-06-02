@@ -206,6 +206,13 @@ create policy "View relevant recommendations" on public.recommendations for sele
 drop policy if exists "Insert recommendations" on public.recommendations;
 create policy "Insert recommendations" on public.recommendations for insert to authenticated with check (recommended_by = auth.uid());
 
+drop policy if exists "Update recommendations" on public.recommendations;
+create policy "Update recommendations" on public.recommendations for update using (
+  recommended_by = auth.uid() or 
+  (group_id is null and exists (select 1 from public.recommendation_targets rt where rt.recommendation_id = id and rt.user_id = auth.uid())) or
+  (group_id is not null and exists (select 1 from public.group_members gm where gm.group_id = recommendations.group_id and gm.user_id = auth.uid()))
+);
+
 -- Targets RLS
 drop policy if exists "View recommendation targets" on public.recommendation_targets;
 create policy "View recommendation targets" on public.recommendation_targets for select using (

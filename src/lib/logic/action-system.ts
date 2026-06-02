@@ -36,12 +36,16 @@ export function getRecommendationViewerContext(
   const viewerRating = ratings.find(r => r.recommendationId === recommendation.id && r.ratedBy === currentUser.id);
   const hasRated = !!viewerRating;
 
+  // Determine if ANY rating exists for this recommendation
+  const anyRatingExists = ratings.some(r => r.recommendationId === recommendation.id);
+
   let viewerRole: ViewerRole = 'outsider';
   if (isRecommender) viewerRole = 'recommender';
   else if (isReceiver) viewerRole = hasRated ? 'ratedReceiver' : 'receiver';
   else if (recommendation.groupId) viewerRole = 'groupMember';
 
-  const verdictState = recommendation.verdictState;
+  // Fallback for older data where the DB status update may have failed due to RLS
+  const verdictState = anyRatingExists ? 'verdict_given' : recommendation.verdictState;
 
   return {
     viewerRole,
