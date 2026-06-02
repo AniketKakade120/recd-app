@@ -67,7 +67,7 @@ function generateHeadline(archetype: string, topGenre: string, topVibe?: string)
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { completeOnboarding, currentUser, updatePreferences, isOnboarded } = useApp();
+  const { completeOnboarding, currentUser, updatePreferences, isOnboarded, userPreferences } = useApp();
   
   const [step, setStep] = useState(0);
   
@@ -82,6 +82,16 @@ export default function OnboardingPage() {
 
   // Step 3: Platforms
   const [platforms, setPlatforms] = useState<string[]>([]);
+
+  // Pre-fill existing preferences
+  useEffect(() => {
+    if (userPreferences) {
+      if (userPreferences.genres?.length) setGenres(userPreferences.genres);
+      if (userPreferences.genrePreferences) setGenrePreferences(userPreferences.genrePreferences);
+      if (userPreferences.moods?.length) setVibes(userPreferences.moods);
+      if (userPreferences.platforms?.length) setPlatforms(userPreferences.platforms);
+    }
+  }, [userPreferences]);
 
   // Step 5: Guide
   const [guideSlide, setGuideSlide] = useState(0);
