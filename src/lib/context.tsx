@@ -526,7 +526,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updatedAt: l.updated_at
       })) : [];
 
-      const dbTitles = titlesResult.data ? titlesResult.data.map(mapDbTitleToTitle) : [];
+      const initialDbTitles = titlesResult.data ? titlesResult.data.map(mapDbTitleToTitle) : [];
+      
+      // We must also fetch titles for items in custom lists that weren't in the default watchlist/recs
+      const listTitleIds = listItemsResult.data ? listItemsResult.data.map((item: any) => item.title_id) : [];
+      const fetchedTitleIds = new Set(initialDbTitles.map(t => t.id));
+      const missingTitleIds = [...new Set(listTitleIds)].filter(id => !fetchedTitleIds.has(id as string));
+      
+      let extraTitles: Title[] = [];
+      if (missingTitleIds.length > 0) {
+        const extraRes = await supabase.from('titles').select('*').in('id', missingTitleIds);
+        if (extraRes.data) {
+          extraTitles = extraRes.data.map(mapDbTitleToTitle);
+        }
+      }
+      
+      const dbTitles = [...initialDbTitles, ...extraTitles];
 
       const dbConns: CrewConnection[] = connResult.data ? connResult.data.map(c => ({
         id: c.id,
@@ -691,12 +706,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
           };
         }
 
+        // Merge dbTitles with prev.titles to keep freshly searched TMDB titles
+        const mergedTitlesMap = new Map();
+        [...prev.titles, ...mockTitles, ...dbTitles].forEach(t => {
+          // dbTitles will overwrite prev.titles/mockTitles due to iteration order
+          mergedTitlesMap.set(t.id, t);
+        });
+        const finalTitles = Array.from(mergedTitlesMap.values());
+
         return {
           ...prev,
           currentUser: recoveredCurrentUser,
           tasteScore: hydratedTasteScore,
           isOnboarded: recoveredIsOnboarded,
-          titles: dbTitles.length > 0 ? [...dbTitles, ...mockTitles.filter(mt => !dbTitles.some(dt => dt.id === mt.id))] : prev.titles,
+          titles: finalTitles,
           recommendations: dbRecs,
           ratings: dbRatings,
           groups: dbGroups,
