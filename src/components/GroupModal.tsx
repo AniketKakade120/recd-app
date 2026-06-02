@@ -13,7 +13,7 @@ interface GroupModalProps {
 }
 
 export default function GroupModal({ isOpen, onClose, group }: GroupModalProps) {
-  const { createGroup, updateGroup, users, currentUser, addToast } = useApp();
+  const { createGroup, updateGroup, users, currentUser, crewConnections, addToast } = useApp();
   const [step, setStep] = useState(1);
   
   const [name, setName] = useState('');
@@ -44,12 +44,15 @@ export default function GroupModal({ isOpen, onClose, group }: GroupModalProps) 
   }, [group, isOpen]);
 
   const filteredUsers = useMemo(() => {
+    const crewMemberIds = new Set(crewConnections.map(c => c.crewMemberId));
+    
     return users.filter(u => 
       u.id !== currentUser?.id && 
+      crewMemberIds.has(u.id) &&
       (u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
        u.username.toLowerCase().includes(searchQuery.toLowerCase()))
     );
-  }, [users, currentUser, searchQuery]);
+  }, [users, crewConnections, currentUser, searchQuery]);
 
   const toggleMember = (userId: string) => {
     setSelectedMembers(prev => 
