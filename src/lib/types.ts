@@ -11,6 +11,8 @@ export interface User {
   avatarUrl: string;
   bio: string;
   tasteArchetype: TasteArchetype;
+  tasteArchetypes?: TasteArchetype[];
+  generatedTasteHeadline?: string;
   tasteScore?: number;
   reputationLabel?: string;
   favoriteGenres?: Genre[];
@@ -126,6 +128,7 @@ export const TASTE_ARCHETYPE_DESCRIPTIONS: Record<TasteArchetype, string> = {
 export interface UserPreferences {
   userId?: string;
   genres: Genre[];
+  genrePreferences?: Record<string, number>;
   moods: Mood[];
   formats: Format[];
   languages: Language[];

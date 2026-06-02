@@ -25,7 +25,9 @@ import {
 export function calculateRecommendationImpact(params: {
   contentRating: number;
   recommendationResult: RecAccuracy;
-}): { contentRatingScore: number; recommendationResultScore: number; impactScore: number } {
+  confidenceScore?: number;
+  moodTags?: string[];
+}): { contentRatingScore: number; recommendationResultScore: number; impactScore: number; bonusApplied?: string } {
   // Content Rating: 1-5 stars -> 20-100 scale
   const contentRatingScore = params.contentRating * 20;
 
@@ -37,12 +39,30 @@ export function calculateRecommendationImpact(params: {
   };
   const recommendationResultScore = resultScoreMap[params.recommendationResult];
 
-  const impactScore = (recommendationResultScore * 0.8) + (contentRatingScore * 0.2);
+  let impactScore = (recommendationResultScore * 0.8) + (contentRatingScore * 0.2);
+  let bonusApplied: string | undefined;
+
+  const isRisky = (params.confidenceScore !== undefined && params.confidenceScore < 40) ||
+                  (params.moodTags && (params.moodTags.includes('Weird') || params.moodTags.includes('Cult pick') || params.moodTags.includes('Dark')));
+
+  if (isRisky) {
+    if (params.recommendationResult === 'Not for me') {
+      // The "Self-Awareness" Bonus. You knew it was a risky take/not for everyone.
+      // Instead of failing with 28/100, you get a "Correct Prediction" baseline score.
+      impactScore = Math.max(impactScore, 75);
+      bonusApplied = 'Self-Awareness Bonus (Correctly predicted risk)';
+    } else if (params.recommendationResult === 'Nailed it') {
+      // The "Tastemaker" Bonus. You recommended something risky and they loved it!
+      impactScore = Math.min(100, impactScore + 20);
+      bonusApplied = 'Tastemaker Bonus (Successful risky take)';
+    }
+  }
 
   return {
     contentRatingScore,
     recommendationResultScore,
     impactScore,
+    bonusApplied
   };
 }
 

@@ -330,10 +330,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       avatarUrl: finalAvatarUrl,
       bio: profile.bio || '',
       tasteArchetype: profile.taste_archetype as any || 'Thriller Dealer',
+      tasteArchetypes: profile.taste_archetypes || [],
+      generatedTasteHeadline: profile.generated_taste_headline || undefined,
       createdAt: profile.created_at,
       onboarding_completed: profile.onboarding_completed,
       prefs: prefs ? {
         genres: prefs.genres || [],
+        genrePreferences: prefs.genre_preferences || {},
         moods: prefs.moods || [],
         formats: prefs.formats || [],
         languages: prefs.languages || [],
@@ -677,7 +680,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const rec = dbRecs.find(re => re.id === rating.recommendationId);
             const impact = calculateRecommendationImpact({
               contentRating: rating.contentRating,
-              recommendationResult: rating.recommendationResult as any
+              recommendationResult: rating.recommendationResult as any,
+              confidenceScore: rec?.confidenceScore,
+              moodTags: rec?.moodTags
             });
             return {
               id: `imp-${idx}`,
@@ -1055,6 +1060,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .from('user_preferences')
         .update({
           genres: data.genres,
+          genre_preferences: data.genrePreferences,
           moods: data.moods,
           formats: data.formats,
           languages: data.languages,
@@ -1072,6 +1078,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .insert({
             user_id: state.currentUser.id,
             genres: data.genres || [],
+            genre_preferences: data.genrePreferences || {},
             moods: data.moods || [],
             formats: data.formats || [],
             languages: data.languages || [],
@@ -1228,14 +1235,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         newRatings = [...prev.ratings, rating];
       }
       
+      // Find original recommendation
+      const rec = prev.recommendations.find(r => r.id === rating.recommendationId);
+
       // Calculate Recommendation Impact for this rating
       const impact = calculateRecommendationImpact({
         contentRating: rating.contentRating,
-        recommendationResult: rating.recommendationResult
+        recommendationResult: rating.recommendationResult,
+        confidenceScore: rec?.confidenceScore,
+        moodTags: rec?.moodTags
       });
-
-      // Find original recommendation
-      const rec = prev.recommendations.find(r => r.id === rating.recommendationId);
       
       // Update recommendation status and primary stamp
       const updatedRecs = prev.recommendations.map(r =>

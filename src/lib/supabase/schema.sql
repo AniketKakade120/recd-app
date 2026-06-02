@@ -32,6 +32,8 @@ create table if not exists public.profiles (
   avatar_url text,
   bio text,
   taste_archetype text,
+  taste_archetypes text[] default '{}',
+  generated_taste_headline text,
   taste_score integer default 0,
   onboarding_completed boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
@@ -54,6 +56,7 @@ create policy "Users can update own profile." on public.profiles for update usin
 create table if not exists public.user_preferences (
   user_id uuid references public.profiles(id) on delete cascade not null primary key,
   genres text[] default '{}',
+  genre_preferences jsonb default '{}',
   moods text[] default '{}',
   formats text[] default '{}',
   languages text[] default '{}',
