@@ -6,6 +6,7 @@ import { useApp } from '@/lib/context';
 import { TASTE_ARCHETYPES, type TasteArchetype, TASTE_ARCHETYPE_DESCRIPTIONS, GENRES, MOODS, PLATFORMS } from '@/lib/types';
 import { TasteProfilePoster } from '@/components/onboarding/TasteProfilePoster';
 import { usePosterExport } from '@/hooks/usePosterExport';
+import InviteModal from '@/components/InviteModal';
 import { Theater, Smile, Zap, Ghost, Heart, Rocket, Video, Cat, Search, Sword, Send, Play, RefreshCcw, Users, Star, BarChart2, Plus, ArrowLeft, Settings, Bookmark } from 'lucide-react';
 
 const GenreIcon = ({ genre }: { genre: string }) => {
@@ -84,6 +85,7 @@ export default function OnboardingPage() {
 
   // Step 5: Guide
   const [guideSlide, setGuideSlide] = useState(0);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   const TOTAL = 5;
 
