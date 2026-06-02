@@ -280,15 +280,20 @@ export default function ProfilePage() {
                          </Link>
                          <p className="text-xs text-bone/80 italic line-clamp-2 mb-3 flex-1">&ldquo;{rec.reason}&rdquo;</p>
                          <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
-                             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-white/5 bg-white/5 text-muted">
-                               {viewerContext.verdictState === 'verdict_given' ? 'Verdict Given' : 'Verdict Pending'}
-                             </span>
-                             <button 
-                               onClick={() => openVerdict(rec.id)}
-                               className="px-3 py-1.5 bg-white/5 border border-white/10 text-bone text-[10px] font-bold uppercase tracking-wider rounded-md hover:bg-white/10 transition-all"
-                             >
-                               View Verdict
-                             </button>
+                             {viewerContext.verdictState === 'verdict_given' ? (
+                               <button 
+                                 onClick={() => openVerdict(rec.id)}
+                                 className="w-full px-3 py-1.5 bg-white/5 border border-white/10 text-bone text-[10px] font-bold uppercase tracking-wider rounded-md hover:bg-white/10 transition-all text-center"
+                               >
+                                 View Verdict
+                               </button>
+                             ) : (
+                               <div className="w-full flex">
+                                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border border-white/5 bg-white/5 text-muted">
+                                   Verdict Pending
+                                 </span>
+                               </div>
+                             )}
                          </div>
                        </div>
                      );
