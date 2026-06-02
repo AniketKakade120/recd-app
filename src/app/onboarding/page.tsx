@@ -150,6 +150,13 @@ export default function OnboardingPage() {
     }
   };
 
+  const skip = () => {
+    completeOnboarding({ onboarding_completed: true }); 
+    const searchParams = new URLSearchParams(window.location.search);
+    const nextParam = searchParams.get('next');
+    router.push(nextParam || '/home'); 
+  };
+
   // Auth loading state
   const [authTimedOut, setAuthTimedOut] = useState(false);
   useEffect(() => {
