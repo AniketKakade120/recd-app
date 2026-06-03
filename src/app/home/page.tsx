@@ -31,6 +31,7 @@ export default function HomePage() {
   const [forceToggle, setForceToggle] = useState<null | boolean>(null);
   const [genreRows, setGenreRows] = useState<Record<string, Title[]>>({});
   const [platformRows, setPlatformRows] = useState<Record<string, Title[]>>({});
+  const [layoutOrder, setLayoutOrder] = useState<{type: 'genre'|'platform', id: string}[]>([]);
   const [crewCollapsed, setCrewCollapsed] = useState(false);
   const [activityCollapsed, setActivityCollapsed] = useState(false);
 
@@ -57,7 +58,18 @@ export default function HomePage() {
           .sort((a, b) => (userPreferences.genrePreferences?.[b] || 3) - (userPreferences.genrePreferences?.[a] || 3))
           .slice(0, 3)
       : ['Drama', 'Comedy', 'Thriller'];
-    const platforms = (userPreferences?.platforms?.length > 0 ? userPreferences.platforms : ['Netflix', 'Prime Video']).filter(p => p !== 'JioHotstar');
+    let platforms = (userPreferences?.platforms?.length > 0 ? userPreferences.platforms : ['Netflix', 'Prime Video']).filter(p => p !== 'JioHotstar');
+    if (!platforms.includes('Theatre')) platforms.push('Theatre');
+
+    const newLayout: {type: 'genre'|'platform', id: string}[] = [];
+    if (genres[0]) newLayout.push({ type: 'genre', id: genres[0] });
+    if (genres[1]) newLayout.push({ type: 'genre', id: genres[1] });
+    newLayout.push({ type: 'platform', id: 'Theatre' });
+    if (genres[2]) newLayout.push({ type: 'genre', id: genres[2] });
+    platforms.forEach(p => {
+      if (p !== 'Theatre') newLayout.push({ type: 'platform', id: p });
+    });
+    setLayoutOrder(newLayout);
 
     genres.forEach(async (genre) => {
       try {
@@ -239,45 +251,47 @@ export default function HomePage() {
             </section>
           )}
 
-          {/* Personalized Dynamic Rows */}
-          {Object.entries(genreRows).map(([genre, movies]) => {
-            if (movies.length === 0) return null;
-            return (
-              <section key={`genre-${genre}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold text-bone">Because you like {genre}</h2>
-                  <Link href="/explore" className="text-xs text-muted hover:text-bone transition-colors font-medium">Explore all</Link>
-                </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
-                  {movies.map(movie => (
-                    <div key={movie.id} className="w-[180px] shrink-0 snap-start">
-                      <MovieCard title={movie} />
-                    </div>
-                  ))}
-                </div>
-              </section>
-            );
-          })}
-
-          {Object.entries(platformRows).map(([platform, movies]) => {
-            if (movies.length === 0) return null;
-            return (
-              <section key={`platform-${platform}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold text-bone">
-                  {platform === 'Theatre' ? 'In Theatres Now' : `Trending on ${platform}`}
-                </h2>
-                  <Link href="/explore" className="text-xs text-muted hover:text-bone transition-colors font-medium">Explore all</Link>
-                </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
-                  {movies.map(movie => (
-                    <div key={movie.id} className="w-[180px] shrink-0 snap-start">
-                      <MovieCard title={movie} />
-                    </div>
-                  ))}
-                </div>
-              </section>
-            );
+          {/* Personalized Dynamic Rows (Strictly Ordered) */}
+          {layoutOrder.map((section, idx) => {
+            if (section.type === 'genre') {
+              const movies = genreRows[section.id];
+              if (!movies || movies.length === 0) return null;
+              return (
+                <section key={`genre-${section.id}-${idx}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-base font-bold text-bone">Because you like {section.id}</h2>
+                    <Link href="/explore" className="text-xs text-muted hover:text-bone transition-colors font-medium">Explore all</Link>
+                  </div>
+                  <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+                    {movies.map(movie => (
+                      <div key={movie.id} className="w-[180px] shrink-0 snap-start">
+                        <MovieCard title={movie} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            } else {
+              const movies = platformRows[section.id];
+              if (!movies || movies.length === 0) return null;
+              return (
+                <section key={`platform-${section.id}-${idx}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-base font-bold text-bone">
+                      {section.id === 'Theatre' ? 'In Theatres Now' : `Trending on ${section.id}`}
+                    </h2>
+                    <Link href="/explore" className="text-xs text-muted hover:text-bone transition-colors font-medium">Explore all</Link>
+                  </div>
+                  <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+                    {movies.map(movie => (
+                      <div key={movie.id} className="w-[180px] shrink-0 snap-start">
+                        <MovieCard title={movie} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            }
           })}
 
           {/* From Your Crew */}
