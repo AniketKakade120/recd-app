@@ -123,19 +123,19 @@ export default function StarterActivationHub() {
       {/* Main Cards Grid */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 relative z-10">
         <HubCard
-          title="Recommend your first pick"
-          subtitle="Share a movie or show with your crew and get the conversation rolling."
-          icon={<Search size={28} strokeWidth={1.5} />}
-          actionLabel="Recommend something"
-          onClick={() => openRecommendModal()}
-          primary
-        />
-        <HubCard
           title="Build your crew"
           subtitle="Add people whose taste you trust. Your feed is only as good as your crew."
           icon={<Users size={28} strokeWidth={1.5} />}
           actionLabel="Add to Crew"
           href="/explore"
+          primary
+        />
+        <HubCard
+          title="Recommend your first pick"
+          subtitle="Share a movie or show with your crew and get the conversation rolling."
+          icon={<Search size={28} strokeWidth={1.5} />}
+          actionLabel="Recommend something"
+          onClick={() => openRecommendModal()}
         />
         <HubCard
           title="Start your watchlist"
