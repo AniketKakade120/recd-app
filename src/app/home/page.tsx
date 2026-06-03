@@ -52,7 +52,11 @@ export default function HomePage() {
     if (!currentUser) return;
     
     // Provide fallback mock data if preferences are empty (e.g. they skipped onboarding)
-    const genres = userPreferences?.genres?.length > 0 ? userPreferences.genres : ['Sci-Fi', 'Thriller'];
+    const genres = userPreferences?.genres?.length > 0 
+      ? [...userPreferences.genres]
+          .sort((a, b) => (userPreferences.genrePreferences?.[b] || 3) - (userPreferences.genrePreferences?.[a] || 3))
+          .slice(0, 3)
+      : ['Sci-fi', 'Thriller'];
     const platforms = userPreferences?.platforms?.length > 0 ? userPreferences.platforms : ['Netflix', 'Prime Video'];
 
     genres.forEach(async (genre) => {
