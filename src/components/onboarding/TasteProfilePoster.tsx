@@ -18,9 +18,9 @@ export const TasteProfilePoster = React.forwardRef<HTMLDivElement, TasteProfileP
     const maxRadius = 310;
     const centerX = 400;
     const centerY = 390;
-    const numAxes = 8;
+    const numAxes = 10;
     
-    const orderedGenres = ['Drama', 'Comedy', 'Thriller', 'Horror', 'Romance', 'Sci-fi', 'Anime', 'Documentary'];
+    const orderedGenres = ['Drama', 'Comedy', 'Thriller', 'Horror', 'Romance', 'Sci-fi', 'Anime', 'Documentary', 'Crime', 'Fantasy'];
 
     const getPoint = (value: number, index: number, radius: number = maxRadius) => {
       const angle = -Math.PI / 2 + (index * 2 * Math.PI) / numAxes;
