@@ -8,7 +8,7 @@ const GENRE_MAP: Record<string, number> = {
   'Action': 28, 'Adventure': 12, 'Animation': 16, 'Comedy': 35,
   'Crime': 80, 'Documentary': 99, 'Drama': 18, 'Family': 10751,
   'Fantasy': 14, 'History': 36, 'Horror': 27, 'Music': 10402,
-  'Mystery': 9648, 'Romance': 10749, 'Sci-Fi': 878, 'TV Movie': 10770,
+  'Mystery': 9648, 'Romance': 10749, 'Sci-Fi': 878, 'Sci-fi': 878, 'TV Movie': 10770,
   'Thriller': 53, 'War': 10752, 'Western': 37,
 };
 
@@ -45,9 +45,15 @@ export async function GET(request: Request) {
     let url = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&sort_by=popularity.desc&include_adult=false&include_video=false&page=1`;
 
     if (genre) {
-      const genreIds = genre.split(',').map(g => GENRE_MAP[g.trim()]).filter(Boolean).join('|');
+      const genresArray = genre.split(',').map(g => g.trim());
+      const genreIds = genresArray.map(g => GENRE_MAP[g]).filter(Boolean).join('|');
+      
       if (genreIds) {
         url += `&with_genres=${genreIds}`;
+      }
+      
+      if (genresArray.includes('Anime')) {
+        url += `&with_keywords=210024`; // TMDB Anime keyword
       }
     }
 
