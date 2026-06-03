@@ -102,7 +102,7 @@ export const TasteProfilePoster = React.forwardRef<HTMLDivElement, TasteProfileP
         <div className="z-10 w-full mb-12 text-center">
           <h1 className="text-[80px] font-editorial leading-[1.1] text-bone whitespace-nowrap">
             {displayName.split(' ')[0]}, this is how you<br/>
-            <span className="text-cinema-red italic drop-shadow-[0_0_30px_rgba(229,9,20,0.5)]">show up</span> on Rec&apos;d Club
+            <span className="text-cinema-red italic drop-shadow-[0_0_30px_rgba(229,9,20,0.5)]">show up</span>&nbsp;on Rec&apos;d Club
           </h1>
         </div>
 

@@ -63,8 +63,7 @@ export default function TasteProfileCard({ user, preferences, onEdit }: TastePro
       <div className="px-6 py-6 text-center z-10">
         <h2 className="text-3xl font-editorial leading-[1.1] text-bone">
           {user.displayName.split(' ')[0]}, this is how you<br/>
-          <span className="text-cinema-red italic drop-shadow-[0_0_15px_rgba(229,9,20,0.5)]">show up </span> 
-          on Rec&apos;d Club
+          <span className="text-cinema-red italic drop-shadow-[0_0_15px_rgba(229,9,20,0.5)]">show up</span>&nbsp;on Rec&apos;d Club
         </h2>
       </div>
 
