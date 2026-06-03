@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
-import { TasteProfilePoster } from '@/components/onboarding/TasteProfilePoster';
-import { usePosterExport } from '@/hooks/usePosterExport';
-import { User, UserPreferences } from '@/lib/types';
-import { Download, Edit2, Loader2 } from 'lucide-react';
+import React from 'react';
+import { TasteRadarChart } from '@/components/profile/TasteRadarChart';
+import { User, UserPreferences, GENRES } from '@/lib/types';
+import { Edit2, Zap, Rocket, Cat, Drama, Laugh, Ghost, Heart, Video, Search, Sword, Film } from 'lucide-react';
 
 interface TasteProfileCardProps {
   user: User;
@@ -12,99 +11,130 @@ interface TasteProfileCardProps {
   onEdit?: () => void;
 }
 
+const GenreIcon = ({ genre, size=16 }: { genre: string, size?: number }) => {
+  const p = { className: "text-muted", size, strokeWidth: 1.5 };
+  switch(genre) {
+    case 'Drama': return <Drama {...p} />;
+    case 'Comedy': return <Laugh {...p} />;
+    case 'Thriller': return <Zap {...p} />;
+    case 'Horror': return <Ghost {...p} />;
+    case 'Romance': return <Heart {...p} />;
+    case 'Sci-fi': return <Rocket {...p} />;
+    case 'Documentary': return <Video {...p} />;
+    case 'Anime': return <Cat {...p} />;
+    case 'Crime': return <Search {...p} />;
+    case 'Fantasy': return <Sword {...p} />;
+    default: return <Film {...p} />;
+  }
+};
+
 export default function TasteProfileCard({ user, preferences, onEdit }: TasteProfileCardProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const posterRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.25);
-  const { exportPoster, isExporting } = usePosterExport();
-
-  useEffect(() => {
-    const obs = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        setScale(entry.contentRect.width / 1080);
-      }
-    });
-    if (containerRef.current) {
-      obs.observe(containerRef.current);
-    }
-    return () => obs.disconnect();
-  }, []);
-
-  const handleDownload = async () => {
-    if (!posterRef.current || isExporting) return;
-    await exportPoster(posterRef.current, `${user.username}-taste-profile.png`);
-  };
-
   const archetypes = user.tasteArchetypes?.length ? user.tasteArchetypes : [user.tasteArchetype];
-
+  const topGenres = [...GENRES]
+    .sort((a,b) => (preferences.genrePreferences?.[b]||3) - (preferences.genrePreferences?.[a]||3))
+    .slice(0,3);
+  
   return (
-    <div className="bg-surface border border-border rounded-[32px] overflow-hidden flex flex-col shadow-2xl relative group">
-      {/* Header section with Edit button */}
-      <div className="absolute top-0 left-0 right-0 p-6 z-20 flex justify-between items-center bg-gradient-to-b from-ink/80 to-transparent">
-        <h3 className="text-[10px] font-black text-bone uppercase tracking-[0.2em] drop-shadow-md">Taste Profile</h3>
+    <div className="bg-[#050505] border border-border rounded-[32px] overflow-hidden flex flex-col shadow-2xl relative">
+      {/* Subtle Noise Background */}
+      <div 
+        className="absolute inset-0 opacity-[0.05] mix-blend-overlay pointer-events-none" 
+        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }}
+      />
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-cinema-red/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+
+      {/* Header */}
+      <div className="p-6 pb-2 z-20 flex justify-between items-center relative">
+        <h3 className="text-[10px] font-black text-bone uppercase tracking-[0.2em] flex items-center gap-2">
+          TASTE PROFILE 
+          <span className="text-muted font-editorial normal-case text-sm tracking-normal">Rec&apos;d Club</span>
+        </h3>
         {onEdit && (
           <button 
             onClick={onEdit} 
-            className="text-[10px] font-bold text-cinema-red uppercase tracking-widest hover:text-bone hover:bg-cinema-red/20 px-3 py-1.5 rounded-full transition-all bg-ink/50 backdrop-blur-md border border-cinema-red/30 flex items-center gap-1.5"
+            className="text-[10px] font-bold text-cinema-red uppercase tracking-widest hover:text-bone hover:border-bone px-3 py-1.5 rounded-full transition-all border border-cinema-red/30 flex items-center gap-1.5"
           >
             <Edit2 size={12} /> Edit
           </button>
         )}
       </div>
 
-      {/* Scaled Poster Container */}
-      <div 
-        ref={containerRef} 
-        className="w-full relative aspect-[1080/1920] bg-ink overflow-hidden"
-      >
-        {/* Offscreen real size for export */}
-        <div className="absolute top-0 left-0 -z-10 opacity-0 pointer-events-none">
-          <TasteProfilePoster 
-            ref={posterRef}
-            displayName={user.displayName}
-            archetypes={archetypes}
-            genrePreferences={preferences.genrePreferences || {}}
-            vibes={preferences.moods.slice(0, 3)}
-          />
+      {/* Headline */}
+      <div className="px-6 py-6 text-center z-10">
+        <h2 className="text-3xl font-editorial leading-[1.1] text-bone">
+          {user.displayName.split(' ')[0]}, this is how you<br/>
+          <span className="text-cinema-red italic drop-shadow-[0_0_15px_rgba(229,9,20,0.5)]">show up </span> 
+          on Rec&apos;d Club
+        </h2>
+      </div>
+
+      <div className="px-4 pb-8 space-y-4 z-10">
+        
+        {/* Radar & Genres Container */}
+        <div className="bg-[#0a0a0a] border border-cinema-red/10 rounded-3xl p-6 shadow-[0_0_50px_rgba(229,9,20,0.05)]">
+          <div className="w-full aspect-[800/780] relative -mt-4 mb-2">
+             <div className="absolute inset-0">
+                <TasteRadarChart 
+                  genrePreferences={preferences.genrePreferences || {}} 
+                  width={"100%" as any} 
+                  height={"100%" as any} 
+                />
+             </div>
+          </div>
+          
+          <div className="flex items-center justify-center gap-4 mt-2">
+             <div className="h-px bg-gradient-to-r from-transparent via-cinema-red/30 to-transparent flex-1" />
+             <span className="text-[8px] font-black uppercase tracking-[0.2em] text-cinema-red">Your Top Genres</span>
+             <div className="h-px bg-gradient-to-r from-cinema-red/30 via-transparent to-transparent flex-1" />
+          </div>
+          
+          <div className="flex justify-center flex-wrap gap-4 mt-4">
+             {topGenres.map((g, i) => (
+               <div key={g} className="flex items-center gap-1.5">
+                  <span className="text-cinema-red font-editorial text-sm">0{i+1}</span>
+                  <GenreIcon genre={g} size={12} />
+                  <span className="text-xs font-bold text-bone">{g}</span>
+               </div>
+             ))}
+          </div>
         </div>
 
-        {/* Scaled Preview */}
-        <div 
-          className="absolute top-0 left-0 origin-top-left pointer-events-none transition-transform duration-200"
-          style={{ transform: `scale(${scale})` }}
-        >
-          <TasteProfilePoster 
-            displayName={user.displayName}
-            archetypes={archetypes}
-            genrePreferences={preferences.genrePreferences || {}}
-            vibes={preferences.moods.slice(0, 3)}
-          />
+        {/* Traits */}
+        <div className="bg-[#0a0a0a] border border-cinema-red/10 rounded-2xl p-6 text-center shadow-[0_0_30px_rgba(229,9,20,0.03)]">
+           <h4 className="text-lg font-editorial text-bone mb-3 flex items-center justify-center gap-2">
+              <span className="text-cinema-red text-xs">✦</span> Taste Traits
+           </h4>
+           <div className="flex flex-wrap justify-center gap-2">
+              {archetypes.map(a => (
+                <span key={a} className="px-3 py-1 bg-ink border border-border rounded-full text-[10px] font-medium text-bone/80">
+                  {a}
+                </span>
+              ))}
+           </div>
         </div>
 
-        {/* Hover overlay for download */}
-        <div className="absolute inset-0 bg-ink/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10 pointer-events-none backdrop-blur-[2px]">
-          <button 
-            onClick={handleDownload}
-            disabled={isExporting}
-            className="pointer-events-auto flex items-center gap-2 px-6 py-3 bg-cinema-red text-bone font-bold rounded-xl shadow-2xl hover:scale-105 active:scale-95 transition-all"
-          >
-            {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-            {isExporting ? 'Generating...' : 'Save Image'}
-          </button>
+        {/* Vibes */}
+        <div className="bg-[#0a0a0a] border border-cinema-red/10 rounded-2xl p-6 text-center shadow-[0_0_30px_rgba(229,9,20,0.03)]">
+           <h4 className="text-lg font-editorial text-bone mb-3 flex items-center justify-center gap-2">
+              <span className="text-cinema-red text-xs">✦</span> Watch Vibes
+           </h4>
+           <div className="flex flex-wrap justify-center gap-2">
+              {(preferences.moods?.length ? preferences.moods : ['Comfort Watch']).slice(0,3).map(m => (
+                <span key={m} className="px-3 py-1 bg-ink border border-border rounded-full text-[10px] font-medium text-bone/80">
+                  {m}
+                </span>
+              ))}
+           </div>
         </div>
+
       </div>
       
-      {/* Mobile-visible download button (since hover doesn't work well on mobile) */}
-      <div className="lg:hidden p-4 border-t border-border bg-ink">
-        <button 
-          onClick={handleDownload}
-          disabled={isExporting}
-          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-surface-hover text-bone text-sm font-bold rounded-xl active:scale-95 transition-all"
-        >
-          {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-          {isExporting ? 'Generating...' : 'Save Poster'}
-        </button>
+      <div className="p-4 text-center border-t border-cinema-red/10 z-10">
+         <span className="text-[8px] font-black uppercase tracking-[0.2em] text-cinema-red flex items-center justify-center gap-2">
+            ✦ SEND THE PICK. SEE HOW IT LANDS. ✦
+         </span>
       </div>
+
     </div>
   );
 }
