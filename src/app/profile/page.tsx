@@ -15,6 +15,7 @@ import EditPreferencesModal from '@/components/EditPreferencesModal';
 import InviteModal from '@/components/InviteModal';
 import { useRouter } from 'next/navigation';
 import VerdictModal from '@/components/VerdictModal';
+import TasteProfileCard from '@/components/profile/TasteProfileCard';
 
 type TabType = 'overview' | 'given' | 'received' | 'rated' | 'crew' | 'watchlist' | 'badges';
 
@@ -538,52 +539,12 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* FAVORITE CATEGORIES */}
-          <div className="rounded-2xl bg-surface border border-border p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Favorite Categories</h3>
-              <button onClick={() => setShowEditPrefsModal(true)} className="text-[10px] font-bold text-cinema-red hover:underline">EDIT</button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] text-muted mb-2 uppercase tracking-tighter">Genres</p>
-                <div className="flex flex-wrap gap-2">
-                  {userPreferences.genres.length > 0 ? (
-                    userPreferences.genres.map(g => (
-                      <span key={g} className="px-2.5 py-1 bg-ink border border-border rounded text-[11px] font-medium text-bone/80">{g}</span>
-                    ))
-                  ) : (
-                    <p className="text-[10px] text-muted italic">No genres selected</p>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted mb-2 uppercase tracking-tighter">Moods</p>
-                <div className="flex flex-wrap gap-2">
-                  {userPreferences.moods.length > 0 ? (
-                    userPreferences.moods.map(m => (
-                      <span key={m} className="px-2.5 py-1 bg-ink border border-border rounded text-[11px] font-medium text-bone/80">{m}</span>
-                    ))
-                  ) : (
-                    <p className="text-[10px] text-muted italic">No moods selected</p>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted mb-2 uppercase tracking-tighter">Platforms</p>
-                <div className="flex flex-wrap gap-2">
-                  {userPreferences.platforms.length > 0 ? (
-                    userPreferences.platforms.map(p => (
-                      <span key={p} className="px-2.5 py-1 bg-ink border border-border rounded text-[11px] font-medium text-bone/80">{p}</span>
-                    ))
-                  ) : (
-                    <p className="text-[10px] text-muted italic">No platforms selected</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* TASTE PROFILE */}
+          <TasteProfileCard 
+            user={currentUser} 
+            preferences={userPreferences} 
+            onEdit={() => setShowEditPrefsModal(true)} 
+          />
 
           {/* BADGES (Compact Sidebar view) */}
           <div className="rounded-2xl bg-surface border border-border p-6">

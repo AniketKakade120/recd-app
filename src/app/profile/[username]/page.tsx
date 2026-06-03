@@ -11,6 +11,7 @@ import Link from 'next/link';
 import TasteScoreRing from '@/components/TasteScoreRing';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import MobileBackLink from '@/components/MobileBackLink';
+import TasteProfileCard from '@/components/profile/TasteProfileCard';
 
 export default function PublicProfilePage() {
   const { username } = useParams();
@@ -218,28 +219,18 @@ export default function PublicProfilePage() {
             </div>
           </div>
 
-          {/* Favorite Categories */}
-          <div className="bg-surface border border-border rounded-[32px] p-8">
-            <h3 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-6">Favorite Categories</h3>
-            <div className="space-y-6">
-              <div>
-                <p className="text-[10px] text-muted mb-3 uppercase font-bold tracking-widest">Genres</p>
-                <div className="flex flex-wrap gap-2">
-                  {(profileUser.favoriteGenres || ['Drama', 'Mystery', 'Thriller', 'Sci-fi']).map(g => (
-                    <span key={g} className="px-3 py-1.5 bg-ink border border-border rounded-xl text-xs text-bone/80 hover:text-bone hover:border-border-strong transition-colors">{g}</span>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted mb-3 uppercase font-bold tracking-widest">Moods</p>
-                <div className="flex flex-wrap gap-2">
-                  {(profileUser.favoriteMoods || ['Slow burn', 'Emotional', 'Mind-bending']).map(g => (
-                    <span key={g} className="px-3 py-1.5 bg-ink border border-border rounded-xl text-xs text-bone/80 hover:text-bone hover:border-border-strong transition-colors">{g}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* TASTE PROFILE */}
+          <TasteProfileCard 
+            user={profileUser} 
+            preferences={{
+              genres: profileUser.favoriteGenres || [],
+              genrePreferences: {},
+              moods: profileUser.favoriteMoods || [],
+              platforms: profileUser.preferredPlatforms || [],
+              formats: [],
+              languages: []
+            }} 
+          />
 
           {/* Badges Earned */}
           <div className="bg-surface border border-border rounded-[32px] p-8">
