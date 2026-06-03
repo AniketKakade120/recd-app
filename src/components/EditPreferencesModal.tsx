@@ -2,17 +2,40 @@
 
 import { useState, useRef } from 'react';
 import { useApp } from '@/lib/context';
-import { GENRES, MOODS, PLATFORMS, LANGUAGES, type Genre, type Mood, type StreamingPlatform, type Language } from '@/lib/types';
+import { TASTE_ARCHETYPES, TasteArchetype, GENRES, MOODS, PLATFORMS, LANGUAGES, type Genre, type Mood, type StreamingPlatform, type Language } from '@/lib/types';
 import { TasteProfilePoster } from '@/components/onboarding/TasteProfilePoster';
 import { usePosterExport } from '@/hooks/usePosterExport';
 import { Download, Loader2, Film, Zap, Rocket, Cat, Drama, Laugh, Ghost, Heart, Video, Search, Sword } from 'lucide-react';
+
+function generateHeadline(archetype: string, topGenre: string, topVibe?: string): string {
+  const base: Record<string, string> = {
+    'Emotional Damage Dealer': 'Emotional chaos curator',
+    'Plot Twist Addict': 'Plot-twist seeker',
+    'Comfort Watch Expert': 'Comfort-watch soul',
+    'Horror Sicko': 'Fear-first watcher',
+    'Rom-Com Defender': 'Rom-com defender',
+    'Prestige TV Snob': 'Prestige TV loyalist',
+    'Anime Evangelist': 'Anime evangelist',
+    'Slow-Burn Believer': 'Slow-burn heartbreak specialist',
+    'Franchise Defender': 'Franchise defender',
+    'Documentary Deep Diver': 'Documentary deep diver',
+    'Sitcom Loyalist': 'Sitcom loyalist',
+    'Thriller Dealer': 'Thriller-first, feelings-later watcher',
+  };
+  const title = base[archetype] || 'Cinematic soul';
+  
+  if (topGenre && topVibe) {
+    return `${title} with ${topVibe.toLowerCase()} ${topGenre.toLowerCase()} tendencies`;
+  }
+  return title;
+}
 
 interface EditPreferencesModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type TabType = 'genres' | 'moods' | 'platforms' | 'languages';
+type TabType = 'traits' | 'genres' | 'moods' | 'platforms' | 'languages';
 
 const GenreIcon = ({ genre, size=24 }: { genre: string, size?: number }) => {
   const p = { className: "text-bone/70", size, strokeWidth: 1.5 };
@@ -32,8 +55,13 @@ const GenreIcon = ({ genre, size=24 }: { genre: string, size?: number }) => {
 };
 
 export default function EditPreferencesModal({ isOpen, onClose }: EditPreferencesModalProps) {
-  const { userPreferences, updatePreferences, currentUser } = useApp();
-  const [activeTab, setActiveTab] = useState<TabType>('genres');
+  const { userPreferences, updatePreferences, currentUser, completeOnboarding, refreshData } = useApp();
+  const [activeTab, setActiveTab] = useState<TabType>('traits');
+  
+  const [selectedTraits, setSelectedTraits] = useState<TasteArchetype[]>(
+    currentUser?.tasteArchetypes?.length ? currentUser.tasteArchetypes : 
+    currentUser?.tasteArchetype ? [currentUser.tasteArchetype] : []
+  );
   
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>(userPreferences?.genres || []);
   const [genrePreferences, setGenrePreferences] = useState<Record<string, number>>(userPreferences?.genrePreferences || {});
@@ -83,6 +111,18 @@ export default function EditPreferencesModal({ isOpen, onClose }: EditPreference
         platforms: selectedPlatforms,
         languages: selectedLanguages
       });
+
+      const topGenres = [...GENRES].sort((a,b) => (genrePreferences[b]||3) - (genrePreferences[a]||3));
+      const topGenre = topGenres[0] || 'Drama';
+      const topVibe = selectedMoods[0];
+      const headline = generateHeadline(selectedTraits[0] || 'Comfort Watch Expert', topGenre, topVibe);
+
+      await completeOnboarding({
+        taste_archetypes: selectedTraits,
+        generated_taste_headline: headline
+      });
+      
+      await refreshData();
       onClose();
     } catch (error) {
       console.error('Failed to update preferences:', error);
@@ -97,6 +137,7 @@ export default function EditPreferencesModal({ isOpen, onClose }: EditPreference
   };
 
   const tabs: { id: TabType; label: string; items: any[]; current: any[]; setter: any }[] = [
+    { id: 'traits', label: 'Taste Traits', items: TASTE_ARCHETYPES, current: selectedTraits, setter: setSelectedTraits },
     { id: 'genres', label: 'Genres', items: GENRES, current: selectedGenres, setter: setSelectedGenres },
     { id: 'moods', label: 'Moods', items: MOODS, current: selectedMoods, setter: setSelectedMoods },
     { id: 'platforms', label: 'Platforms', items: PLATFORMS, current: selectedPlatforms, setter: setSelectedPlatforms },
@@ -251,7 +292,7 @@ export default function EditPreferencesModal({ isOpen, onClose }: EditPreference
             <TasteProfilePoster 
               ref={posterRef}
               displayName={currentUser.displayName}
-              archetypes={currentUser.tasteArchetypes?.length ? currentUser.tasteArchetypes : [currentUser.tasteArchetype]}
+              archetypes={selectedTraits.length ? selectedTraits : ['Comfort Watch Expert']}
               genrePreferences={genrePreferences}
               vibes={selectedMoods.slice(0, 3)}
             />
