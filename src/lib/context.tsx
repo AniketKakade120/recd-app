@@ -651,19 +651,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
         let recoveredCurrentUser = prev.currentUser;
         let recoveredIsOnboarded = prev.isOnboarded;
         
-        // Recover currentUser if it was missing
-        if (!prev.currentUser && myProfileRecord) {
-          const emailPrefix = 'user'; // We don't have the session email here, but it's just a fallback
-          recoveredCurrentUser = {
-            id: myProfileRecord.id,
-            username: myProfileRecord.username || emailPrefix,
-            displayName: myProfileRecord.display_name || 'User',
-            avatarUrl: myProfileRecord.avatar_url || '',
-            bio: myProfileRecord.bio || '',
-            tasteArchetype: myProfileRecord.taste_archetype as any || 'Thriller Dealer',
-            createdAt: myProfileRecord.created_at,
-          };
-          recoveredIsOnboarded = !!myProfileRecord.onboarding_completed;
+        // Recover or update currentUser with latest DB profile
+        if (myProfileRecord) {
+          if (!prev.currentUser) {
+            const emailPrefix = 'user';
+            recoveredCurrentUser = {
+              id: myProfileRecord.id,
+              username: myProfileRecord.username || emailPrefix,
+              displayName: myProfileRecord.display_name || 'User',
+              avatarUrl: myProfileRecord.avatar_url || '',
+              bio: myProfileRecord.bio || '',
+              tasteArchetype: myProfileRecord.taste_archetype as any || 'Thriller Dealer',
+              tasteArchetypes: myProfileRecord.taste_archetypes || [],
+              generatedTasteHeadline: myProfileRecord.generated_taste_headline || undefined,
+              createdAt: myProfileRecord.created_at,
+            };
+            recoveredIsOnboarded = !!myProfileRecord.onboarding_completed;
+          } else {
+            // User exists, just ensure their profile details (like taste traits) are fresh
+            recoveredCurrentUser = {
+              ...prev.currentUser,
+              tasteArchetype: myProfileRecord.taste_archetype as any || prev.currentUser.tasteArchetype,
+              tasteArchetypes: myProfileRecord.taste_archetypes || prev.currentUser.tasteArchetypes,
+              generatedTasteHeadline: myProfileRecord.generated_taste_headline || prev.currentUser.generatedTasteHeadline,
+            };
+            recoveredIsOnboarded = !!myProfileRecord.onboarding_completed;
+          }
         }
 
         // Dynamically calculate taste score based on actual DB records
@@ -1041,10 +1054,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setState(prev => ({ ...prev, isOnboarded: true }));
     }
 
-    // STEP 2: Fire-and-forget DB update — persists across sessions
+    // STEP 2: Wait for DB update to finish so downstream fetchers see fresh data
     if (isSupabaseConfigured && supabase && state.currentUser) {
-      supabase.from('profiles').update(data).eq('id', state.currentUser.id)
-        .then(({ error }) => { if (error) console.error('Error updating profile in Supabase:', error); });
+      const { error } = await supabase.from('profiles').update(data).eq('id', state.currentUser.id);
+      if (error) {
+        console.error('Error updating profile in Supabase:', error);
+      }
     }
   }, [state.currentUser]);
 
