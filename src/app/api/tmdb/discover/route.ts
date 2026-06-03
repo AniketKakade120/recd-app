@@ -57,7 +57,9 @@ export async function GET(request: Request) {
       }
     }
 
-    if (platform) {
+    if (platform === 'Theatre') {
+      url = `${TMDB_BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}&region=${region}&page=1`;
+    } else if (platform) {
       const providerIds = platform.split(',').map(p => PROVIDER_MAP[p.trim()]).filter(Boolean).join('|');
       if (providerIds) {
         url += `&with_watch_providers=${providerIds}&watch_region=${region}`;
