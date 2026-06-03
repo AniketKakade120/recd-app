@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useApp } from '@/lib/context';
 import { TASTE_ARCHETYPES, TasteArchetype, GENRES, MOODS, PLATFORMS, LANGUAGES, type Genre, type Mood, type StreamingPlatform, type Language } from '@/lib/types';
 import { TasteProfilePoster } from '@/components/onboarding/TasteProfilePoster';
@@ -58,6 +58,15 @@ export default function EditPreferencesModal({ isOpen, onClose }: EditPreference
   const { userPreferences, updatePreferences, currentUser, completeOnboarding, refreshData } = useApp();
   const [activeTab, setActiveTab] = useState<TabType>('traits');
   
+  useEffect(() => {
+    if (isOpen && currentUser) {
+      setSelectedTraits(
+        currentUser.tasteArchetypes?.length ? currentUser.tasteArchetypes : 
+        currentUser.tasteArchetype ? [currentUser.tasteArchetype] : []
+      );
+    }
+  }, [isOpen, currentUser]);
+
   const [selectedTraits, setSelectedTraits] = useState<TasteArchetype[]>(
     currentUser?.tasteArchetypes?.length ? currentUser.tasteArchetypes : 
     currentUser?.tasteArchetype ? [currentUser.tasteArchetype] : []

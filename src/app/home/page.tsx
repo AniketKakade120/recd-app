@@ -56,7 +56,7 @@ export default function HomePage() {
       ? [...userPreferences.genres]
           .sort((a, b) => (userPreferences.genrePreferences?.[b] || 3) - (userPreferences.genrePreferences?.[a] || 3))
           .slice(0, 3)
-      : ['Sci-fi', 'Thriller'];
+      : ['Drama', 'Comedy', 'Thriller'];
     const platforms = userPreferences?.platforms?.length > 0 ? userPreferences.platforms : ['Netflix', 'Prime Video'];
 
     genres.forEach(async (genre) => {

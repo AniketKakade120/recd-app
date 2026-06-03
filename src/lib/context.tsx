@@ -189,7 +189,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const profileResult = await supabase
       .from('profiles')
-      .select('*')
+      .select('*, taste_archetypes')
       .eq('id', user.id)
       .maybeSingle();
     
@@ -409,7 +409,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         supabase.from('activity').select('*').order('created_at', { ascending: false }).limit(20),
         supabase.from('watchlist_lists').select('*').eq('user_id', userId),
         supabase.from('comments').select('*').order('created_at', { ascending: true }),
-        supabase.from('profiles').select('*, prefs:user_preferences(genres, moods)')
+        supabase.from('profiles').select('*, taste_archetypes, prefs:user_preferences(genres, moods)')
       ]);
 
       // Check primary independent query errors
