@@ -1533,15 +1533,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const leaveGroup = useCallback(async (groupId: string) => {
     if (!state.currentUser?.id) return;
+    
+    // Optimistic UI update
+    setState(prev => ({
+      ...prev,
+      groupMembers: prev.groupMembers.filter(gm => !(gm.groupId === groupId && gm.userId === prev.currentUser?.id))
+    }));
+
     if (isSupabaseConfigured && supabase) {
       await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', state.currentUser.id);
       refreshData();
       return;
     }
-    setState(prev => ({
-      ...prev,
-      groupMembers: prev.groupMembers.filter(gm => !(gm.groupId === groupId && gm.userId === prev.currentUser?.id))
-    }));
   }, [state.currentUser?.id, refreshData]);
 
   const sendCrewRequest = useCallback(async (receiverId: string) => {
