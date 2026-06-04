@@ -137,6 +137,7 @@ interface AppContextType extends AppState {
   retryAuthSync: () => Promise<void>;
   addTitleComment: (titleId: string, content: string) => Promise<void>;
   addGroupComment: (groupId: string, titleId: string, comment: string) => Promise<void>;
+  joinGroupByCode: (code: string) => Promise<{ success: boolean; groupName?: string }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -1509,6 +1510,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, [state.currentUser, refreshData]);
 
+  const joinGroupByCode = useCallback(async (code: string) => {
+    const uppercaseCode = code.toUpperCase();
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase.from('groups').select('id, name').eq('invite_code', uppercaseCode).single();
+      if (error || !data) return { success: false };
+      
+      await supabase.from('group_members').insert({
+        group_id: data.id,
+        user_id: state.currentUser?.id || '',
+        role: 'member'
+      });
+      refreshData();
+      return { success: true, groupName: data.name };
+    } else {
+      const target = mockGroups.find(g => g.inviteCode === uppercaseCode);
+      if (!target) return { success: false };
+      joinGroup(target.id);
+      return { success: true, groupName: target.name };
+    }
+  }, [state.currentUser, refreshData, joinGroup]);
+
   const leaveGroup = useCallback(async (groupId: string) => {
     if (!state.currentUser?.id) return;
     if (isSupabaseConfigured && supabase) {
@@ -2230,7 +2252,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     leaderboard: mockLeaderboard, refreshData, enterDemoMode,
     retryAuthSync,
     addTitleComment,
-    addGroupComment
+    addGroupComment,
+    joinGroupByCode
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

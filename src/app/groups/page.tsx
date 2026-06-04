@@ -11,7 +11,7 @@ import { mockGroups } from '@/lib/mock-data';
 import GroupModal from '@/components/GroupModal';
 
 export default function GroupsPage() {
-  const { groups, joinGroup, groupMembers, currentUser, addToast } = useApp();
+  const { groups, joinGroup, groupMembers, currentUser, addToast, joinGroupByCode } = useApp();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [joinCode, setJoinCode] = useState('');
@@ -31,17 +31,29 @@ export default function GroupsPage() {
   const myGroupIds = groupMembers.filter(gm => gm.userId === currentUser?.id).map(gm => gm.groupId);
   const myGroups = groups.filter(g => myGroupIds.includes(g.id));
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsJoining(true);
+    
+    // Check if the user is already in this group in local state
     const target = groups.find(g => g.inviteCode === joinCode.toUpperCase());
     if (target) {
-      joinGroup(target.id);
-      addToast(`Welcome to ${target.name}!`, { type: 'success' });
+      addToast(`You are already in ${target.name}!`, { type: 'success' });
       setIsJoining(false); 
       setJoinCode('');
-    } else {
-      addToast('Invalid invite code. Try again.', { type: 'error' });
+      return;
     }
+
+    if (joinGroupByCode) {
+      const result = await joinGroupByCode(joinCode);
+      if (result.success) {
+        addToast(`Welcome to ${result.groupName}!`, { type: 'success' });
+        setJoinCode('');
+      } else {
+        addToast('Invalid invite code. Try again.', { type: 'error' });
+      }
+    }
+    setIsJoining(false);
   };
 
   return (
