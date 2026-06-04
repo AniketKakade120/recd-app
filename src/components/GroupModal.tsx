@@ -10,10 +10,11 @@ interface GroupModalProps {
   isOpen: boolean;
   onClose: () => void;
   group?: Group; // If present, we are in Edit mode
+  initialStep?: number;
 }
 
-export default function GroupModal({ isOpen, onClose, group }: GroupModalProps) {
-  const { createGroup, updateGroup, users, currentUser, crewConnections, addToast } = useApp();
+export default function GroupModal({ isOpen, onClose, group, initialStep }: GroupModalProps) {
+  const { createGroup, updateGroup, getGroupMembers, users, currentUser, crewConnections, addToast } = useApp();
   const [step, setStep] = useState(1);
   
   const [name, setName] = useState('');
@@ -31,8 +32,8 @@ export default function GroupModal({ isOpen, onClose, group }: GroupModalProps) 
       setDescription(group.description || '');
       setVibe(group.vibe);
       setPrivacy(group.privacy);
-      // Logic for loading existing members if editing could be added here
-      // For now, we'll focus on the requested creation flow features
+      const existingMembers = getGroupMembers(group.id);
+      setSelectedMembers(existingMembers.filter(m => m.id !== group.createdBy).map(m => m.id));
     } else {
       setName('');
       setDescription('');
@@ -40,8 +41,8 @@ export default function GroupModal({ isOpen, onClose, group }: GroupModalProps) 
       setPrivacy('private');
       setSelectedMembers([]);
     }
-    setStep(1);
-  }, [group, isOpen]);
+    setStep(initialStep || 1);
+  }, [group, isOpen, initialStep, getGroupMembers]);
 
   const filteredUsers = useMemo(() => {
     const crewMemberIds = new Set(crewConnections.map(c => c.crewMemberId));
@@ -64,7 +65,7 @@ export default function GroupModal({ isOpen, onClose, group }: GroupModalProps) 
     if (!name.trim()) return;
 
     if (isEdit && group) {
-      updateGroup(group.id, { name, description, vibe, privacy });
+      updateGroup(group.id, { name, description, vibe, privacy }, selectedMembers);
       addToast('Group updated successfully');
     } else {
       const newGroup: Group = {

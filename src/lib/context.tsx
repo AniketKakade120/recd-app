@@ -83,7 +83,7 @@ interface AppContextType extends AppState {
   updateVerdictState: (recId: string, state: VerdictState) => void;
   addRating: (rating: Rating) => void;
   createGroup: (group: Group, memberIds?: string[]) => void;
-  updateGroup: (groupId: string, data: Partial<Group>) => void;
+  updateGroup: (groupId: string, data: Partial<Group>, memberIds?: string[]) => void;
   deleteGroup: (groupId: string) => void;
   joinGroup: (groupId: string) => void;
   sendCrewRequest: (receiverId: string, message?: string) => Promise<{ success: boolean; error?: string; alreadyConnected?: boolean; data?: any }>;
@@ -1351,7 +1351,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, [state.currentUser, refreshData]);
 
-  const updateGroup = useCallback(async (groupId: string, data: Partial<Group>) => {
+  const updateGroup = useCallback(async (groupId: string, data: Partial<Group>, memberIds?: string[]) => {
     if (isSupabaseConfigured && supabase) {
       await supabase.from('groups').update({
         name: data.name,
@@ -1360,13 +1360,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
         privacy: data.privacy,
         avatar_gradient: data.avatarGradient
       }).eq('id', groupId);
+
+      if (memberIds) {
+        await supabase.from('group_members').delete().eq('group_id', groupId).neq('role', 'owner');
+        if (memberIds.length > 0) {
+          const members = memberIds.map(id => ({ group_id: groupId, user_id: id, role: 'member' }));
+          await supabase.from('group_members').insert(members);
+        }
+      }
+
       refreshData();
       return;
     }
-    setState(prev => ({
-      ...prev,
-      groups: prev.groups.map(g => g.id === groupId ? { ...g, ...data } : g)
-    }));
+    setState(prev => {
+      let newGroupMembers = prev.groupMembers;
+      if (memberIds) {
+        const owner = prev.groupMembers.find(gm => gm.groupId === groupId && gm.role === 'owner');
+        const otherGroups = prev.groupMembers.filter(gm => gm.groupId !== groupId);
+        
+        newGroupMembers = [...otherGroups];
+        if (owner) newGroupMembers.push(owner);
+        
+        memberIds.forEach(id => {
+          newGroupMembers.push({
+            id: `gm-${Date.now()}-${Math.random()}`,
+            groupId,
+            userId: id,
+            role: 'member' as const,
+            joinedAt: new Date().toISOString()
+          });
+        });
+      }
+      return {
+        ...prev,
+        groups: prev.groups.map(g => g.id === groupId ? { ...g, ...data } : g),
+        groupMembers: newGroupMembers
+      };
+    });
   }, [refreshData]);
 
   const deleteGroup = useCallback(async (groupId: string) => {

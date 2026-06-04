@@ -8,6 +8,7 @@ import RecommendationCard from '@/components/RecommendationCard';
 import UserAvatar from '@/components/UserAvatar';
 import EmptyState from '@/components/EmptyState';
 import InviteModal from '@/components/InviteModal';
+import GroupModal from '@/components/GroupModal';
 import StampBadge from '@/components/StampBadge';
 import ClickableUserAvatar from '@/components/ClickableUserAvatar';
 
@@ -16,6 +17,8 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
   const { getGroup, getGroupMembers, getGroupRecommendations, openRecommendModal } = useApp();
   const [filter, setFilter] = useState<'all' | 'pending' | 'watched'>('all');
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editInitialStep, setEditInitialStep] = useState(1);
 
   const group = getGroup(resolvedParams.id);
   const members = getGroupMembers(resolvedParams.id);
@@ -79,10 +82,12 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
               </Link>
             </div>
           ))}
-          <button onClick={() => setInviteOpen(true)} className="flex flex-col items-center gap-1 shrink-0 w-14 group">
-            <div className="w-12 h-12 rounded-full border border-dashed border-border flex items-center justify-center text-muted group-hover:border-cinema-red group-hover:text-cinema-red transition-colors">+</div>
-            <span className="text-sm text-muted group-hover:text-cinema-red transition-colors">Add</span>
-          </button>
+          {currentUser?.id === group.createdBy && (
+            <button onClick={() => { setEditInitialStep(2); setEditModalOpen(true); }} className="flex flex-col items-center gap-1 shrink-0 w-14 group">
+              <div className="w-12 h-12 rounded-full border border-dashed border-border flex items-center justify-center text-muted group-hover:border-cinema-red group-hover:text-cinema-red transition-colors">+</div>
+              <span className="text-sm text-muted group-hover:text-cinema-red transition-colors">Add</span>
+            </button>
+          )}
         </div>
       </section>
 
@@ -116,6 +121,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
       )}
 
       <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} groupName={group.name} />
+      <GroupModal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} group={group} initialStep={editInitialStep} />
     </div>
   );
 }
