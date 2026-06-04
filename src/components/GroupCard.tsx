@@ -15,7 +15,7 @@ interface GroupCardProps {
 }
 
 export default function GroupCard({ group, showJoin }: GroupCardProps) {
-  const { getGroupMembers, joinGroup, currentUser, deleteGroup, addToast } = useApp();
+  const { getGroupMembers, joinGroup, leaveGroup, currentUser, deleteGroup, addToast } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -64,7 +64,7 @@ export default function GroupCard({ group, showJoin }: GroupCardProps) {
                      Invite to group
                   </button>
                   
-                  {isOwner && (
+                  {isOwner ? (
                     <>
                       <div className="h-px bg-ink/5 my-1" />
                       <button 
@@ -82,7 +82,26 @@ export default function GroupCard({ group, showJoin }: GroupCardProps) {
                          Delete group
                       </button>
                     </>
-                  )}
+                  ) : members.some(m => m.id === currentUser?.id) ? (
+                    <>
+                      <div className="h-px bg-ink/5 my-1" />
+                      <button 
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          e.stopPropagation(); 
+                          if (confirm('Are you sure you want to leave this group?')) {
+                            leaveGroup(group.id);
+                            addToast('You have left the group.');
+                          }
+                          setShowMenu(false); 
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-cinema-red text-xs font-bold hover:bg-cinema-red/5 transition-colors text-left"
+                      >
+                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                         Leave group
+                      </button>
+                    </>
+                  ) : null}
                 </div>
               </>
             )}

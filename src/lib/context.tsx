@@ -86,6 +86,7 @@ interface AppContextType extends AppState {
   updateGroup: (groupId: string, data: Partial<Group>, memberIds?: string[]) => void;
   deleteGroup: (groupId: string) => void;
   joinGroup: (groupId: string) => void;
+  leaveGroup: (groupId: string) => void;
   sendCrewRequest: (receiverId: string, message?: string) => Promise<{ success: boolean; error?: string; alreadyConnected?: boolean; data?: any }>;
   acceptCrewRequest: (requestId: string) => Promise<void>;
   rejectCrewRequest: (requestId: string) => Promise<void>;
@@ -1432,6 +1433,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, [state.currentUser, refreshData]);
 
+  const leaveGroup = useCallback(async (groupId: string) => {
+    if (!state.currentUser?.id) return;
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', state.currentUser.id);
+      refreshData();
+      return;
+    }
+    setState(prev => ({
+      ...prev,
+      groupMembers: prev.groupMembers.filter(gm => !(gm.groupId === groupId && gm.userId === prev.currentUser?.id))
+    }));
+  }, [state.currentUser?.id, refreshData]);
+
   const sendCrewRequest = useCallback(async (receiverId: string) => {
     if (!state.currentUser?.id) return { success: false, error: 'Not authenticated' };
     
@@ -2112,7 +2126,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ...state, login, logout, completeOnboarding,
     openRecommendModal, closeRecommendModal,
     openGiveVerdictModal, closeGiveVerdictModal,
-    updateVerdictState, addRating, createGroup, updateGroup, deleteGroup, joinGroup,
+    updateVerdictState, addRating, createGroup, updateGroup, deleteGroup, joinGroup, leaveGroup,
     addToWatchlist,
     addTitleToWatchlist,
     createWatchlistList,
