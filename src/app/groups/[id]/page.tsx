@@ -2,6 +2,7 @@
 
 import { useState, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/context';
 import PageHeader from '@/components/PageHeader';
 import RecommendationCard from '@/components/RecommendationCard';
@@ -14,7 +15,8 @@ import ClickableUserAvatar from '@/components/ClickableUserAvatar';
 
 export default function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const { getGroup, getGroupMembers, getGroupRecommendations, openRecommendModal, currentUser } = useApp();
+  const router = useRouter();
+  const { getGroup, getGroupMembers, getGroupRecommendations, openRecommendModal, currentUser, leaveGroup, addToast } = useApp();
   const [filter, setFilter] = useState<'all' | 'pending' | 'watched'>('all');
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -37,7 +39,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="space-y-6">
       <PageHeader 
-        title={group.name} 
+        title={<span className="text-5xl md:text-6xl">{group.name}</span>}
         subtitle={group.vibe} 
         breadcrumbItems={[
           { label: 'Groups', href: '/groups' },
@@ -47,6 +49,20 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         mobileBackHref="/groups"
         action={
           <div className="flex gap-2">
+            {currentUser?.id !== group.createdBy && members.some(m => m.id === currentUser?.id) && (
+              <button 
+                onClick={() => {
+                  if (confirm('Are you sure you want to leave this group?')) {
+                    leaveGroup(group.id);
+                    addToast('You have left the group.');
+                    router.push('/groups');
+                  }
+                }} 
+                className="px-3 py-1.5 bg-surface border border-cinema-red/50 text-cinema-red rounded-lg text-xs font-medium hover:bg-cinema-red/10 btn-press"
+              >
+                Leave Group
+              </button>
+            )}
             <button onClick={() => setInviteOpen(true)} className="px-3 py-1.5 bg-surface border border-border text-bone/70 rounded-lg text-xs font-medium hover:bg-surface-hover btn-press">Invite</button>
             <button onClick={() => openRecommendModal({ groupId: group.id })} className="px-3 py-1.5 bg-cinema-red text-bone rounded-lg text-xs font-semibold hover:bg-cinema-red/90 btn-press inline-block">Rec to Group</button>
           </div>

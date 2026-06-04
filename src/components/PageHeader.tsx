@@ -7,7 +7,7 @@ import Breadcrumbs, { BreadcrumbItem } from './Breadcrumbs';
 import MobileBackLink from './MobileBackLink';
 
 interface PageHeaderProps {
-  title: string;
+  title: ReactNode;
   subtitle?: string;
   action?: ReactNode;
   backButton?: boolean;
