@@ -22,7 +22,7 @@ export default function GiveVerdictModal() {
   } = useApp();
 
   const TOTAL_STEPS = 4;
-  const [step, setStep] = useState(0); // Step 0: Watched check
+  const [step, setStep] = useState(1); // Step 1: Content Rating
   const [contentRating, setContentRating] = useState(0);
   const [recAccuracy, setRecAccuracy] = useState<RecAccuracy | null>(null);
   const [selectedStamp, setSelectedStamp] = useState<StampType | null>(null);
@@ -46,7 +46,7 @@ export default function GiveVerdictModal() {
         setComment(existingRating.comment || '');
         setStep(1); // Skip watched check for edits
       } else {
-        setStep(0);
+        setStep(1); // Start directly at step 1
         setContentRating(0);
         setRecAccuracy(null);
         setSelectedStamp(null);
@@ -86,7 +86,7 @@ export default function GiveVerdictModal() {
   };
 
   const prevStep = () => {
-    if (step > 0) setStep(step - 1);
+    if (step > 1) setStep(step - 1);
   };
 
   const isSaved = watchlist.some(w => w.titleId === title.id);
@@ -136,43 +136,23 @@ export default function GiveVerdictModal() {
         ) : (
           <div className="flex flex-col flex-1 overflow-hidden">
             {/* Stepper */}
-            {step > 0 && (
               <div className="px-6 pt-5 pb-2">
                 <div className="flex gap-1.5">
-                  {Array.from({ length: 3 }, (_, i) => (
-                    <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                      step > i ? 'bg-cinema-red shadow-[0_0_8px_rgba(234,51,51,0.5)]' : 'bg-border'
-                    }`} />
-                  ))}
+                  {Array.from({ length: 3 }, (_, i) => {
+                    const actualStep = i + 1;
+                    return (
+                      <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                        step >= actualStep ? 'bg-cinema-red shadow-[0_0_8px_rgba(234,51,51,0.5)]' : 'bg-border'
+                      }`} />
+                    );
+                  })}
                 </div>
               </div>
-            )}
 
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto p-6 min-h-[300px]">
               
-              {/* STEP 0: Watched Check */}
-              {step === 0 && (
-                <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 text-center py-4">
-                  <div className="py-2">
-                    <h3 className="text-2xl font-bold text-bone font-editorial mb-3">Have you watched this?</h3>
-                    <p className="text-sm text-muted px-8 leading-relaxed">You can only stamp a rec after you've seen it.</p>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <button onClick={() => setStep(1)}
-                      className="w-full py-4 bg-cinema-red text-bone font-bold rounded-xl btn-press shadow-lg shadow-cinema-red/10">
-                      Yes, give verdict
-                    </button>
-                    <button onClick={() => { 
-                      if (!isSaved) addTitleToWatchlist(title.id);
-                      closeGiveVerdictModal(); 
-                    }}
-                      className="w-full py-4 bg-white/5 text-bone border border-white/10 rounded-xl font-semibold btn-press hover:bg-white/10">
-                      Not yet (Save to Watchlist)
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* STEP 0 has been removed to skip the redundant watched check */}
 
               {/* STEP 1: Content Rating */}
               {step === 1 && (
@@ -261,16 +241,19 @@ export default function GiveVerdictModal() {
             </div>
 
             {/* Navigation Controls */}
-            {step > 0 && (
-              <div className="p-5 border-t border-border bg-ink/50 flex justify-between items-center shrink-0">
+            <div className="p-5 border-t border-border bg-ink/50 flex justify-between items-center shrink-0">
+              {step > 1 ? (
                 <button 
                   onClick={prevStep} 
                   className="px-4 py-2.5 text-xs font-black uppercase tracking-widest text-muted hover:text-bone transition-colors"
                 >
                   Back
                 </button>
+              ) : (
+                <div />
+              )}
 
-                {step < 3 ? (
+              {step < 3 ? (
                   <button 
                     onClick={nextStep} 
                     disabled={
@@ -292,7 +275,6 @@ export default function GiveVerdictModal() {
                   </button>
                 )}
               </div>
-            )}
           </div>
         )}
 
