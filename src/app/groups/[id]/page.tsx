@@ -14,7 +14,7 @@ import ClickableUserAvatar from '@/components/ClickableUserAvatar';
 
 export default function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const { getGroup, getGroupMembers, getGroupRecommendations, openRecommendModal } = useApp();
+  const { getGroup, getGroupMembers, getGroupRecommendations, openRecommendModal, currentUser } = useApp();
   const [filter, setFilter] = useState<'all' | 'pending' | 'watched'>('all');
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
