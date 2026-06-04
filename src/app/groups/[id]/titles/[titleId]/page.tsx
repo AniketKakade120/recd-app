@@ -65,6 +65,7 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
   // Comment input
   const [newComment, setNewComment] = useState('');
   const [verdictModalOpen, setVerdictModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'verdicts' | 'discussion'>('verdicts');
 
   // User state for CTA
   const userVerdict = verdicts.find(v => v.ratedBy === currentUser?.id);
