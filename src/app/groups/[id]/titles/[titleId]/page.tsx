@@ -36,7 +36,7 @@ function Stars({ rating }: { rating: number }) {
 export default function GroupTitleDetailPage({ params }: { params: Promise<{ id: string; titleId: string }> }) {
   const { id: groupId, titleId } = use(params);
   const router = useRouter();
-  const { getTitle, getGroup, getGroupMembers, getGroupRecommendations, getUser, currentUser, recommendations, ratings, comments, openGiveVerdictModal } = useApp();
+  const { getTitle, getGroup, getGroupMembers, getGroupRecommendations, getUser, currentUser, recommendations, ratings, comments, openGiveVerdictModal, addGroupComment } = useApp();
 
   const title = getTitle(titleId);
   const group = getGroup(groupId);
@@ -245,8 +245,10 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!newComment.trim()) return;
-                    await useApp().addGroupComment?.(groupId, titleId, newComment);
-                    setNewComment('');
+                    if (addGroupComment) {
+                      await addGroupComment(groupId, titleId, newComment);
+                      setNewComment('');
+                    }
                   }} 
                   className="flex items-center gap-3 mt-4"
                 >
