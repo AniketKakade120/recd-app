@@ -49,20 +49,6 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         mobileBackHref="/groups"
         action={
           <div className="flex gap-2">
-            {currentUser?.id !== group.createdBy && members.some(m => m.id === currentUser?.id) && (
-              <button 
-                onClick={() => {
-                  if (confirm('Are you sure you want to leave this group?')) {
-                    leaveGroup(group.id);
-                    addToast('You have left the group.');
-                    router.push('/groups');
-                  }
-                }} 
-                className="px-3 py-1.5 bg-surface border border-cinema-red/50 text-cinema-red rounded-lg text-xs font-medium hover:bg-cinema-red/10 btn-press"
-              >
-                Leave Group
-              </button>
-            )}
             <button onClick={() => setInviteOpen(true)} className="px-3 py-1.5 bg-surface border border-border text-bone/70 rounded-lg text-xs font-medium hover:bg-surface-hover btn-press">Invite</button>
             <button onClick={() => openRecommendModal({ groupId: group.id })} className="px-3 py-1.5 bg-cinema-red text-bone rounded-lg text-xs font-semibold hover:bg-cinema-red/90 btn-press inline-block">Rec to Group</button>
           </div>
@@ -134,6 +120,24 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         <EmptyState title="No recs yet" description="Be the first to recommend something." inviteCta action={
           <button onClick={() => openRecommendModal({ groupId: group.id })} className="text-cinema-red font-medium hover:text-cinema-red/80 text-sm">Recommend something →</button>
         } />
+      )}
+
+      {/* Danger Zone */}
+      {currentUser?.id !== group.createdBy && members.some(m => m.id === currentUser?.id) && (
+        <div className="pt-12 pb-8 flex justify-center border-t border-border mt-12">
+          <button 
+            onClick={() => {
+              if (confirm('Are you sure you want to leave this group?')) {
+                leaveGroup(group.id);
+                addToast('You have left the group.');
+                router.push('/groups');
+              }
+            }} 
+            className="text-xs font-bold text-cinema-red/70 hover:text-cinema-red transition-colors uppercase tracking-widest"
+          >
+            Leave Group
+          </button>
+        </div>
       )}
 
       <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} groupName={group.name} />
