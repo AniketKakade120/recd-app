@@ -140,7 +140,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         </div>
       )}
 
-      <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} groupName={group.name} />
+      <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} groupName={group.name} inviteCode={group.inviteCode} />
       <GroupModal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} group={group} initialStep={editInitialStep} />
     </div>
   );

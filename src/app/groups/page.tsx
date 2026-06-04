@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useApp } from '@/lib/context';
 import GroupCard from '@/components/GroupCard';
@@ -16,6 +16,17 @@ export default function GroupsPage() {
   const [isJoining, setIsJoining] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('join');
+      if (code) {
+        setJoinCode(code);
+        setIsJoining(true);
+      }
+    }
+  }, []);
 
   const myGroupIds = groupMembers.filter(gm => gm.userId === currentUser?.id).map(gm => gm.groupId);
   const myGroups = groups.filter(g => myGroupIds.includes(g.id));

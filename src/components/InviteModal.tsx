@@ -8,16 +8,25 @@ interface InviteModalProps {
   isOpen: boolean;
   onClose: () => void;
   groupName?: string;
+  inviteCode?: string;
 }
 
-export default function InviteModal({ isOpen, onClose, groupName }: InviteModalProps) {
+export default function InviteModal({ isOpen, onClose, groupName, inviteCode }: InviteModalProps) {
   const { currentUser, createInvite, addToast } = useApp();
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
-    if (isOpen && !inviteUrl && currentUser && !isLoading) {
+    if (!isOpen) return;
+    
+    if (inviteCode) {
+      // Group invite link
+      setInviteUrl(`${window.location.origin}/groups?join=${inviteCode}`);
+      return;
+    }
+
+    if (!inviteUrl && currentUser && !isLoading) {
       const generateLink = async () => {
         setIsLoading(true);
         const url = await createInvite();
@@ -26,7 +35,7 @@ export default function InviteModal({ isOpen, onClose, groupName }: InviteModalP
       };
       generateLink();
     }
-  }, [isOpen, inviteUrl, currentUser, createInvite]);
+  }, [isOpen, inviteUrl, currentUser, createInvite, inviteCode]);
 
   const handleCopy = () => {
     if (inviteUrl) {
@@ -39,7 +48,7 @@ export default function InviteModal({ isOpen, onClose, groupName }: InviteModalP
 
   const nameToUse = currentUser?.displayName || 'Your friend';
   const previewMsg = groupName
-    ? `${nameToUse} invited you to join ${groupName} on Rec'd — recommend movies, stamp good picks, and settle who actually has taste.`
+    ? `${nameToUse} invited you to join ${groupName} on Rec'd. Join with code ${inviteCode}:`
     : `${nameToUse} invited you to Rec'd — recommend movies to your crew, get stamped, and prove your taste.`;
 
   if (!isOpen) return null;
