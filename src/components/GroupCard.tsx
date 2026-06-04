@@ -8,6 +8,7 @@ import AvatarStack from './AvatarStack';
 import StampBadge from './StampBadge';
 import GroupModal from './GroupModal';
 import InviteModal from './InviteModal';
+import LeaveGroupConfirmModal from './LeaveGroupConfirmModal';
 
 interface GroupCardProps {
   group: Group;
@@ -19,6 +20,7 @@ export default function GroupCard({ group, showJoin }: GroupCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
   
   const members = getGroupMembers(group.id);
   const memberNames = members.map(m => m.displayName);
@@ -89,10 +91,7 @@ export default function GroupCard({ group, showJoin }: GroupCardProps) {
                         onClick={(e) => { 
                           e.preventDefault(); 
                           e.stopPropagation(); 
-                          if (confirm('Are you sure you want to leave this group?')) {
-                            leaveGroup(group.id);
-                            addToast('You have left the group.');
-                          }
+                          setShowLeaveModal(true);
                           setShowMenu(false); 
                         }}
                         className="w-full flex items-center gap-3 px-4 py-3 text-cinema-red text-xs font-bold hover:bg-cinema-red/5 transition-colors text-left"
@@ -156,6 +155,11 @@ export default function GroupCard({ group, showJoin }: GroupCardProps) {
       isOpen={showInviteModal} 
       onClose={() => setShowInviteModal(false)} 
       groupName={group.name}
+    />
+    <LeaveGroupConfirmModal
+      isOpen={showLeaveModal}
+      onClose={() => setShowLeaveModal(false)}
+      group={group}
     />
     </>
   );

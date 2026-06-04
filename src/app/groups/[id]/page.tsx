@@ -12,6 +12,7 @@ import InviteModal from '@/components/InviteModal';
 import GroupModal from '@/components/GroupModal';
 import StampBadge from '@/components/StampBadge';
 import ClickableUserAvatar from '@/components/ClickableUserAvatar';
+import LeaveGroupConfirmModal from '@/components/LeaveGroupConfirmModal';
 
 export default function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -19,6 +20,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
   const { getGroup, getGroupMembers, getGroupRecommendations, openRecommendModal, currentUser, leaveGroup, addToast } = useApp();
   const [filter, setFilter] = useState<'all' | 'pending' | 'watched'>('all');
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editInitialStep, setEditInitialStep] = useState(1);
 
@@ -126,13 +128,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
       {currentUser?.id !== group.createdBy && members.some(m => m.id === currentUser?.id) && (
         <div className="pt-12 pb-8 flex justify-center border-t border-border mt-12">
           <button 
-            onClick={() => {
-              if (confirm('Are you sure you want to leave this group?')) {
-                leaveGroup(group.id);
-                addToast('You have left the group.');
-                router.push('/groups');
-              }
-            }} 
+            onClick={() => setLeaveModalOpen(true)}
             className="text-xs font-bold text-cinema-red/70 hover:text-cinema-red transition-colors uppercase tracking-widest"
           >
             Leave Group
@@ -141,6 +137,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
       )}
 
       <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} groupName={group.name} inviteCode={group.inviteCode} />
+      <LeaveGroupConfirmModal isOpen={leaveModalOpen} onClose={() => setLeaveModalOpen(false)} group={group} />
       <GroupModal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} group={group} initialStep={editInitialStep} />
     </div>
   );
