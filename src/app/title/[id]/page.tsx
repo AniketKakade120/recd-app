@@ -30,8 +30,12 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
     getTitle, addTitle, getUser, recommendations, watchlist, currentUser, addRating,
     addToWatchlist, removeFromWatchlist, updateVerdictState,
     getViewerContext, getActions, crewConnections, ratings, addToast,
-    groups, watchlistLists, openRecommendModal, openGiveVerdictModal
+    groups, watchlistLists, openRecommendModal, openGiveVerdictModal,
+    titleComments, addTitleComment
   } = useApp();
+
+  const [activeTab, setActiveTab] = useState<'verdicts' | 'discussion'>('verdicts');
+  const [commentText, setCommentText] = useState('');
 
   const [tmdbLoading, setTmdbLoading] = useState(false);
   const [tmdbError, setTmdbError] = useState(false);
@@ -512,53 +516,155 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
               // 3. Find ratings (verdicts) for these recommendations
               const crewVerdicts = ratings.filter(r => crewRecs.some(cr => cr.id === r.recommendationId));
 
-              if (crewVerdicts.length > 0) {
-                return (
-                  <div className="flex overflow-x-auto pb-8 -mx-4 px-4 sm:mx-0 sm:px-0 gap-5 snap-x scrollbar-hide">
-                    {crewVerdicts.map((verdict) => {
-                      const reviewer = getUser(verdict.ratedBy);
-                      if (!reviewer) return null;
-                      return (
-                        <div key={verdict.id} className="shrink-0 w-80 rounded-[32px] bg-surface border border-white/5 p-6 snap-start flex flex-col h-full hover:border-white/10 transition-all shadow-lg">
-                          <div className="flex items-center justify-between mb-5">
-                            <div className="flex items-center gap-3">
-                              <ClickableUserAvatar 
-                                userId={reviewer.id} 
-                                username={reviewer.username} 
-                                name={reviewer.displayName} 
-                                size="sm" 
-                              />
-                              <Link href={`/profile/${reviewer.username}`} className="font-bold text-bone hover:text-cinema-red transition-colors">{reviewer.displayName}</Link>
-                            </div>
-                            <div className="px-2.5 py-1 bg-cinema-red/10 text-cinema-red font-black text-[10px] rounded-lg tracking-widest uppercase">
-                              {verdict.contentRating}/5
-                            </div>
-                          </div>
-                          <div className="mb-5">
-                             {verdict.stamp && <StampBadge stamp={verdict.stamp as any} size="xs" variant="filled" />}
-                          </div>
-                          {verdict.comment && (
-                            <p className="text-bone/80 text-sm leading-relaxed italic">&ldquo;{verdict.comment}&rdquo;</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              }
+              // 4. Find discussions for this title
+              const discussionComments = titleComments.filter(c => c.titleId === id && (c.userId === currentUser?.id || crewIds.includes(c.userId))).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+              const handleSendComment = async (e?: React.FormEvent) => {
+                if (e) e.preventDefault();
+                if (!commentText.trim()) return;
+                await addTitleComment(id, commentText.trim());
+                setCommentText('');
+              };
+
+              // Time formatter helper
+              const formatTimeAgo = (dateStr: string) => {
+                const diffMs = Date.now() - new Date(dateStr).getTime();
+                const diffMins = Math.floor(diffMs / 60000);
+                if (diffMins < 60) return `${diffMins}m ago`;
+                const diffHrs = Math.floor(diffMins / 60);
+                if (diffHrs < 24) return `${diffHrs}h ago`;
+                return `${Math.floor(diffHrs / 24)}d ago`;
+              };
 
               return (
-                <div className="rounded-[40px] border-2 border-dashed border-white/5 p-12 text-center space-y-6">
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-bone font-editorial">No crew verdicts yet.</h3>
-                    <p className="text-sm text-muted">Recommend this to your crew and see what they think.</p>
+                <div className="space-y-6">
+                  {/* Tabs Header */}
+                  <div className="flex items-center gap-6 border-b border-border">
+                    <button 
+                      onClick={() => setActiveTab('verdicts')}
+                      className={`pb-3 font-bold text-sm transition-colors relative ${activeTab === 'verdicts' ? 'text-bone' : 'text-muted hover:text-bone/80'}`}
+                    >
+                      Verdicts ({crewVerdicts.length})
+                      {activeTab === 'verdicts' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cinema-red rounded-t-full shadow-[0_-2px_10px_rgba(234,51,51,0.5)]" />}
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab('discussion')}
+                      className={`pb-3 font-bold text-sm transition-colors relative ${activeTab === 'discussion' ? 'text-bone' : 'text-muted hover:text-bone/80'}`}
+                    >
+                      Crew Discussion ({discussionComments.length})
+                      {activeTab === 'discussion' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cinema-red rounded-t-full shadow-[0_-2px_10px_rgba(234,51,51,0.5)]" />}
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => router.push(`/recommend?titleId=${id}`)}
-                    className="px-8 py-3.5 bg-bone text-ink rounded-2xl font-bold btn-press hover:bg-white transition-colors"
-                  >
-                    Recommend this
-                  </button>
+
+                  {/* Tab Content */}
+                  {activeTab === 'verdicts' ? (
+                    <div className="space-y-4">
+                      {crewVerdicts.length > 0 ? crewVerdicts.map((verdict) => {
+                        const reviewer = getUser(verdict.ratedBy);
+                        if (!reviewer) return null;
+                        return (
+                          <div key={verdict.id} className="rounded-2xl bg-surface border border-white/5 p-4 sm:p-5 flex items-start gap-4 hover:border-white/10 transition-colors">
+                            <ClickableUserAvatar 
+                              userId={reviewer.id} 
+                              username={reviewer.username} 
+                              name={reviewer.displayName} 
+                              size="md" 
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-2">
+                                <Link href={`/profile/${reviewer.username}`} className="font-bold text-bone hover:text-cinema-red transition-colors">{reviewer.displayName}</Link>
+                                <span className="text-xs text-muted/60 font-medium">{formatTimeAgo(verdict.createdAt || new Date().toISOString())}</span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-3 mb-3">
+                                <div className="flex gap-0.5">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <svg key={star} width="12" height="12" viewBox="0 0 24 24" fill={star <= verdict.contentRating ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={star <= verdict.contentRating ? '0' : '2'} className={star <= verdict.contentRating ? 'text-cinema-red' : 'text-muted/30'}>
+                                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                    </svg>
+                                  ))}
+                                </div>
+                                {verdict.stamp && <StampBadge stamp={verdict.stamp as any} size="xs" variant="outline" />}
+                              </div>
+                              {verdict.comment && (
+                                <div className="inline-block px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 mt-1">
+                                  <p className="text-[10px] text-bone/70 font-black uppercase tracking-widest">{verdict.comment}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }) : (
+                        <div className="py-12 text-center border-2 border-dashed border-border rounded-2xl">
+                          <p className="text-muted text-sm mb-4">No verdicts from your crew yet.</p>
+                          <button 
+                            onClick={() => router.push(`/recommend?titleId=${id}`)}
+                            className="px-6 py-2.5 bg-bone text-ink rounded-xl text-sm font-bold btn-press hover:bg-white transition-colors"
+                          >
+                            Recommend to crew
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col border border-border rounded-2xl bg-surface/30 overflow-hidden">
+                      <div className="flex-1 p-4 sm:p-5 space-y-6 max-h-[500px] overflow-y-auto">
+                        {discussionComments.length > 0 ? discussionComments.map((comment) => {
+                          const author = getUser(comment.userId);
+                          if (!author) return null;
+                          return (
+                            <div key={comment.id} className="flex gap-3 items-start">
+                              <ClickableUserAvatar 
+                                userId={author.id} 
+                                username={author.username} 
+                                name={author.displayName} 
+                                size="sm" 
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-baseline gap-2 mb-1">
+                                  <span className="font-bold text-bone text-sm">{author.displayName}</span>
+                                  <span className="text-[10px] text-muted font-medium">{formatTimeAgo(comment.createdAt)}</span>
+                                </div>
+                                <p className="text-sm text-bone/90 leading-relaxed">{comment.content}</p>
+                              </div>
+                            </div>
+                          );
+                        }) : (
+                          <div className="py-8 text-center">
+                            <p className="text-muted text-sm italic">Start the discussion...</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Input Area */}
+                      <div className="p-4 border-t border-border bg-surface">
+                        <form onSubmit={handleSendComment} className="flex items-center gap-3">
+                          <div className="shrink-0 hidden sm:block">
+                            {currentUser ? (
+                              <UserAvatar user={currentUser} size="sm" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-border" />
+                            )}
+                          </div>
+                          <div className="flex-1 relative">
+                            <input 
+                              type="text" 
+                              value={commentText}
+                              onChange={(e) => setCommentText(e.target.value)}
+                              placeholder="Add to the discussion..."
+                              className="w-full bg-ink border border-border rounded-xl py-3 pl-4 pr-16 text-sm text-bone placeholder:text-muted/60 focus:outline-none focus:border-white/20 transition-colors"
+                            />
+                            <button 
+                              type="submit"
+                              disabled={!commentText.trim()}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 text-xs font-bold uppercase tracking-widest transition-colors disabled:text-muted/40 text-bone/80 hover:text-cinema-red"
+                            >
+                              Send
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}

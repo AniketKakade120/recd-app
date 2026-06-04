@@ -68,6 +68,7 @@ interface AppState {
   recommendModalData: { titleId?: string; groupId?: string; recipientId?: string } | null;
   giveVerdictModalOpen: boolean;
   giveVerdictModalData: { recommendationId: string; edit?: boolean } | null;
+  titleComments: TitleComment[];
 }
 
 interface AppContextType extends AppState {
@@ -134,6 +135,7 @@ interface AppContextType extends AppState {
   removeFromWatchlist: (id: string) => Promise<void>;
   updatePreferences: (data: Partial<UserPreferences>) => Promise<void>;
   retryAuthSync: () => Promise<void>;
+  addTitleComment: (titleId: string, content: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -167,6 +169,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     recommendModalData: null,
     giveVerdictModalOpen: false,
     giveVerdictModalData: null,
+    titleComments: [],
   });
 
   // Fix stale closure for refreshData
@@ -936,6 +939,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }));
     }, 4000);
   }, []);
+
+  const addTitle = useCallback((title: Title) => {
+    setState(prev => {
+      // Don't add if already exists
+      if (prev.titles.some(t => t.id === title.id)) return prev;
+      return { ...prev, titles: [...prev.titles, title] };
+    });
+  }, []);
+
+  const addTitleComment = useCallback(async (titleId: string, content: string) => {
+    if (!state.currentUser) return;
+    
+    const newComment: TitleComment = {
+      id: `tc_${Math.random().toString(36).substr(2, 9)}`,
+      titleId,
+      userId: state.currentUser.id,
+      content,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('title_comments').insert({
+          id: newComment.id,
+          title_id: newComment.titleId,
+          user_id: newComment.userId,
+          content: newComment.content,
+          created_at: newComment.createdAt
+        });
+        if (error && error.code !== '42P01') { // Ignore relation doesn't exist for now
+          console.error("Error adding title comment to Supabase", error);
+        }
+      } catch (err) {
+        console.error("Supabase insert error", err);
+      }
+    }
+
+    setState(prev => ({ ...prev, titleComments: [...prev.titleComments, newComment] }));
+  }, [state.currentUser]);
 
   const removeToast = useCallback((id: string) => {
     setState(prev => ({
@@ -2076,13 +2119,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getTitle = useCallback((id: string) => state.titles.find(t => t.id === id), [state.titles]);
 
-  const addTitle = useCallback((title: Title) => {
-    setState(prev => {
-      // Don't add if already exists
-      if (prev.titles.some(t => t.id === title.id)) return prev;
-      return { ...prev, titles: [...prev.titles, title] };
-    });
-  }, []);
   const getUser = useCallback((id: string) => state.users.find(u => u.id === id), [state.users]);
   const getUserByUsername = useCallback((username: string) => state.users.find(u => u.username === username), [state.users]);
   const getGroup = useCallback((id: string) => state.groups.find(g => g.id === id), [state.groups]);
@@ -2159,7 +2195,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getGroupRecommendations, getPendingForUser, getUserBadges: getUserBadgesFn,
     getViewerContext, getActions,
     leaderboard: mockLeaderboard, refreshData, enterDemoMode,
-    retryAuthSync
+    retryAuthSync,
+    addTitleComment
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

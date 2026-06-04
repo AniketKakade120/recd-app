@@ -326,6 +326,15 @@ export type VerdictState =
   | 'dismissed'
   | 'none';
 
+export interface TitleComment {
+  id: string;
+  titleId: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Recommendation {
   id: string;
   titleId: string;
