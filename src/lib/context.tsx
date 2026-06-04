@@ -1534,6 +1534,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const leaveGroup = useCallback(async (groupId: string) => {
     if (!state.currentUser?.id) return;
     
+    // Store original groups to revert if deletion fails
+    const originalGroups = state.groupMembers;
+
     // Optimistic UI update
     setState(prev => ({
       ...prev,
@@ -1541,11 +1544,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
 
     if (isSupabaseConfigured && supabase) {
-      await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', state.currentUser.id);
+      const { error } = await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', state.currentUser.id);
+      if (error) {
+        console.error('Failed to leave group in DB:', error);
+        // Revert optimistic update
+        setState(prev => ({ ...prev, groupMembers: originalGroups }));
+        addToast('Failed to leave group. Please try again.', { type: 'error' });
+      }
       refreshData();
       return;
     }
-  }, [state.currentUser?.id, refreshData]);
+  }, [state.currentUser?.id, state.groupMembers, refreshData, addToast]);
 
   const sendCrewRequest = useCallback(async (receiverId: string) => {
     if (!state.currentUser?.id) return { success: false, error: 'Not authenticated' };

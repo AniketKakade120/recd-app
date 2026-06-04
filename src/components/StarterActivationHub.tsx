@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Search, Users, Bookmark, Play, MessageSquare, TrendingUp, Sparkles, ArrowRight } from 'lucide-react';
 import { useApp } from '@/lib/context';
 import Link from 'next/link';
+import { useState } from 'react';
+import InviteModal from './InviteModal';
 
 interface HubCardProps {
   title: string;
@@ -61,6 +63,7 @@ function HubCard({ title, subtitle, icon, actionLabel, onClick, href, primary = 
 
 export default function StarterActivationHub() {
   const { openRecommendModal } = useApp();
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -126,8 +129,8 @@ export default function StarterActivationHub() {
           title="Build your crew"
           subtitle="Add people whose taste you trust. Your feed is only as good as your crew."
           icon={<Users size={28} strokeWidth={1.5} />}
-          actionLabel="Add to Crew"
-          href="/explore"
+          actionLabel="Invite your crew"
+          onClick={() => setInviteOpen(true)}
           primary
         />
         <HubCard
@@ -187,6 +190,7 @@ export default function StarterActivationHub() {
           ))}
         </div>
       </motion.div>
+      <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} />
     </motion.section>
   );
 }
