@@ -640,7 +640,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
                         <form onSubmit={handleSendComment} className="flex items-center gap-3">
                           <div className="shrink-0 hidden sm:block">
                             {currentUser ? (
-                              <UserAvatar user={currentUser} size="sm" />
+                              <UserAvatar name={currentUser.displayName} avatarUrl={currentUser.avatarUrl} size="sm" />
                             ) : (
                               <div className="w-8 h-8 rounded-full bg-border" />
                             )}

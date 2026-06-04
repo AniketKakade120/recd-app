@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 import type {
   User, Recommendation, Rating, VerdictState, TasteScore, Title,
   Badge, Comment, Group, GroupMember, ActivityItem, WatchlistItem, WatchlistList, UserPreferences, RecAccuracy,
-  StampType, CrewConnection, CrewRequest, Notification,
+  StampType, CrewConnection, CrewRequest, Notification, TitleComment
 } from '@/lib/types';
 import {
   mockUsers, mockRecommendations, mockRatings, mockBadges, mockGroups,
