@@ -21,7 +21,7 @@ export default function GiveVerdictModal() {
     watchlist
   } = useApp();
 
-  const TOTAL_STEPS = 2;
+  const TOTAL_STEPS = 4;
   const [step, setStep] = useState(1); // Step 1: Content Rating
   const [contentRating, setContentRating] = useState(0);
   const [recAccuracy, setRecAccuracy] = useState<RecAccuracy | null>(null);
@@ -138,7 +138,7 @@ export default function GiveVerdictModal() {
             {/* Stepper */}
               <div className="px-6 pt-5 pb-2">
                 <div className="flex gap-1.5">
-                  {Array.from({ length: 2 }, (_, i) => {
+                  {Array.from({ length: 3 }, (_, i) => {
                     const actualStep = i + 1;
                     return (
                       <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
@@ -177,9 +177,9 @@ export default function GiveVerdictModal() {
                 </div>
               )}
 
-              {/* STEP 2: Accuracy, Stamp & Comment */}
+              {/* STEP 2: Accuracy */}
               {step === 2 && (
-                <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
+                <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
                   <div className="text-center">
                     <h3 className="text-2xl font-bold text-bone font-editorial mb-2">Was this a good rec?</h3>
                     <p className="text-sm text-muted">How well did they read your taste?</p>
@@ -196,42 +196,45 @@ export default function GiveVerdictModal() {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
 
-                  {recAccuracy && (
-                    <div className="space-y-6 animate-in slide-in-from-top-2 fade-in duration-300 pt-4 border-t border-white/5">
-                      <div>
-                        <h3 className="font-bold text-bone mb-1 text-sm">Give them a stamp</h3>
-                        <p className="text-[10px] text-muted mb-4 uppercase tracking-widest">Optional. Pick one that fits.</p>
-                        <div className="flex flex-wrap gap-2">
-                          {(() => {
-                            const stamps = recAccuracy === 'Nailed it' 
-                              ? ['Good Call', 'Worth It', 'Certified Good Call', 'Cult Pick']
-                              : recAccuracy === 'Pretty close'
-                              ? ['Risky But Worth It', 'Mixed Response', 'Not For Everyone']
-                              : ['Missed The Mark', 'Not For Everyone', 'Questionable Taste'];
-                            
-                            return stamps.map(stamp => (
-                              <button key={stamp} onClick={() => setSelectedStamp(selectedStamp === (stamp as any) ? null : (stamp as any))}
-                                className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 ${
-                                  selectedStamp === (stamp as any)
-                                    ? 'bg-cinema-red/10 border-cinema-red/50 text-bone shadow-[0_0_20px_rgba(234,51,51,0.15)] ring-1 ring-cinema-red/30' 
-                                    : 'bg-ink border-border text-muted hover:border-border-strong hover:text-bone'
-                                }`}>
-                                {stamp}
-                              </button>
-                            ));
-                          })()}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] font-black text-bone mb-2 uppercase tracking-widest">Final take (optional)</p>
-                        <textarea value={comment} onChange={e => setComment(e.target.value)}
-                          placeholder="Be honest, but keep it crew-friendly." 
-                          className="w-full h-24 p-4 bg-ink border border-border rounded-xl text-sm text-bone placeholder:text-muted/40 focus:outline-none focus:border-cinema-red/50 resize-none transition-colors" />
-                      </div>
+              {/* STEP 3: Contextual Stamp & Comment */}
+              {step === 3 && (
+                <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                  <div>
+                    <h3 className="font-bold text-bone mb-1 text-sm">Give them a stamp</h3>
+                    <p className="text-[10px] text-muted mb-4 uppercase tracking-widest">Optional. Pick one that fits.</p>
+                    <div className="flex flex-wrap gap-2">
+                      {recAccuracy && (
+                        (() => {
+                          const stamps = recAccuracy === 'Nailed it' 
+                            ? ['Good Call', 'Worth It', 'Certified Good Call', 'Cult Pick']
+                            : recAccuracy === 'Pretty close'
+                            ? ['Risky But Worth It', 'Mixed Response', 'Not For Everyone']
+                            : ['Missed The Mark', 'Not For Everyone', 'Questionable Taste'];
+                          
+                          return stamps.map(stamp => (
+                            <button key={stamp} onClick={() => setSelectedStamp(selectedStamp === (stamp as any) ? null : (stamp as any))}
+                              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 ${
+                                selectedStamp === (stamp as any)
+                                  ? 'bg-cinema-red/10 border-cinema-red/50 text-bone shadow-[0_0_20px_rgba(234,51,51,0.15)] ring-1 ring-cinema-red/30' 
+                                  : 'bg-ink border-border text-muted hover:border-border-strong hover:text-bone'
+                              }`}>
+                              {stamp}
+                            </button>
+                          ));
+                        })()
+                      )}
                     </div>
-                  )}
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-black text-bone mb-2 uppercase tracking-widest">Final take (optional)</p>
+                    <textarea value={comment} onChange={e => setComment(e.target.value)}
+                      placeholder="Be honest, but keep it crew-friendly." 
+                      className="w-full h-28 p-4 bg-ink border border-border rounded-xl text-sm text-bone placeholder:text-muted/40 focus:outline-none focus:border-cinema-red/50 resize-none transition-colors" />
+                  </div>
                 </div>
               )}
 
@@ -250,10 +253,13 @@ export default function GiveVerdictModal() {
                 <div />
               )}
 
-              {step < 2 ? (
+              {step < 3 ? (
                   <button 
                     onClick={nextStep} 
-                    disabled={step === 1 && contentRating === 0}
+                    disabled={
+                      (step === 1 && contentRating === 0) || 
+                      (step === 2 && !recAccuracy)
+                    }
                     className="px-8 py-2.5 bg-bone text-ink font-bold rounded-xl text-xs uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed btn-press transition-all hover:bg-white"
                   >
                     Continue
