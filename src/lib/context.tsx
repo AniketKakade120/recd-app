@@ -136,6 +136,7 @@ interface AppContextType extends AppState {
   updatePreferences: (data: Partial<UserPreferences>) => Promise<void>;
   retryAuthSync: () => Promise<void>;
   addTitleComment: (titleId: string, content: string) => Promise<void>;
+  addGroupComment: (groupId: string, titleId: string, comment: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -978,6 +979,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     setState(prev => ({ ...prev, titleComments: [...prev.titleComments, newComment] }));
+  }, [state.currentUser]);
+
+  const addGroupComment = useCallback(async (groupId: string, titleId: string, text: string) => {
+    if (!state.currentUser) return;
+    const newComment: Comment = {
+      id: `comment-${Date.now()}`,
+      groupId,
+      titleId,
+      userId: state.currentUser.id,
+      comment: text,
+      createdAt: new Date().toISOString(),
+    };
+    
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('comments').insert({
+          id: newComment.id,
+          group_id: newComment.groupId,
+          title_id: newComment.titleId,
+          user_id: newComment.userId,
+          comment: newComment.comment,
+          created_at: newComment.createdAt
+        });
+        if (error) {
+          console.error("Error adding group comment to Supabase", error);
+        }
+      } catch (err) {
+        console.error("Failed to add group comment", err);
+      }
+    }
+
+    setState(prev => ({ ...prev, comments: [...prev.comments, newComment] }));
   }, [state.currentUser]);
 
   const removeToast = useCallback((id: string) => {
@@ -2196,7 +2229,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getViewerContext, getActions,
     leaderboard: mockLeaderboard, refreshData, enterDemoMode,
     retryAuthSync,
-    addTitleComment
+    addTitleComment,
+    addGroupComment
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

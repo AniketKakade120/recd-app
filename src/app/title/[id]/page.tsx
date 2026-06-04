@@ -537,7 +537,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
               };
 
               return (
-                <div className="space-y-6">
+                <div className="space-y-6 mt-2">
                   {/* Tabs Header */}
                   <div className="flex items-center gap-6 border-b border-border">
                     <button 

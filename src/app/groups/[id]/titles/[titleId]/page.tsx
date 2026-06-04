@@ -151,79 +151,125 @@ export default function GroupTitleDetailPage({ params }: { params: Promise<{ id:
             </section>
           )}
 
-          {/* ── 4. INDIVIDUAL VERDICTS ──────────────────────────────────────── */}
-          <section>
-            <h2 className="text-base font-bold text-bone mb-4">Verdicts ({verdicts.length})</h2>
-            <div className="space-y-3">
-              {verdicts.map(v => {
-                const user = getUser(v.ratedBy);
-                if (!user) return null;
-                return (
-                  <div key={v.id} className="rounded-2xl bg-surface border border-border p-4 card-hover">
-                    <div className="flex items-start gap-3">
-                      <UserAvatar name={user.displayName} size="md" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-bold text-bone">{user.displayName}</p>
-                          <span className="text-xs text-muted" suppressHydrationWarning>{formatRelativeTime(v.createdAt)}</span>
-                        </div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <Stars rating={v.contentRating} />
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                            v.recommendationResult === 'Nailed it' ? 'text-green-400 border-green-400/30 bg-green-400/10'
-                            : v.recommendationResult === 'Pretty close' ? 'text-amber-400 border-amber-400/30 bg-amber-400/10'
-                            : 'text-red-400 border-red-400/30 bg-red-400/10'
-                          }`}>{v.recommendationResult}</span>
-                        </div>
-                        {v.comment && <p className="text-sm text-bone/70 italic mb-2">&ldquo;{v.comment}&rdquo;</p>}
-                        {v.stamp && <StampBadge stamp={v.stamp} size="xs" />}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              {verdicts.length === 0 && (
-                <div className="py-10 text-center rounded-2xl border border-dashed border-border">
-                  <p className="text-muted text-sm">No verdicts yet. Be the first to rate.</p>
-                </div>
-              )}
+          {/* ── TABS: VERDICTS & DISCUSSION ──────────────────────────────────────── */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-6 border-b border-border">
+              <button 
+                onClick={() => setActiveTab('verdicts')}
+                className={`pb-3 text-sm font-bold uppercase tracking-widest transition-all relative ${
+                  activeTab === 'verdicts' ? 'text-bone' : 'text-muted hover:text-bone/80'
+                }`}
+              >
+                Crew Verdicts ({verdicts.length})
+                {activeTab === 'verdicts' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cinema-red rounded-t-full shadow-[0_-2px_10px_rgba(234,51,51,0.5)]" />
+                )}
+              </button>
+              <button 
+                onClick={() => setActiveTab('discussion')}
+                className={`pb-3 text-sm font-bold uppercase tracking-widest transition-all relative ${
+                  activeTab === 'discussion' ? 'text-bone' : 'text-muted hover:text-bone/80'
+                }`}
+              >
+                Crew Discussion ({groupComments.length})
+                {activeTab === 'discussion' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cinema-red rounded-t-full shadow-[0_-2px_10px_rgba(234,51,51,0.5)]" />
+                )}
+              </button>
             </div>
-          </section>
 
-          {/* ── 6. CREW DISCUSSION ─────────────────────────────────────────── */}
-          <section>
-            <h2 className="text-base font-bold text-bone mb-4">Crew Discussion ({groupComments.length})</h2>
-            <div className="space-y-3">
-              {groupComments.map(c => {
-                const user = getUser(c.userId);
-                if (!user) return null;
-                return (
-                  <div key={c.id} className="flex items-start gap-3">
-                    <UserAvatar name={user.displayName} size="sm" />
-                    <div className="flex-1 min-w-0 rounded-xl bg-surface border border-border p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-xs font-bold text-bone">{user.displayName}</p>
-                        <span className="text-xs text-muted" suppressHydrationWarning>{formatRelativeTime(c.createdAt)}</span>
+            {activeTab === 'verdicts' ? (
+              <div className="space-y-3">
+                {verdicts.map(v => {
+                  const user = getUser(v.ratedBy);
+                  if (!user) return null;
+                  return (
+                    <div key={v.id} className="rounded-2xl bg-surface border border-border p-4 card-hover">
+                      <div className="flex items-start gap-3">
+                        <UserAvatar name={user.displayName} size="md" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-bold text-bone">{user.displayName}</p>
+                            <span className="text-xs text-muted" suppressHydrationWarning>{formatRelativeTime(v.createdAt)}</span>
+                          </div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <Stars rating={v.contentRating} />
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                              v.recommendationResult === 'Nailed it' ? 'text-green-400 border-green-400/30 bg-green-400/10'
+                              : v.recommendationResult === 'Pretty close' ? 'text-amber-400 border-amber-400/30 bg-amber-400/10'
+                              : 'text-red-400 border-red-400/30 bg-red-400/10'
+                            }`}>{v.recommendationResult}</span>
+                          </div>
+                          {v.comment && <p className="text-sm text-bone/70 italic mb-2">&ldquo;{v.comment}&rdquo;</p>}
+                          {v.stamp && <StampBadge stamp={v.stamp} size="xs" />}
+                        </div>
                       </div>
-                      <p className="text-sm text-bone/70">{c.comment}</p>
                     </div>
+                  );
+                })}
+                {verdicts.length === 0 && (
+                  <div className="py-10 text-center rounded-2xl border border-dashed border-border">
+                    <p className="text-muted text-sm">No verdicts yet. Be the first to rate.</p>
                   </div>
-                );
-              })}
-            </div>
-            {/* Comment input */}
-            <div className="flex items-center gap-3 mt-4">
-              <UserAvatar name={currentUser?.displayName || 'You'} size="sm" />
-              <div className="flex-1 flex items-center gap-2 bg-surface border border-border rounded-xl px-3 py-2 focus-within:border-cinema-red/50 transition-colors">
-                <input
-                  type="text" value={newComment} onChange={e => setNewComment(e.target.value)}
-                  placeholder="Add to the discussion…"
-                  className="flex-1 bg-transparent text-sm text-bone placeholder:text-muted/50 outline-none"
-                />
-                <button disabled={!newComment.trim()} className="text-xs font-semibold text-cinema-red disabled:text-muted/30 transition-colors">Send</button>
+                )}
               </div>
-            </div>
-          </section>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 hide-scrollbar">
+                  {groupComments.map(c => {
+                    const user = getUser(c.userId);
+                    if (!user) return null;
+                    return (
+                      <div key={c.id} className="flex items-start gap-3">
+                        <UserAvatar name={user.displayName} size="sm" />
+                        <div className="flex-1 min-w-0 rounded-xl bg-surface border border-border p-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-xs font-bold text-bone">{user.displayName}</p>
+                            <span className="text-xs text-muted" suppressHydrationWarning>{formatRelativeTime(c.createdAt)}</span>
+                          </div>
+                          <p className="text-sm text-bone/70">{c.comment}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {groupComments.length === 0 && (
+                    <div className="py-10 text-center rounded-2xl border border-dashed border-border">
+                      <p className="text-muted text-sm">No discussion yet. Start the conversation!</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Comment input */}
+                <form 
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newComment.trim()) return;
+                    await useApp().addGroupComment?.(groupId, titleId, newComment);
+                    setNewComment('');
+                  }} 
+                  className="flex items-center gap-3 mt-4"
+                >
+                  <UserAvatar name={currentUser?.displayName || 'You'} size="sm" />
+                  <div className="flex-1 flex items-center gap-2 bg-surface border border-border rounded-xl px-3 py-2 focus-within:border-cinema-red/50 transition-colors">
+                    <input
+                      type="text" 
+                      value={newComment} 
+                      onChange={e => setNewComment(e.target.value)}
+                      placeholder="Add to the discussion…"
+                      className="flex-1 bg-transparent text-sm text-bone placeholder:text-muted/50 outline-none"
+                    />
+                    <button 
+                      type="submit"
+                      disabled={!newComment.trim()} 
+                      className="text-xs font-semibold text-cinema-red disabled:text-muted/30 transition-colors"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
 
           {/* ── 8. RELATED GROUP PICKS ─────────────────────────────────────── */}
           {relatedRecs.length > 0 && (
