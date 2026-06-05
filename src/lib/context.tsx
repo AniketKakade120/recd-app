@@ -1652,21 +1652,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const removeCrewMember = useCallback(async (memberId: string) => {
     if (!state.currentUser?.id) return;
     
-    // Delete from crew_connections (both directions)
-    await Promise.all([
-      supabase.from('crew_connections').delete().eq('user_id', state.currentUser.id).eq('crew_member_id', memberId),
-      supabase.from('crew_connections').delete().eq('user_id', memberId).eq('crew_member_id', state.currentUser.id)
-    ]);
+    // Call the secure RPC function to ensure both sides of the connection and requests are deleted securely
+    const { error } = await supabase.rpc('remove_crew_member', { target_user_id: memberId });
       
-    // Update any existing crew_requests between these users to 'cancelled' 
-    // (RLS prevents deleting requests we didn't send, but allows updating them)
-    await supabase
-      .from('crew_requests')
-      .update({ status: 'cancelled' })
-      .or(`and(sender_id.eq.${state.currentUser.id},receiver_id.eq.${memberId}),and(sender_id.eq.${memberId},receiver_id.eq.${state.currentUser.id})`);
-      
-    addToast('Removed from crew.', { type: 'info' });
-    refreshData();
+    if (error) {
+      console.error('Error removing crew member:', error);
+      addToast('Failed to remove member', { type: 'error' });
+    } else {
+      addToast('Removed from crew.', { type: 'info' });
+      refreshData();
+    }
   }, [state.currentUser, addToast, refreshData]);
 
   const createInvite = useCallback(async () => {
