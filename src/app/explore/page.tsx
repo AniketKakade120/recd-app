@@ -70,6 +70,7 @@ export default function ExplorePage() {
   const [upcomingTitles, setUpcomingTitles] = useState<Title[]>([]);
   const [bollywoodTitles, setBollywoodTitles] = useState<Title[]>([]);
   const [regionalTitles, setRegionalTitles] = useState<Title[]>([]);
+  const [regionalLabel, setRegionalLabel] = useState<string>('Regional');
   const [topGenre, setTopGenre] = useState<string>('');
   const [topPlatform, setTopPlatform] = useState<string>('');
   const [topLanguage, setTopLanguage] = useState<string>('');
@@ -139,7 +140,16 @@ export default function ExplorePage() {
 
       // 7. Regional Cinema (South & others)
       try {
-        const res = await fetch(`/api/tmdb/discover?origin_country=IN&original_language=ta|te|ml|kn`);
+        const regionalLangPrefs = userPreferences?.languages?.filter(l => l !== 'Hindi' && l !== 'English') || [];
+        if (regionalLangPrefs.length === 1) {
+          setRegionalLabel(regionalLangPrefs[0]);
+        } else if (regionalLangPrefs.length > 1) {
+          setRegionalLabel('Regional');
+        }
+        const langCodes = regionalLangPrefs.map(l => LANGUAGE_NAME_TO_CODE[l]).filter(Boolean);
+        const langParam = langCodes.length > 0 ? langCodes.join('|') : 'ta|te|ml|kn'; // fallback to South Indian
+
+        const res = await fetch(`/api/tmdb/discover?origin_country=IN&original_language=${langParam}`);
         if (res.ok) setRegionalTitles((await res.json()).slice(0, 10));
       } catch (e) { console.error(e); }
     }
@@ -549,7 +559,7 @@ export default function ExplorePage() {
           {regionalTitles.length > 0 && (
             <section>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Regional <span className="text-cinema-red">Gems</span></h2>
+                <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">{regionalLabel} <span className="text-cinema-red">Gems</span></h2>
               </div>
               <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
                 {regionalTitles.map(t => {
