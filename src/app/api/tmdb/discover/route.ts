@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
@@ -34,8 +36,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const genre = searchParams.get('genre');
   const platform = searchParams.get('platform');
-  const language = searchParams.get('language');
+  const language = searchParams.get('language'); // explicit language name like 'English'
   const region = searchParams.get('region') || 'IN'; // Default to IN
+  const origin_country = searchParams.get('origin_country');
+  const original_language = searchParams.get('original_language'); // explicit tmdb code like 'hi|ta'
+  const upcoming = searchParams.get('upcoming') === 'true';
 
   if (!TMDB_API_KEY) {
     return NextResponse.json({ error: 'TMDB API key not configured' }, { status: 500 });
@@ -43,6 +48,12 @@ export async function GET(request: Request) {
 
   try {
     let url = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&sort_by=popularity.desc&include_adult=false&include_video=false&page=1`;
+
+    if (upcoming) {
+      url = `${TMDB_BASE_URL}/movie/upcoming?api_key=${TMDB_API_KEY}&region=${region}&page=1`;
+    } else if (platform === 'Theatre') {
+      url = `${TMDB_BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}&region=${region}&page=1`;
+    }
 
     if (genre) {
       const genresArray = genre.split(',').map(g => g.trim());
@@ -57,9 +68,7 @@ export async function GET(request: Request) {
       }
     }
 
-    if (platform === 'Theatre') {
-      url = `${TMDB_BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}&region=${region}&page=1`;
-    } else if (platform) {
+    if (platform && platform !== 'Theatre') {
       const providerIds = platform.split(',').map(p => PROVIDER_MAP[p.trim()]).filter(Boolean).join('|');
       if (providerIds) {
         url += `&with_watch_providers=${providerIds}&watch_region=${region}`;
@@ -67,12 +76,26 @@ export async function GET(request: Request) {
     }
     
     if (language) {
-      // TMDB language codes are like 'hi', 'en', 'ta'. The UI passes language codes OR names, we should assume the UI sends comma separated codes or we can map them.
-      // Assuming the UI will pass the language codes if we format it correctly.
+      // mapped from names by the frontend
       url += `&with_original_language=${encodeURIComponent(language.replace(/,/g, '|'))}`;
     }
 
-    const response = await fetch(url);
+    if (original_language && !upcoming && platform !== 'Theatre') {
+      // The discover API uses with_original_language
+      url += `&with_original_language=${encodeURIComponent(original_language)}`;
+    }
+    
+    if (origin_country && !upcoming && platform !== 'Theatre') {
+      url += `&with_origin_country=${encodeURIComponent(origin_country)}`;
+    }
+
+    const response = await fetch(url, {
+      cache: 'no-store',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'RecdApp/1.0'
+      }
+    });
 
     if (!response.ok) {
       throw new Error(`TMDB responded with ${response.status}`);

@@ -120,7 +120,14 @@ export async function getTrendingTmdb(region = 'IN'): Promise<Title[]> {
   
   // Using discover to get trending content specifically from India with regional language focus
   const response = await fetch(
-    `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&watch_region=${region}&with_origin_country=${region}&with_original_language=hi|ta|te|ml|kn|bn|mr|pa|gu&sort_by=popularity.desc`
+    `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&watch_region=${region}&with_origin_country=${region}&with_original_language=hi|ta|te|ml|kn|bn|mr|pa|gu&sort_by=popularity.desc`,
+    {
+      cache: 'no-store',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'RecdApp/1.0'
+      }
+    }
   );
   
   if (!response.ok) {
