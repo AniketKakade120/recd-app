@@ -816,7 +816,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // We have an active session
       if (event !== 'TOKEN_REFRESHED') {
-        setState(prev => ({ ...prev, isAuthenticated: true, loading: true, authStatus: 'authenticated_loading_profile' }));
+        if (!currentUserRef.current || currentUserRef.current.id !== activeSession.user.id) {
+          setState(prev => ({ ...prev, isAuthenticated: true, loading: true, authStatus: 'authenticated_loading_profile' }));
+        }
       }
 
       try {
