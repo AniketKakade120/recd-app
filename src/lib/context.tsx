@@ -1652,13 +1652,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const removeCrewMember = useCallback(async (memberId: string) => {
     if (!state.currentUser?.id) return;
-    const { error } = await supabase
+    
+    // Delete from crew_connections
+    const { error: connError } = await supabase
       .from('crew_connections')
       .delete()
       .or(`and(user_id.eq.${state.currentUser.id},crew_member_id.eq.${memberId}),and(user_id.eq.${memberId},crew_member_id.eq.${state.currentUser.id})`);
       
-    if (error) {
-      console.error('Error removing crew member:', error);
+    // Also delete any existing crew_requests between these users so getConnectionState resets to 'none'
+    const { error: reqError } = await supabase
+      .from('crew_requests')
+      .delete()
+      .or(`and(sender_id.eq.${state.currentUser.id},receiver_id.eq.${memberId}),and(sender_id.eq.${memberId},receiver_id.eq.${state.currentUser.id})`);
+      
+    if (connError || reqError) {
+      console.error('Error removing crew member:', connError || reqError);
       addToast('Failed to remove member', { type: 'error' });
     } else {
       addToast('Removed from crew.', { type: 'info' });
