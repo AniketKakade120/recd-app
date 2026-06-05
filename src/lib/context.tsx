@@ -1592,7 +1592,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         receiver_id: receiverId,
         status: 'pending',
         message: null,
-        source: 'direct',
         updated_at: new Date().toISOString()
       }, { onConflict: 'sender_id,receiver_id' })
       .select()
