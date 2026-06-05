@@ -626,9 +626,9 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
                                 {verdict.stamp && <StampBadge stamp={verdict.stamp as any} size="xs" variant="outline" />}
                               </div>
                               {verdict.comment && (
-                                <div className="inline-block px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 mt-1">
-                                  <p className="text-[10px] text-bone/70 font-black uppercase tracking-widest">{verdict.comment}</p>
-                                </div>
+                                <p className="text-sm text-bone/90 italic mt-2 leading-relaxed">
+                                  &ldquo;{verdict.comment}&rdquo;
+                                </p>
                               )}
                             </div>
                           </div>
