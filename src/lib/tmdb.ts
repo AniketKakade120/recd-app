@@ -74,27 +74,42 @@ export async function searchTmdb(query: string, region = 'IN'): Promise<Title[]>
   
   console.log('[Rec\'d TMDB] Searching for:', query);
   
-  try {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false&region=${region}`
-    );
-    
-    if (!response.ok) {
-      throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    
-    // Map results and filter out people or nulls
-    const results: Title[] = (data.results || [])
-      .map(mapTmdbToTitle)
-      .filter((t: Title | null) => t !== null);
+  let retries = 2;
+  while (retries >= 0) {
+    try {
+      const response = await fetch(
+        `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false&region=${region}`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'RecdApp/1.0'
+          }
+        }
+      );
       
-    return results;
-  } catch (error) {
-    console.error('[Rec\'d TMDB] Search failed:', error);
-    return [];
+      if (!response.ok) {
+        throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Map results and filter out people or nulls
+      const results: Title[] = (data.results || [])
+        .map(mapTmdbToTitle)
+        .filter((t: Title | null) => t !== null);
+        
+      return results;
+    } catch (error: any) {
+      if (retries === 0) {
+        console.error('[Rec\'d TMDB] Search failed after retries:', error);
+        return [];
+      }
+      console.warn(`[Rec\'d TMDB] Search failed, retrying... (${retries} left)`, error?.message);
+      await new Promise(r => setTimeout(r, 1500));
+      retries--;
+    }
   }
+  return [];
 }
 
 export async function getTrendingTmdb(region = 'IN'): Promise<Title[]> {
