@@ -1,8 +1,9 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useApp } from '@/lib/context';
+import { calculateContentPreferenceMatch } from '@/lib/logic/taste-system';
 import { REC_ACCURACY_OPTIONS, type RecAccuracy, CORE_STAMPS, type StampType, type Title } from '@/lib/types';
 import StampBadge from '@/components/StampBadge';
 import UserAvatar from '@/components/UserAvatar';
@@ -31,7 +32,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
     addToWatchlist, removeFromWatchlist, updateVerdictState,
     getViewerContext, getActions, crewConnections, ratings, addToast,
     groups, watchlistLists, openRecommendModal, openGiveVerdictModal,
-    titleComments, addTitleComment
+    titleComments, addTitleComment, userPreferences
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'verdicts' | 'discussion'>('verdicts');
@@ -195,6 +196,45 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
   // Unified logic for actions
   const viewerContext = recommendation ? getViewerContext(recommendation) : null;
   const actions = recommendation ? getActions(recommendation) : null;
+
+  const tasteMatchResult = useMemo(() => {
+    if (recommendation?.tasteMatchScore) {
+      return {
+        score: recommendation.tasteMatchScore,
+        factors: recommendation.moodTags ? 
+          [
+            `Strong alignment with your preference for ${recommendation.moodTags[0] || title?.genres[0]}`, 
+            `and ${recommendation.moodTags[1] || title?.genres[1] || 'atmospheric'} content.`
+          ] : 
+          ['Add this to your watchlist to see how it aligns with your taste.']
+      };
+    }
+    
+    if (!title) return { score: 85, factors: [] };
+
+    if (!userPreferences || (userPreferences.genres.length === 0 && userPreferences.moods.length === 0)) {
+      // Hash fallback logic if preferences are empty
+      const idStr = `${currentUser?.id || 'anon'}-${title.id}`;
+      let hash = 0;
+      for (let i = 0; i < idStr.length; i++) {
+        hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return {
+        score: 65 + (Math.abs(hash) % 31),
+        factors: ['Add this to your watchlist to see how it aligns with your taste.']
+      };
+    }
+
+    // Actual calculation
+    const match = calculateContentPreferenceMatch({ title, preferences: userPreferences });
+    return {
+      // Add a base of 40 so it's not 0%
+      score: Math.max(45, Math.min(99, 40 + match.score)),
+      factors: match.matchedFactors.length > 0 
+        ? match.matchedFactors 
+        : ['Add this to your watchlist to see how it aligns with your taste.']
+    };
+  }, [recommendation, title, userPreferences, currentUser]);
 
   const [addToListOpen, setAddToListOpen] = useState(false);
   const [verdictModalOpen, setVerdictModalOpen] = useState(false);
@@ -680,16 +720,14 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
             <div className="absolute top-0 right-0 w-32 h-32 bg-cinema-red/5 blur-[60px] -translate-y-1/2 translate-x-1/2 group-hover:bg-cinema-red/10 transition-colors" />
             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/60 mb-6">Taste Match</h3>
             <div className="flex items-end gap-3 mb-6">
-              <span className="text-6xl font-bold font-editorial text-bone tracking-tighter leading-none">{recommendation?.tasteMatchScore || 85}%</span>
+              <span className="text-6xl font-bold font-editorial text-bone tracking-tighter leading-none">{tasteMatchResult.score}%</span>
               <span className="text-[10px] text-cinema-red font-black uppercase tracking-[0.2em] mb-2">Signal</span>
             </div>
-            <p className="text-sm text-bone/70 leading-relaxed mb-6">
-              {recommendation ? (
-                <>Strong alignment with your preference for <span className="text-bone font-bold">{recommendation.moodTags?.[0] || title.genres[0]}</span> and <span className="text-bone font-bold">{recommendation.moodTags?.[1] || title.genres[1] || 'atmospheric'}</span> content.</>
-              ) : (
-                <>Add this to your watchlist to see how it aligns with your taste.</>
-              )}
-            </p>
+            <div className="text-sm text-bone/70 leading-relaxed mb-6 space-y-1">
+              {tasteMatchResult.factors.map((factor, i) => (
+                <p key={i}>{factor}</p>
+              ))}
+            </div>
             <div className="flex flex-wrap gap-2">
               {(recommendation?.moodTags || title.genres.slice(0, 3)).map(tag => (
                 <span key={tag} className="px-3 py-1.5 bg-ink/50 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-bone/60">
