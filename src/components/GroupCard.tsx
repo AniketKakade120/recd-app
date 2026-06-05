@@ -38,12 +38,12 @@ export default function GroupCard({ group, showJoin }: GroupCardProps) {
   return (
     <>
     <Link href={`/groups/${group.id}`} className="block group h-full">
-      <div className="relative bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden transition-all duration-300 hover:border-cinema-red/30 hover:-translate-y-1 hover:shadow-2xl hover:shadow-cinema-red/10 flex flex-col h-full">
+      <div className="group relative bg-surface border border-border rounded-2xl overflow-hidden transition-all duration-300 hover:border-border-strong hover:shadow-2xl flex flex-col h-full">
         
         {/* Cover Image Banner */}
         <div className={`h-24 w-full relative ${!group.coverImage ? `poster-gradient-${(group.avatarGradient % 10) + 1}` : 'bg-surface'}`}>
           {group.coverImage && <img src={group.coverImage} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
           
           {/* Admin Menu */}
           <div className="absolute top-4 right-4 z-20">
@@ -110,39 +110,25 @@ export default function GroupCard({ group, showJoin }: GroupCardProps) {
         {/* Card Content Area */}
         <div className="px-6 pb-6 pt-0 flex flex-col flex-1 relative z-10 -mt-12">
           
-          <div className="flex items-end justify-between mb-5">
-            {/* Dynamic Avatar Cluster replacing the empty square */}
-            <div className="w-20 h-20 rounded-[24px] shadow-2xl border-4 border-[#0a0a0a] bg-surface flex items-center justify-center shrink-0 overflow-hidden relative">
-              <div className={`absolute inset-0 opacity-50 poster-gradient-${group.avatarGradient}`} />
-              <div className="absolute inset-0 backdrop-blur-md" />
-              <div className="relative z-10 scale-125 pointer-events-none">
-                <AvatarStack names={memberNames} size="md" max={3} />
-              </div>
-            </div>
-
-            <span className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border ${
+          <div className="flex items-end justify-between mb-4">
+            <div className={`w-20 h-20 rounded-[24px] shadow-2xl border-4 border-surface poster-gradient-${group.avatarGradient} shrink-0`} />
+            <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border ${
               group.privacy === 'private'
-                ? 'border-white/5 bg-white/5 text-muted/80 backdrop-blur-sm'
+                ? 'border-white/10 bg-ink text-muted/60'
                 : 'border-cinema-red/30 bg-cinema-red/10 text-cinema-red shadow-[0_0_15px_rgba(234,51,51,0.2)]'
             }`}>
-              {group.privacy === 'private' ? (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-              ) : (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-              )}
               {group.privacy}
             </span>
           </div>
           
-          <h3 className="font-editorial text-2xl text-bone tracking-tight group-hover:text-cinema-red transition-colors duration-300">{group.name}</h3>
-          <p className="text-[10px] text-muted font-bold tracking-[0.2em] uppercase mt-2">{group.vibe}</p>
+          <h3 className="font-bold text-xl text-bone tracking-tight group-hover:text-cinema-red transition-colors duration-300">{group.name}</h3>
+          <p className="text-[10px] text-cinema-red font-black tracking-[0.2em] uppercase mt-2">{group.vibe}</p>
 
           {group.description && (
-            <p className="text-sm text-bone/60 my-5 line-clamp-2 leading-relaxed flex-1">{group.description}</p>
+            <p className="text-sm text-bone/60 my-5 line-clamp-2 leading-relaxed flex-1 italic">&ldquo;{group.description}&rdquo;</p>
           )}
-          {!group.description && <div className="flex-1 my-3" />}
 
-          <div className="flex items-center justify-between mt-auto pt-5">
+          <div className="flex items-center justify-between mt-auto pt-5 border-t border-white/5">
             <div className="flex items-center gap-3">
               <AvatarStack names={memberNames} size="sm" max={3} />
               <span className="text-[10px] font-bold text-muted uppercase tracking-widest">{members.length} member{members.length !== 1 ? 's' : ''}</span>
