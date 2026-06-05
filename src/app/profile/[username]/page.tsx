@@ -219,18 +219,6 @@ export default function PublicProfilePage() {
             </div>
           </div>
 
-          {/* TASTE PROFILE */}
-          <TasteProfileCard 
-            user={profileUser} 
-            preferences={{
-              genres: profileUser.favoriteGenres || [],
-              genrePreferences: {},
-              moods: profileUser.favoriteMoods || [],
-              platforms: profileUser.preferredPlatforms || [],
-              formats: [],
-              languages: []
-            }} 
-          />
 
           {/* Badges Earned */}
           <div className="bg-surface border border-border rounded-[32px] p-8">
