@@ -17,7 +17,7 @@ export default function InviteModal({ isOpen, onClose, groupName, inviteCode }: 
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'search' | 'link'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'link'>('link');
   
   useEffect(() => {
     if (!isOpen) return;
@@ -79,26 +79,26 @@ export default function InviteModal({ isOpen, onClose, groupName, inviteCode }: 
             {/* Tab Switcher */}
             <div className="flex gap-1 bg-ink/60 border border-border rounded-xl p-1 mt-4">
               <button
-                onClick={() => setActiveTab('search')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === 'search'
-                    ? 'bg-surface text-bone shadow-md border border-border'
-                    : 'text-muted hover:text-bone'
-                }`}
-              >
-                <Search size={14} />
-                Search People
-              </button>
-              <button
                 onClick={() => setActiveTab('link')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
                   activeTab === 'link'
-                    ? 'bg-surface text-bone shadow-md border border-border'
+                    ? 'bg-cinema-red text-bone shadow-lg shadow-cinema-red/20'
                     : 'text-muted hover:text-bone'
                 }`}
               >
                 <Link2 size={14} />
                 Invite Link
+              </button>
+              <button
+                onClick={() => setActiveTab('search')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === 'search'
+                    ? 'bg-cinema-red text-bone shadow-lg shadow-cinema-red/20'
+                    : 'text-muted hover:text-bone'
+                }`}
+              >
+                <Search size={14} />
+                Search People
               </button>
             </div>
           </div>
@@ -178,15 +178,6 @@ export default function InviteModal({ isOpen, onClose, groupName, inviteCode }: 
             )}
           </div>
 
-          {/* Close link */}
-          <div className="px-6 pb-6 shrink-0">
-            <button 
-              onClick={onClose}
-              className="w-full py-2 text-xs text-muted hover:text-bone transition-colors font-medium"
-            >
-              Maybe later
-            </button>
-          </div>
         </div>
       </div>
     </div>

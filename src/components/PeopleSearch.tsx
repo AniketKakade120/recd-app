@@ -128,7 +128,7 @@ export default function PeopleSearch({
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full h-12 pl-12 pr-4 bg-ink border border-border rounded-xl text-sm text-bone placeholder:text-muted/60 focus:outline-none focus:border-cinema-red/50 focus:ring-1 focus:ring-cinema-red/20 transition-all"
+          className="w-full h-12 pl-[44px] pr-4 bg-ink border border-border rounded-xl text-sm text-bone placeholder:text-muted/60 focus:outline-none focus:border-cinema-red/50 focus:ring-1 focus:ring-cinema-red/20 transition-all"
           autoComplete="off"
           spellCheck={false}
         />
