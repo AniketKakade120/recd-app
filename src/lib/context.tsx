@@ -815,10 +815,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       // We have an active session
+      if (currentUserRef.current && currentUserRef.current.id === activeSession.user.id) {
+        // We already have the profile loaded. No need to block the UI or risk a timeout error just for a tab switch.
+        refreshData(activeSession.user.id);
+        return;
+      }
+
       if (event !== 'TOKEN_REFRESHED') {
-        if (!currentUserRef.current || currentUserRef.current.id !== activeSession.user.id) {
-          setState(prev => ({ ...prev, isAuthenticated: true, loading: true, authStatus: 'authenticated_loading_profile' }));
-        }
+        setState(prev => ({ ...prev, isAuthenticated: true, loading: true, authStatus: 'authenticated_loading_profile' }));
       }
 
       try {
