@@ -1639,10 +1639,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const cancelCrewRequest = useCallback(async (requestId: string) => {
     if (isSupabaseConfigured && supabase) {
-      await supabase.from('crew_requests').delete().eq('id', requestId);
-      refreshData();
+      const { error } = await supabase.from('crew_requests').delete().eq('id', requestId);
+      if (error) {
+        console.error('Error cancelling crew request:', error);
+        addToast('Failed to cancel request', { type: 'error' });
+      } else {
+        addToast('Request cancelled.', { type: 'info' });
+        refreshData();
+      }
     }
-  }, [refreshData]);
+  }, [addToast, refreshData]);
 
   const removeCrewMember = useCallback(async (memberId: string) => {
     if (!state.currentUser?.id) return;

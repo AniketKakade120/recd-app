@@ -6,7 +6,8 @@ import type { User } from '@/lib/types';
 import CrewMemberCard from './CrewMemberCard';
 import UserAvatar from './UserAvatar';
 import InviteModal from './InviteModal';
-import { UserCheck, Clock, Send, Check, X, UserPlus } from 'lucide-react';
+import PeopleSearch from './PeopleSearch';
+import { UserCheck, Clock, Send, Check, X, UserPlus, Search } from 'lucide-react';
 
 export default function ProfileCrewTab() {
   const { 
@@ -20,7 +21,7 @@ export default function ProfileCrewTab() {
     removeCrewMember 
   } = useApp();
   
-  const [activeSubTab, setActiveSubTab] = useState<'crew' | 'requests'>('crew');
+  const [activeSubTab, setActiveSubTab] = useState<'crew' | 'find' | 'requests'>('crew');
   const [inviteOpen, setInviteOpen] = useState(false);
 
   if (!currentUser) return null;
@@ -57,6 +58,14 @@ export default function ProfileCrewTab() {
           {activeSubTab === 'crew' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cinema-red" />}
         </button>
         <button 
+          onClick={() => setActiveSubTab('find')}
+          className={`pb-3 text-xs font-bold uppercase tracking-widest relative transition-colors flex items-center gap-1.5 ${activeSubTab === 'find' ? 'text-bone' : 'text-muted'}`}
+        >
+          <Search size={12} />
+          Find People
+          {activeSubTab === 'find' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cinema-red" />}
+        </button>
+        <button 
           onClick={() => setActiveSubTab('requests')}
           className={`pb-3 text-xs font-bold uppercase tracking-widest relative transition-colors ${activeSubTab === 'requests' ? 'text-bone' : 'text-muted'}`}
         >
@@ -65,6 +74,7 @@ export default function ProfileCrewTab() {
         </button>
       </div>
 
+      {/* MY CREW TAB */}
       {activeSubTab === 'crew' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -72,8 +82,12 @@ export default function ProfileCrewTab() {
               <h2 className="text-xl font-bold text-bone font-editorial">Your Crew</h2>
               <p className="text-muted text-xs mt-1">People whose taste you trust.</p>
             </div>
-            <button className="px-4 py-2 bg-white/5 border border-border rounded-lg text-[10px] font-bold text-muted hover:text-bone transition-colors uppercase tracking-widest">
-              Manage
+            <button 
+              onClick={() => setInviteOpen(true)}
+              className="px-4 py-2 bg-cinema-red/10 border border-cinema-red/20 rounded-lg text-[10px] font-bold text-cinema-red hover:bg-cinema-red/20 transition-colors uppercase tracking-widest flex items-center gap-1.5"
+            >
+              <UserPlus size={12} />
+              Invite
             </button>
           </div>
 
@@ -84,19 +98,40 @@ export default function ProfileCrewTab() {
               ))
             ) : (
               <div className="col-span-full py-20 text-center bg-surface border border-border border-dashed rounded-3xl">
-                <p className="text-muted text-sm mb-4">Your crew is empty.</p>
-                <button 
-                  onClick={() => setInviteOpen(true)}
-                  className="px-6 py-2 bg-cinema-red text-bone text-xs font-bold rounded-xl shadow-lg shadow-cinema-red/20 btn-press"
-                >
-                  Invite Friends
-                </button>
+                <p className="text-muted text-sm mb-2">Your crew is empty.</p>
+                <p className="text-muted/60 text-xs mb-6">Search people or invite friends to start sharing picks.</p>
+                <div className="flex gap-3 justify-center">
+                  <button 
+                    onClick={() => setActiveSubTab('find')}
+                    className="px-6 py-2 bg-cinema-red text-bone text-xs font-bold rounded-xl shadow-lg shadow-cinema-red/20 btn-press"
+                  >
+                    Find People
+                  </button>
+                  <button 
+                    onClick={() => setInviteOpen(true)}
+                    className="px-6 py-2 bg-surface border border-border text-bone text-xs font-bold rounded-xl btn-press"
+                  >
+                    Invite Friends
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
       )}
 
+      {/* FIND PEOPLE TAB */}
+      {activeSubTab === 'find' && (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-xl font-bold text-bone font-editorial">Find People</h2>
+            <p className="text-muted text-xs mt-1">Search for people already on Rec&apos;d Club.</p>
+          </div>
+          <PeopleSearch />
+        </div>
+      )}
+
+      {/* REQUESTS TAB */}
       {activeSubTab === 'requests' && (
         <div className="space-y-12">
           
