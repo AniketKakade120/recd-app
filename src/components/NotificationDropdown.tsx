@@ -97,7 +97,7 @@ export default function NotificationDropdown({ isOpen, onClose }: NotificationDr
                         </p>
                       )}
                       <p className="text-[10px] text-bone/30 mt-1.5 uppercase tracking-wider">
-                        {new Date(notif.createdAt || notif.created_at || new Date()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        {new Date(notif.createdAt || new Date()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </p>
                     </Link>
                   </div>
