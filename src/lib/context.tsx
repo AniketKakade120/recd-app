@@ -138,6 +138,9 @@ interface AppContextType extends AppState {
   addTitleComment: (titleId: string, content: string) => Promise<void>;
   addGroupComment: (groupId: string, titleId: string, comment: string) => Promise<void>;
   joinGroupByCode: (code: string) => Promise<{ success: boolean; groupName?: string }>;
+  markNotificationAsRead: (id: string) => Promise<void>;
+  markAllNotificationsAsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
