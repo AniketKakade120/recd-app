@@ -282,7 +282,8 @@ export default function CreateListModal({ isOpen, onClose, list, preselectedTitl
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Search by title..."
-                    className="w-full bg-ink border border-border rounded-2xl !pl-14 pr-12 py-4 text-bone focus:outline-none focus:border-cinema-red transition-all shadow-inner text-sm"
+                    className="w-full bg-ink border border-border rounded-2xl pr-12 py-4 text-bone focus:outline-none focus:border-cinema-red transition-all shadow-inner text-sm"
+                    style={{ paddingLeft: '3.5rem' }}
                   />
                   {searchLoading && (
                     <div className="absolute right-5 top-1/2 -translate-y-1/2">

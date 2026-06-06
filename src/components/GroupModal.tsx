@@ -203,7 +203,8 @@ export default function GroupModal({ isOpen, onClose, group, initialStep }: Grou
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search friends to add..."
-                  className="w-full bg-ink border border-white/10 rounded-2xl !pl-14 pr-5 py-4 text-bone focus:outline-none focus:border-cinema-red/50 transition-colors"
+                  className="w-full bg-ink border border-white/10 rounded-2xl pr-5 py-4 text-bone focus:outline-none focus:border-cinema-red/50 transition-colors"
+                  style={{ paddingLeft: '3.5rem' }}
                 />
               </div>
 

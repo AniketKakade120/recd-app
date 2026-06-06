@@ -72,7 +72,8 @@ export default function MovieSearch({ onSelect, placeholder = "Search for a movi
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setFocused(true)}
           placeholder={placeholder}
-          className="w-full py-4 !pl-14 !pr-12 bg-ink border border-border rounded-2xl text-bone text-base placeholder:text-muted/50 focus:outline-none focus:border-cinema-red/50 focus:ring-1 focus:ring-cinema-red/20 transition-all shadow-2xl"
+          className="w-full py-4 !pr-12 bg-ink border border-border rounded-2xl text-bone text-base placeholder:text-muted/50 focus:outline-none focus:border-cinema-red/50 focus:ring-1 focus:ring-cinema-red/20 transition-all shadow-2xl"
+          style={{ paddingLeft: '3.5rem' }}
         />
         {loading && (
           <div className="absolute inset-y-0 right-5 flex items-center">

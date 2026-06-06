@@ -57,7 +57,8 @@ export default function AddTitleToListModal({ isOpen, onClose, list }: AddTitleT
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search movies and shows..."
-              className="w-full bg-ink border border-border rounded-2xl pl-14 pr-4 py-4 text-bone focus:outline-none focus:border-cinema-red transition-all shadow-inner"
+              className="w-full bg-ink border border-border rounded-2xl pr-4 py-4 text-bone focus:outline-none focus:border-cinema-red transition-all shadow-inner"
+              style={{ paddingLeft: '3.5rem' }}
             />
             <div className="absolute left-5 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>

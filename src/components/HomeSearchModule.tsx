@@ -103,7 +103,8 @@ export default function HomeSearchModule() {
               onChange={e => setQuery(e.target.value)}
               onFocus={() => setFocused(true)}
               placeholder="Search titles or people..."
-              className="w-full py-3.5 !pl-14 !pr-12 bg-ink border border-border rounded-xl text-bone text-sm placeholder:text-muted/60 focus:outline-none focus:border-cinema-red/50 focus:ring-1 focus:ring-cinema-red/20 transition-all relative"
+              className="w-full py-3.5 !pr-12 bg-ink border border-border rounded-xl text-bone text-sm placeholder:text-muted/60 focus:outline-none focus:border-cinema-red/50 focus:ring-1 focus:ring-cinema-red/20 transition-all relative"
+              style={{ paddingLeft: '3.5rem' }}
             />
             {query.length > 0 && (
               <button
