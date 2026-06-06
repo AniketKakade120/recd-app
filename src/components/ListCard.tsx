@@ -22,10 +22,19 @@ export default function ListCard({ list }: ListCardProps) {
       <div className="relative aspect-[2/3] overflow-hidden bg-surface">
         
         {/* Cover Styles */}
-        {list.coverStyle === 'collage' && posters.length >= 4 ? (
-          <div className="grid grid-cols-2 grid-rows-2 h-full gap-px bg-border group-hover:scale-105 transition-transform duration-700">
+        {list.coverStyle === 'collage' && posters.length > 0 ? (
+          <div className={`grid h-full gap-px bg-border group-hover:scale-105 transition-transform duration-700 ${
+            posters.length === 1 ? 'grid-cols-1' :
+            posters.length === 2 ? 'grid-cols-2' :
+            'grid-cols-2 grid-rows-2'
+          }`}>
             {posters.slice(0, 4).map((url, i) => (
-              <img key={i} src={url} className="w-full h-full object-cover" alt="list cover" />
+              <img 
+                key={i} 
+                src={url} 
+                className={`w-full h-full object-cover ${posters.length === 3 && i === 0 ? 'col-span-2' : ''}`} 
+                alt="list cover" 
+              />
             ))}
           </div>
         ) : list.coverStyle === 'poster_stack' && posters.length > 0 ? (

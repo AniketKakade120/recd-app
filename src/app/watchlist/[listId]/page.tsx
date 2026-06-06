@@ -98,20 +98,34 @@ export default function ListDetailPage({ params }: { params: Promise<{ listId: s
           <div className="flex flex-col lg:flex-row gap-12 lg:items-end mb-24">
             {/* Cover Art */}
             <div className="w-48 h-48 sm:w-64 sm:h-64 flex-shrink-0 rounded-[48px] overflow-hidden border border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] relative group">
-               {list.coverStyle === 'gradient' ? (
+               {list.coverStyle === 'collage' && list.titleIds.length > 0 ? (
+                 <div className={`grid w-full h-full gap-px bg-border group-hover:scale-105 transition-transform duration-700 ${
+                   list.titleIds.length === 1 ? 'grid-cols-1' :
+                   list.titleIds.length === 2 ? 'grid-cols-2' :
+                   'grid-cols-2 grid-rows-2'
+                 }`}>
+                   {list.titleIds.slice(0, 4).map((id, i) => {
+                     const url = getTitle(id)?.posterUrl;
+                     if (!url) return null;
+                     return (
+                       <img 
+                         key={i} 
+                         src={url} 
+                         className={`w-full h-full object-cover ${list.titleIds.length === 3 && i === 0 ? 'col-span-2' : ''}`} 
+                         alt="list cover" 
+                       />
+                     );
+                   })}
+                 </div>
+               ) : list.coverStyle === 'poster_stack' && list.titleIds.length > 0 ? (
+                 <div className="relative w-full h-full bg-surface group-hover:scale-105 transition-transform duration-700">
+                    {coverImage && <img src={coverImage} className="absolute inset-0 w-full h-full object-cover" alt="list cover" />}
+                    <div className="absolute inset-0 bg-black/20" />
+                 </div>
+               ) : (
                  <div className="w-full h-full bg-gradient-to-br from-cinema-red/40 to-ink flex items-center justify-center">
                     <span className="text-7xl group-hover:scale-110 transition-transform duration-700">🎬</span>
                  </div>
-               ) : (
-                 <>
-                   {coverImage ? (
-                     <img src={coverImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={list.name} />
-                   ) : (
-                     <div className="w-full h-full bg-surface-hover flex items-center justify-center text-4xl text-bone/20">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                     </div>
-                   )}
-                 </>
                )}
             </div>
 
