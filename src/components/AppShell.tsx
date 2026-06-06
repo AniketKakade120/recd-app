@@ -11,6 +11,8 @@ import ToastOverlay from './ToastOverlay';
 import Logo from './Logo';
 import UserMenu from './UserMenu';
 import TopNavSearch from './TopNavSearch';
+import { Bell } from 'lucide-react';
+import NotificationDropdown from './NotificationDropdown';
 
 const navItems = [
   { name: 'Home', path: '/home', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
@@ -22,8 +24,10 @@ const navItems = [
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const normalizedPathname = pathname.replace(/\/$/, '') || '/';
-  const { authStatus, authError, currentUser, openRecommendModal, isOnboarded, logout, retryAuthSync } = useApp();
+  const { authStatus, authError, currentUser, openRecommendModal, isOnboarded, logout, retryAuthSync, notifications } = useApp();
   const [mounted, setMounted] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const unreadCount = notifications ? notifications.filter(n => !n.read).length : 0;
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [retrying, setRetrying] = useState(false);
@@ -202,6 +206,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="absolute right-0 flex items-center gap-4">
             <TopNavSearch />
 
+            <div className="relative flex items-center justify-center">
+              <button 
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className="relative p-2 text-muted hover:text-bone transition-colors btn-press"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1.5 w-2 h-2 bg-cinema-red rounded-full shadow-[0_0_8px_rgba(234,51,51,0.8)]" />
+                )}
+              </button>
+              <NotificationDropdown isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+            </div>
+
             <button onClick={() => setInviteOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-bone hover:bg-surface/50 transition-colors btn-press">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
@@ -255,12 +272,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Top Nav */}
       <header className="md:hidden flex items-center justify-between border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-40 py-3 px-4 h-14">
-        {/* Invisible spacer for center alignment */}
-        <div className="w-8 shrink-0" />
+        {/* Left Side: Bell */}
+        <div className="w-12 shrink-0">
+          <div className="relative flex items-center">
+            <button 
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              className="relative p-1 text-muted hover:text-bone transition-colors btn-press -ml-1"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-cinema-red rounded-full shadow-[0_0_8px_rgba(234,51,51,0.8)]" />
+              )}
+            </button>
+            <NotificationDropdown isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+          </div>
+        </div>
         <Link href="/home" className="flex items-center shrink-0">
           <Logo variant="horizontal" size="sm" />
         </Link>
-        <div className="flex justify-end shrink-0" style={{ width: '32px' }}>
+        <div className="flex justify-end shrink-0" style={{ width: '48px' }}>
           <TopNavSearch />
         </div>
       </header>

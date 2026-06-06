@@ -1247,12 +1247,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
             recommendation_id: data.id,
             user_id: userId
           }));
+          await supabase.from('recommendation_targets').insert(targets);
 
-          const { error: targetError } = await supabase
-            .from('recommendation_targets')
-            .insert(targets);
-
-          if (targetError) throw targetError;
+          const notifications = targetUserIds.map(userId => ({
+            user_id: userId,
+            actor_id: state.currentUser.id,
+            type: 'recommendation_received',
+            title: 'New Recommendation',
+            body: `${state.currentUser!.displayName} recommended a title to you!`,
+            resource_id: data.id
+          }));
+          await supabase.from('notifications').insert(notifications);
         }
 
         refreshData();
@@ -1312,6 +1317,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('recommendations')
           .update({ status: 'verdict_given' })
           .eq('id', rating.recommendationId);
+
+        const rec = state.recommendations.find(r => r.id === rating.recommendationId);
+        if (rec && rec.recommendedBy !== state.currentUser?.id && state.currentUser) {
+          await supabase.from('notifications').insert({
+            user_id: rec.recommendedBy,
+            actor_id: state.currentUser.id,
+            type: 'verdict_received',
+            title: 'New Verdict',
+            body: `${state.currentUser.displayName} rated your recommendation!`,
+            resource_id: rating.recommendationId
+          });
+        }
 
         refreshData();
         return;
@@ -1603,21 +1620,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return { success: false, error: error.message };
     }
 
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('notifications').insert({
+        user_id: receiverId,
+        actor_id: state.currentUser.id,
+        type: 'crew_request_received',
+        title: 'New Crew Request',
+        body: `${state.currentUser.displayName} wants to join your crew.`,
+        resource_id: data.id
+      });
+    }
+
     addToast('Request sent.', { type: 'success' });
     refreshData();
     return { success: true, data };
   }, [state.currentUser, state.crewConnections, state.crewRequests, addToast, refreshData]);
 
   const acceptCrewRequest = useCallback(async (requestId: string) => {
+    const req = state.crewRequests.find(r => r.id === requestId);
     const { data, error } = await supabase.rpc('accept_crew_request', { request_id: requestId });
     if (error) {
       console.error('Error accepting crew request:', error);
       addToast('Couldn’t accept request. Please try again.', { type: 'error' });
     } else {
+      if (req && state.currentUser && isSupabaseConfigured && supabase) {
+        await supabase.from('notifications').insert({
+          user_id: req.senderId,
+          actor_id: state.currentUser.id,
+          type: 'crew_request_accepted',
+          title: 'Crew Request Accepted',
+          body: `${state.currentUser.displayName} accepted your crew request!`,
+          resource_id: requestId
+        });
+      }
       addToast('Joined crew!', { type: 'success' });
       refreshData();
     }
-  }, [addToast, refreshData]);
+  }, [addToast, refreshData, state.crewRequests, state.currentUser]);
 
   const rejectCrewRequest = useCallback(async (requestId: string) => {
     if (!state.currentUser?.id) return;
@@ -2197,6 +2236,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const getTitle = useCallback((id: string) => state.titles.find(t => t.id === id), [state.titles]);
 
   const getUser = useCallback((id: string) => state.users.find(u => u.id === id), [state.users]);
+  const markNotificationAsRead = useCallback(async (id: string) => {
+    setState(prev => ({
+      ...prev,
+      notifications: prev.notifications.map(n => n.id === id ? { ...n, read: true } : n)
+    }));
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('notifications').update({ read: true }).eq('id', id);
+    }
+  }, []);
+
+  const markAllNotificationsAsRead = useCallback(async () => {
+    if (!state.currentUser) return;
+    setState(prev => ({
+      ...prev,
+      notifications: prev.notifications.map(n => ({ ...n, read: true }))
+    }));
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('notifications').update({ read: true }).eq('user_id', state.currentUser.id);
+    }
+  }, [state.currentUser]);
+
+  const deleteNotification = useCallback(async (id: string) => {
+    setState(prev => ({
+      ...prev,
+      notifications: prev.notifications.filter(n => n.id !== id)
+    }));
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('notifications').delete().eq('id', id);
+    }
+  }, []);
+
   const getUserByUsername = useCallback((username: string) => state.users.find(u => u.username === username), [state.users]);
   const getGroup = useCallback((id: string) => state.groups.find(g => g.id === id), [state.groups]);
 
@@ -2275,7 +2345,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     retryAuthSync,
     addTitleComment,
     addGroupComment,
-    joinGroupByCode
+    joinGroupByCode,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    deleteNotification
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
