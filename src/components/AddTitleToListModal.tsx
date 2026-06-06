@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/context';
 import type { WatchlistList, Title } from '@/lib/types';
+import { ensureTitleExistsInDb } from '@/lib/supabase/actions';
 
 interface AddTitleToListModalProps {
   isOpen: boolean;
@@ -11,20 +12,45 @@ interface AddTitleToListModalProps {
 }
 
 export default function AddTitleToListModal({ isOpen, onClose, list }: AddTitleToListModalProps) {
-  const { titles, addTitleToList, isTitleInList, addToast } = useApp();
+  const { addTitle, addTitleToList, isTitleInList, addToast } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Title[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    return titles.filter(t => 
-      t.title.toLowerCase().includes(searchQuery.toLowerCase())
-    ).slice(0, 8);
-  }, [searchQuery, titles]);
+  useEffect(() => {
+    const search = async () => {
+      if (searchQuery.length < 2) {
+        setSearchResults([]);
+        return;
+      }
+
+      setSearchLoading(true);
+      try {
+        const res = await fetch(`/api/tmdb/search?q=${encodeURIComponent(searchQuery)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data.slice(0, 8));
+        }
+      } catch (err) {
+        console.error('Search failed:', err);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+
+    const timer = setTimeout(search, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   if (!isOpen) return null;
 
-  const handleAdd = (title: Title) => {
+  const handleAdd = async (title: Title) => {
     if (isTitleInList(title.id, list.id)) return;
+    
+    // Ensure title is cached in DB and in our local state before adding to list
+    await ensureTitleExistsInDb(title);
+    addTitle(title);
+    
     addTitleToList(title.id, list.id);
     addToast(`Added to ${list.name}.`, { type: 'success' });
   };
