@@ -67,8 +67,9 @@ export default function NotificationDropdown({ isOpen, onClose }: NotificationDr
           ) : (
             <div className="flex flex-col">
               {notifications.map((notif) => (
-                <div 
+                <Link 
                   key={notif.id}
+                  href={getLink(notif)}
                   className={`relative group flex gap-3 p-4 border-b border-white/5 transition-colors hover:bg-white/[0.02] ${!notif.read ? 'bg-white/[0.04]' : ''}`}
                   onClick={() => {
                     markNotificationAsRead(notif.id);
@@ -87,7 +88,7 @@ export default function NotificationDropdown({ isOpen, onClose }: NotificationDr
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <Link href={getLink(notif)} className="block focus:outline-none">
+                    <div className="block focus:outline-none">
                       <p className={`text-sm ${!notif.read ? 'text-bone font-medium' : 'text-bone/70'}`}>
                         {notif.title}
                       </p>
@@ -99,11 +100,12 @@ export default function NotificationDropdown({ isOpen, onClose }: NotificationDr
                       <p className="text-[10px] text-bone/30 mt-1.5 uppercase tracking-wider">
                         {new Date(notif.createdAt || new Date()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </p>
-                    </Link>
+                    </div>
                   </div>
 
                   <button
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       deleteNotification(notif.id);
                     }}
@@ -112,7 +114,7 @@ export default function NotificationDropdown({ isOpen, onClose }: NotificationDr
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                </div>
+                </Link>
               ))}
             </div>
           )}
