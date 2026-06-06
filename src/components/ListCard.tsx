@@ -22,7 +22,7 @@ export default function ListCard({ list }: ListCardProps) {
       <div className="relative aspect-[2/3] overflow-hidden bg-surface">
         
         {/* Cover Styles */}
-        {list.coverStyle === 'collage' && posters.length > 0 ? (
+        {(list.coverStyle === 'collage' || list.coverStyle === 'gradient') && posters.length > 0 ? (
           <div className={`grid h-full gap-px bg-border group-hover:scale-105 transition-transform duration-700 ${
             posters.length === 1 ? 'grid-cols-1' :
             posters.length === 2 ? 'grid-cols-2' :

@@ -98,7 +98,7 @@ export default function ListDetailPage({ params }: { params: Promise<{ listId: s
           <div className="flex flex-col lg:flex-row gap-12 lg:items-end mb-24">
             {/* Cover Art */}
             <div className="w-48 h-48 sm:w-64 sm:h-64 flex-shrink-0 rounded-[48px] overflow-hidden border border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] relative group">
-               {list.coverStyle === 'collage' && list.titleIds.length > 0 ? (
+               {(list.coverStyle === 'collage' || list.coverStyle === 'gradient') && list.titleIds.length > 0 ? (
                  <div className={`grid w-full h-full gap-px bg-border group-hover:scale-105 transition-transform duration-700 ${
                    list.titleIds.length === 1 ? 'grid-cols-1' :
                    list.titleIds.length === 2 ? 'grid-cols-2' :
