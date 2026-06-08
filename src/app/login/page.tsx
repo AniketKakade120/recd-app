@@ -75,21 +75,6 @@ export default function LoginPage() {
             Continue with Google
           </button>
 
-          <button disabled className="w-full py-3 bg-surface-hover border border-border text-bone/60 rounded-xl text-sm font-medium cursor-not-allowed">
-            Continue with email
-          </button>
-
-          <div className="relative flex items-center py-1">
-            <div className="flex-grow border-t border-border" />
-            <span className="mx-4 text-xs text-muted uppercase tracking-widest">or</span>
-            <div className="flex-grow border-t border-border" />
-          </div>
-
-          <button disabled={loading} onClick={handleDemo}
-            className="w-full py-3 bg-cinema-red/10 border border-cinema-red/25 text-cinema-red font-semibold rounded-xl hover:bg-cinema-red/20 transition-colors btn-press text-sm">
-            Enter demo mode
-          </button>
-
           <p className="text-center text-xs text-muted/40 pt-1">
             By signing in, your taste will be judged — honestly.
           </p>
