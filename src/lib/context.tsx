@@ -1,10 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
 import type {
   User, Recommendation, Rating, VerdictState, TasteScore, Title,
   Badge, Comment, Group, GroupMember, ActivityItem, WatchlistItem, WatchlistList, UserPreferences, RecAccuracy,
-  StampType, CrewConnection, CrewRequest, Notification, TitleComment
+  StampType, CrewConnection, CrewRequest, Notification, TitleComment, RecommendationImpact
 } from '@/lib/types';
 import {
   mockUsers, mockRecommendations, mockRatings, mockBadges, mockGroups,
@@ -2307,9 +2307,66 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return getRecommendationActions(context);
   }, [getViewerContext]);
 
+  const computedTasteScore = useMemo(() => {
+    if (!state.currentUser) return state.tasteScore;
+
+    // 1. Find all recommendations sent BY the current user
+    const sentRecommendations = state.recommendations.filter(r => r.recommendedBy === state.currentUser?.id);
+    const totalSent = sentRecommendations.length;
+
+    // 2. Find all ratings given to those recommendations (i.e. by other users)
+    const sentRecIds = new Set(sentRecommendations.map(r => r.id));
+    const ratingsReceived = state.ratings.filter(r => sentRecIds.has(r.recommendationId) && r.ratedBy !== state.currentUser?.id);
+
+    // 3. Convert ratings to RecommendationImpact
+    const impacts: RecommendationImpact[] = ratingsReceived.map(r => {
+      const { contentRatingScore, recommendationResultScore, impactScore } = calculateRecommendationImpact({
+        contentRating: r.contentRating,
+        recommendationResult: r.recommendationResult,
+      });
+      
+      const rec = sentRecommendations.find(rec => rec.id === r.recommendationId);
+      
+      return {
+        id: r.id,
+        recommendationId: r.recommendationId,
+        recommenderId: state.currentUser!.id,
+        receiverId: r.ratedBy,
+        groupId: rec?.groupId, // Pull from recommendation
+        contentRating: r.contentRating,
+        contentRatingScore,
+        recommendationResult: r.recommendationResult,
+        recommendationResultScore,
+        impactScore,
+        stamp: r.stamp,
+        createdAt: r.createdAt
+      };
+    });
+
+    // 4. Calculate final taste score (starts at 0 if no ratings received)
+    const scoreBreakdown = calculateTasteScore({
+      userId: state.currentUser.id,
+      ratingsReceived: impacts,
+      totalSent,
+      scope: 'global'
+    });
+
+    // 5. Build final TasteScore object
+    return {
+      score: scoreBreakdown.score,
+      label: scoreBreakdown.label,
+      totalRecommendationsSent: scoreBreakdown.totalRecommendationsSent,
+      totalRecommendationsRated: scoreBreakdown.totalRecommendationsRated,
+      responseRate: scoreBreakdown.responseRate,
+      averageImpactScore: scoreBreakdown.averageImpactScore,
+      calculatedAt: scoreBreakdown.calculatedAt
+    };
+  }, [state.currentUser, state.recommendations, state.ratings, state.tasteScore]);
+
   const value: AppContextType = {
     addRecommendation,
-    ...state, login, logout, completeOnboarding,
+    ...state,
+    tasteScore: computedTasteScore, login, logout, completeOnboarding,
     openRecommendModal, closeRecommendModal,
     openGiveVerdictModal, closeGiveVerdictModal,
     updateVerdictState, addRating, createGroup, updateGroup, deleteGroup, joinGroup, leaveGroup,
