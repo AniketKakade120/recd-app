@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useApp } from '@/lib/context';
 import type { WatchlistList } from '@/lib/types';
 
+import { Film } from 'lucide-react';
+
 interface ShareListModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -57,7 +59,7 @@ export default function ShareListModal({ isOpen, onClose, list }: ShareListModal
           {/* List Preview */}
           <div className="flex items-center gap-4 p-4 bg-ink border border-border rounded-2xl mb-8">
             <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-cinema-red/20 to-cinema-red/5 flex items-center justify-center border border-cinema-red/10 overflow-hidden text-2xl">
-               {list.coverStyle === 'gradient' ? '🎬' : <div className="w-full h-full bg-surface" />}
+               {list.coverStyle === 'gradient' ? <Film className="w-6 h-6 text-cinema-red/50" strokeWidth={1.5} /> : <div className="w-full h-full bg-surface" />}
             </div>
             <div>
               <p className="font-bold text-bone">{list.name}</p>

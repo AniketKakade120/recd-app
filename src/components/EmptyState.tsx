@@ -1,21 +1,29 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { Ghost } from 'lucide-react';
 import GlassCard from './GlassCard';
 
 interface EmptyStateProps {
   title: string;
   description: string;
-  icon?: string | ReactNode;
+  icon?: ReactNode;
   action?: ReactNode;
   inviteCta?: boolean;
   className?: string;
 }
 
-export default function EmptyState({ title, description, icon = '👻', action, inviteCta = false, className = '' }: EmptyStateProps) {
+export default function EmptyState({ 
+  title, 
+  description, 
+  icon = <Ghost className="w-10 h-10 text-muted/60" strokeWidth={1.5} />, 
+  action, 
+  inviteCta = false, 
+  className = '' 
+}: EmptyStateProps) {
   return (
     <GlassCard className={`flex flex-col items-center justify-center text-center py-12 px-6 ${className}`}>
-      <div className="text-4xl mb-4 opacity-60">
+      <div className="mb-4 flex justify-center">
         {icon}
       </div>
       <h3 className="text-xl font-bold mb-2 text-bone font-editorial">{title}</h3>

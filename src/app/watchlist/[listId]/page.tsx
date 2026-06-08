@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useState, useMemo, useEffect } from 'react';
+import { Film } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/context';
 import ListTitleCard from '@/components/ListTitleCard';
@@ -124,7 +125,7 @@ export default function ListDetailPage({ params }: { params: Promise<{ listId: s
                  </div>
                ) : (
                  <div className="w-full h-full bg-gradient-to-br from-cinema-red/40 to-ink flex items-center justify-center">
-                    <span className="text-7xl group-hover:scale-110 transition-transform duration-700">🎬</span>
+                    <Film className="w-16 h-16 text-cinema-red/50 group-hover:scale-110 transition-transform duration-700" strokeWidth={1.5} />
                  </div>
                )}
             </div>

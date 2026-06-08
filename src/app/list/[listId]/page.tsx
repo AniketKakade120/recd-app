@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useMemo } from 'react';
+import { Film } from 'lucide-react';
 import Link from 'next/link';
 import { useApp } from '@/lib/context';
 import UserAvatar from '@/components/UserAvatar';
@@ -61,7 +62,9 @@ export default function SharedListPage({ params }: { params: Promise<{ listId: s
         <div className="relative max-w-4xl mx-auto px-8 text-center">
           <div className="w-32 h-32 sm:w-48 sm:h-48 mx-auto rounded-[40px] overflow-hidden border border-white/10 shadow-2xl mb-12 transform -rotate-2">
              {list.coverStyle === 'gradient' ? (
-                <div className="w-full h-full bg-gradient-to-br from-cinema-red/40 to-ink flex items-center justify-center text-6xl">🎬</div>
+                <div className="w-full h-full bg-gradient-to-br from-cinema-red/40 to-ink flex items-center justify-center">
+                   <Film className="w-16 h-16 text-cinema-red/50" strokeWidth={1.5} />
+                </div>
              ) : (
                 <img src={listItems[0]?.posterUrl} className="w-full h-full object-cover" alt="" />
              )}

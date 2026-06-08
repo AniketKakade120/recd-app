@@ -1,5 +1,6 @@
 'use client';
 
+import { Film } from 'lucide-react';
 import Link from 'next/link';
 import type { WatchlistList } from '@/lib/types';
 import { useApp } from '@/lib/context';
@@ -44,7 +45,7 @@ export default function ListCard({ list }: ListCardProps) {
           </div>
         ) : (
           <div className={`w-full h-full bg-gradient-to-br from-cinema-red/20 to-surface flex items-center justify-center group-hover:scale-105 transition-transform duration-700`}>
-             <span className="text-4xl">🎬</span>
+             <Film className="w-10 h-10 text-cinema-red/40" strokeWidth={1.5} />
           </div>
         )}
 

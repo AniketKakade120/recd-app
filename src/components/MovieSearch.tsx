@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { Clapperboard } from 'lucide-react';
 import type { Title } from '@/lib/types';
 
 interface MovieSearchProps {
@@ -114,8 +115,8 @@ export default function MovieSearch({ onSelect, placeholder = "Search for a movi
                 </button>
               ))
             ) : query.length >= 2 && !loading ? (
-              <div className="p-8 text-center">
-                <span className="text-3xl block mb-3">🎬</span>
+              <div className="p-8 text-center flex flex-col items-center">
+                <Clapperboard className="w-8 h-8 text-muted/60 mb-3" strokeWidth={1.5} />
                 <p className="text-sm text-muted font-medium">No titles found for "{query}"</p>
                 <p className="text-xs text-muted/50 mt-1">Try a different search term.</p>
               </div>

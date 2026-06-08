@@ -452,8 +452,8 @@ export default function OnboardingPage() {
         {/* Step 5: Invite */}
         {step === 5 && (
           <div className="w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700 ease-out pt-6 sm:pt-10">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-cinema-red/10 border border-cinema-red/30 flex items-center justify-center mb-6 sm:mb-8 shadow-[0_0_30px_rgba(229,9,20,0.2)]">
-              <span className="text-3xl sm:text-4xl">🍿</span>
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-cinema-red/10 border border-cinema-red/30 flex items-center justify-center mb-6 sm:mb-8 shadow-[0_0_30px_rgba(229,9,20,0.2)] text-cinema-red">
+              <Users size={40} strokeWidth={1.5} />
             </div>
             <h1 className="text-4xl sm:text-6xl font-bold text-bone font-editorial mb-4 sm:mb-6">Bring your crew in.</h1>
             <p className="text-lg sm:text-xl text-muted mb-8 sm:mb-12 max-w-2xl leading-relaxed">Rec&apos;d gets infinitely better when your friends start recommending things too.</p>
