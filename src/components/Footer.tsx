@@ -31,6 +31,15 @@ export default function Footer() {
           <Link href="/profile" className="hover:text-cinema-red transition-colors">Profile</Link>
         </div>
 
+        {/* Legal Links */}
+        <div className="flex flex-wrap justify-center gap-4 md:gap-6 text-xs font-medium text-bone/60 mb-8">
+          <Link href="/privacy" className="hover:text-bone transition-colors">Privacy</Link>
+          <Link href="/terms" className="hover:text-bone transition-colors">Terms</Link>
+          <Link href="/credits" className="hover:text-bone transition-colors">Credits</Link>
+          <Link href="/contact" className="hover:text-bone transition-colors">Contact</Link>
+          <Link href="/community-guidelines" className="hover:text-bone transition-colors">Community Guidelines</Link>
+        </div>
+
         {/* Social Icons */}
         <div className="flex items-center justify-center gap-6 text-bone/40 mb-8">
           {/* Email */}
@@ -44,9 +53,14 @@ export default function Footer() {
         </div>
 
         {/* Copyright */}
-        <p className="text-xs text-bone/40 font-medium">
-          © {new Date().getFullYear()} Rec'd Club. All Rights Reserved.
-        </p>
+        <div className="text-center space-y-2">
+          <p className="text-xs text-bone/40 font-medium">
+            © {new Date().getFullYear()} Rec'd Club. All Rights Reserved.
+          </p>
+          <p className="text-[10px] text-bone/30 max-w-sm mx-auto">
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </p>
+        </div>
         
       </div>
     </footer>

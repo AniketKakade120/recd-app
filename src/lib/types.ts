@@ -20,6 +20,8 @@ export interface User {
   preferredPlatforms?: StreamingPlatform[];
   preferences?: UserPreferences;
   profileVisibility?: 'public' | 'crew_only' | 'private';
+  age_acknowledged?: boolean;
+  age_acknowledged_at?: string;
   createdAt: string;
 }
 

@@ -120,9 +120,16 @@ export default function SettingsPage() {
             </div>
             <span className="text-sm text-muted px-2 py-0.5 border border-border rounded">Demo mode</span>
           </div>
-          <button disabled className="w-full text-left py-2 text-xs text-muted/40 cursor-not-allowed">
+          <button disabled className="w-full text-left py-2 text-xs text-muted/40 cursor-not-allowed hidden">
             Change password (coming soon)
           </button>
+          
+          <div className="pt-2">
+            <h3 className="text-xs font-semibold text-cinema-red uppercase tracking-wider mb-2">Delete Account</h3>
+            <p className="text-xs text-muted leading-relaxed">
+              To permanently delete your account and all associated data, please email <a href={`mailto:${process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'privacy@recdclub.com'}`} className="text-bone hover:underline">{process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'privacy@recdclub.com'}</a> from the email connected to your Rec'd Club account.
+            </p>
+          </div>
         </div>
       </SettingsSection>
 

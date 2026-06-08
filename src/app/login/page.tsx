@@ -75,9 +75,17 @@ export default function LoginPage() {
             Continue with Google
           </button>
 
-          <p className="text-center text-xs text-muted/40 pt-1">
-            By signing in, your taste will be judged — honestly.
-          </p>
+          <div className="text-center text-[11px] text-muted space-y-2 pt-2">
+            <p>
+              By continuing, you agree to Rec'd Club's <Link href="/terms" className="text-bone hover:underline">Terms</Link> and <Link href="/privacy" className="text-bone hover:underline">Privacy Policy</Link>.
+            </p>
+            <p className="text-muted/60">
+              We use Google only to sign you in and create your Rec'd Club profile.
+            </p>
+            <p className="text-[10px] text-muted/50 max-w-[260px] mx-auto leading-relaxed pt-2">
+              Rec'd Club is intended for users 13+. If you are under 18, use it only with parent or guardian permission.
+            </p>
+          </div>
         </div>
 
         <p className="text-center text-xs text-muted mt-5">

@@ -74,6 +74,7 @@ export default function OnboardingPage() {
   // Step 1: Archetypes
   const [archetypes, setArchetypes] = useState<TasteArchetype[]>([]);
   const [hoveredArchetype, setHoveredArchetype] = useState<TasteArchetype | null>(null);
+  const [ageAcknowledged, setAgeAcknowledged] = useState(false);
 
   // Step 2: Genres & Sliders
   const [genres, setGenres] = useState<string[]>([]);
@@ -130,6 +131,14 @@ export default function OnboardingPage() {
     genres.length > 0 ? genres.reduce((a, b) => (genrePreferences[a] > genrePreferences[b] ? a : b)) : 'Drama',
     vibes[0] || 'Comfort'
   ) : '';
+
+  const handleStart = () => {
+    completeOnboarding({ 
+      age_acknowledged: true,
+      age_acknowledged_at: new Date().toISOString()
+    });
+    setStep(1);
+  };
 
   const next = async () => {
     if (step === 1 && archetypes.length > 0) {
@@ -236,19 +245,33 @@ export default function OnboardingPage() {
               <span className="text-cinema-red">Rec&apos;d Club</span>, {currentUser.displayName.split(' ')[0]}.
             </h1>
             
-            <p className="text-lg sm:text-xl text-muted/80 mb-12 leading-relaxed max-w-lg">
+            <p className="text-lg sm:text-xl text-muted/80 mb-8 leading-relaxed max-w-lg">
               You&apos;re in. Now, let&apos;s refine your profile so your crew knows exactly what your taste is made of.
             </p>
+
+            <div className="flex items-start gap-3 mt-2 mb-10 max-w-lg text-left bg-surface/50 p-4 rounded-xl border border-border">
+              <input 
+                type="checkbox" 
+                id="age_ack" 
+                checked={ageAcknowledged}
+                onChange={(e) => setAgeAcknowledged(e.target.checked)}
+                className="mt-0.5 w-5 h-5 shrink-0 rounded border-border bg-ink text-cinema-red focus:ring-cinema-red focus:ring-offset-ink"
+              />
+              <label htmlFor="age_ack" className="text-xs text-muted/90 leading-relaxed cursor-pointer select-none">
+                I confirm that I am at least 13 years old and, if I am under 18, I have parent or guardian permission to use Rec'd Club.
+              </label>
+            </div>
             
             <button 
-              onClick={() => setStep(1)}
-              className="group relative px-10 py-5 bg-cinema-red text-bone font-bold rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(229,9,20,0.4)] text-xl btn-press overflow-hidden"
+              onClick={handleStart}
+              disabled={!ageAcknowledged}
+              className="group relative px-10 py-5 bg-cinema-red text-bone font-bold rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(229,9,20,0.4)] text-xl btn-press disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed overflow-hidden"
             >
               <span className="relative z-10 flex items-center gap-3">
                 Tell us about yourself
                 <svg viewBox="0 0 24 24" width="20" height="20" className="transition-transform group-hover:translate-x-1"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.58L12 20l8-8z" fill="currentColor"/></svg>
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
+              {!ageAcknowledged ? null : <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />}
             </button>
           </div>
         )}
