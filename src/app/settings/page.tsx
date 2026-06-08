@@ -118,7 +118,6 @@ export default function SettingsPage() {
               To permanently delete your account and all associated data, please email <a href={`mailto:${process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'recdclub0@gmail.com'}`} className="text-bone hover:underline">{process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'recdclub0@gmail.com'}</a> from the email connected to your Rec'd Club account.
             </p>
           </div>
-        </div>
       </SettingsSection>
 
       {/* Save + logout */}
