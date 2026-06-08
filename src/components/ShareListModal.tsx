@@ -5,6 +5,7 @@ import { useApp } from '@/lib/context';
 import type { WatchlistList } from '@/lib/types';
 
 import { Film } from 'lucide-react';
+import ModalBase from './ModalBase';
 
 interface ShareListModalProps {
   isOpen: boolean;
@@ -39,22 +40,12 @@ export default function ShareListModal({ isOpen, onClose, list }: ShareListModal
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
-      <div 
-        className="absolute inset-0 bg-ink/80 backdrop-blur-md" 
-        onClick={onClose} 
-      />
-      
-      <div 
-        className="relative z-10 w-full max-w-sm bg-surface border border-border rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
-      >
-        <div className="p-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold font-editorial text-bone">Share list</h2>
-            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-muted hover:text-bone">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
+    <ModalBase
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Share list"
+      maxWidth="max-w-sm"
+    >
 
           {/* List Preview */}
           <div className="flex items-center gap-4 p-4 bg-ink border border-border rounded-2xl mb-8">
@@ -122,8 +113,6 @@ export default function ShareListModal({ isOpen, onClose, list }: ShareListModal
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </ModalBase>
   );
 }

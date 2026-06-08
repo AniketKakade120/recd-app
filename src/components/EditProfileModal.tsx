@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useApp } from '@/lib/context';
 import { TASTE_ARCHETYPES, type TasteArchetype } from '@/lib/types';
 import UserAvatar from './UserAvatar';
+import ModalBase from './ModalBase';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -39,21 +40,14 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-ink/80 backdrop-blur-md" onClick={onClose} />
-      
-      <div className="relative z-10 w-full md:max-w-xl bg-surface border border-border rounded-t-3xl md:rounded-3xl p-8 animate-in slide-in-from-bottom-8 duration-300 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-bone font-editorial">Edit Profile</h2>
-            <p className="text-sm text-muted mt-1">Refine your identity on Rec&apos;d.</p>
-          </div>
-          <button onClick={onClose} className="p-2 text-muted hover:text-bone transition-colors">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-8">
+    <ModalBase
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Profile"
+      subtitle="Refine your identity on Rec'd."
+      maxWidth="max-w-xl"
+    >
+      <form onSubmit={handleSubmit} className="space-y-8">
           {/* Avatar Preview */}
           <div className="flex flex-col items-center gap-4 py-4">
             <div className="p-1 rounded-full bg-ink border border-border shadow-2xl">
@@ -129,7 +123,6 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalBase>
   );
 }

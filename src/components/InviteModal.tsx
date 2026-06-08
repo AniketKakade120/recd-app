@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/context';
 import { Copy, Check, Mail, Search, Link2 } from 'lucide-react';
 import PeopleSearch from './PeopleSearch';
+import ModalBase from './ModalBase';
 
 interface InviteModalProps {
   isOpen: boolean;
@@ -56,27 +57,18 @@ export default function InviteModal({ isOpen, onClose, groupName, inviteCode }: 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-ink/80 backdrop-blur-md" onClick={onClose} />
-      <div className="relative z-10 w-full md:max-w-lg bg-surface border border-border rounded-t-3xl md:rounded-3xl overflow-hidden animate-in slide-in-from-bottom-8 duration-300 max-h-[85vh] flex flex-col">
-        
+    <ModalBase
+      isOpen={isOpen}
+      onClose={onClose}
+      title={groupName ? `Invite to ${groupName}` : "Invite your crew."}
+      subtitle="Search people on Rec'd Club, or send an invite link."
+      maxWidth="max-w-lg"
+    >
+      <div className="flex flex-col h-full min-h-0 relative z-10">
         {/* Glow Effect */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-cinema-red/10 blur-3xl rounded-full translate-x-10 -translate-y-10" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-cinema-red/10 blur-3xl rounded-full translate-x-10 -translate-y-10 pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col min-h-0">
-          {/* Header */}
-          <div className="px-6 pt-6 pb-0 shrink-0">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h3 className="text-xl font-bold text-bone font-editorial">Invite your crew.</h3>
-                <p className="text-xs text-muted mt-1">Search people on Rec&apos;d Club, or send an invite link to bring someone in.</p>
-              </div>
-              <button onClick={onClose} className="text-muted hover:text-bone transition-colors p-1">
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Tab Switcher */}
+        <div className="shrink-0 mb-4 relative z-10">
             <div className="flex gap-1 bg-ink/60 border border-border rounded-xl p-1 mt-4">
               <button
                 onClick={() => setActiveTab('link')}
@@ -177,10 +169,8 @@ export default function InviteModal({ isOpen, onClose, groupName, inviteCode }: 
               </div>
             )}
           </div>
-
-        </div>
       </div>
-    </div>
+    </ModalBase>
   );
 }
 

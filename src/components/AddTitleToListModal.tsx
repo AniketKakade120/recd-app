@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/context';
 import type { WatchlistList, Title } from '@/lib/types';
 import { ensureTitleExistsInDb } from '@/lib/supabase/actions';
+import ModalBase from '@/components/ModalBase';
 
 interface AddTitleToListModalProps {
   isOpen: boolean;
@@ -56,25 +57,17 @@ export default function AddTitleToListModal({ isOpen, onClose, list }: AddTitleT
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
-      <div 
-        className="absolute inset-0 bg-ink/80 backdrop-blur-md" 
-        onClick={onClose} 
-      />
-      
-      <div 
-        className="relative z-10 w-full max-w-lg bg-surface border border-border rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
-      >
-        <div className="p-8 pb-4">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold font-editorial text-bone leading-tight">Add to {list.name}</h2>
-              <p className="text-xs text-muted mt-1 uppercase tracking-widest">{list.titleIds.length} titles currently</p>
-            </div>
-            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-muted hover:text-bone">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
+    <ModalBase
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Add to ${list.name}`}
+      subtitle={`${list.titleIds.length} titles currently`}
+      maxWidth="max-w-lg"
+      noPadding={true}
+    >
+      <div className="flex flex-col h-full">
+        <div className="p-4 sm:p-6 pb-2 sm:pb-4 border-b border-border/50 shrink-0">
+
 
           <div className="relative mb-6">
             <input 
@@ -138,11 +131,11 @@ export default function AddTitleToListModal({ isOpen, onClose, list }: AddTitleT
           )}
         </div>
 
-        <div className="p-6 border-t border-white/5 flex items-center justify-between bg-surface">
-           <button onClick={onClose} className="text-xs font-bold text-muted hover:text-bone transition-colors">Done</button>
-           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/40">Rec&apos;d Library</p>
+        <div className="p-4 sm:p-6 border-t border-border/50 flex items-center justify-between bg-surface shrink-0">
+           <button onClick={onClose} className="text-xs font-bold text-muted hover:text-bone transition-colors uppercase tracking-wider">Done</button>
+           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/40 hidden sm:block">Rec&apos;d Library</p>
         </div>
       </div>
-    </div>
+    </ModalBase>
   );
 }

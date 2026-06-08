@@ -8,6 +8,7 @@ import StampBadge from '@/components/StampBadge';
 import MovieSearch from '@/components/MovieSearch';
 import { ensureTitleExistsInDb } from '@/lib/supabase/actions';
 import type { Title } from '@/lib/types';
+import ModalBase from '@/components/ModalBase';
 
 export default function RecommendModal() {
   const { 
@@ -33,6 +34,7 @@ export default function RecommendModal() {
   const [moods, setMoods] = useState<MoodTag[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Reset or initialize state when modal opens
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function RecommendModal() {
       setMoods([]);
       setSuccess(false);
       setSubmitting(false);
+      setSearchQuery('');
     }
   }, [recommendModalOpen]); // Only run when modal is opened/closed
 
@@ -99,29 +102,14 @@ export default function RecommendModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-ink/80 backdrop-blur-md"
-        onClick={closeRecommendModal}
-      />
-
-      {/* Modal Container */}
-      <div className="relative z-10 w-full max-w-2xl bg-surface border border-border shadow-2xl rounded-3xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
-        
-        {/* Header & Close Button */}
-        <div className="flex justify-between items-center p-5 border-b border-border bg-ink/50">
-          <div>
-            <h1 className="text-xl font-bold text-bone font-editorial leading-none">Recommend</h1>
-            <p className="text-[10px] text-muted uppercase tracking-widest font-semibold mt-1">Put your taste on the line</p>
-          </div>
-          <button 
-            onClick={closeRecommendModal}
-            className="w-8 h-8 rounded-full bg-surface hover:bg-surface-hover border border-border flex items-center justify-center text-muted hover:text-bone transition-colors"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
+    <ModalBase
+      isOpen={recommendModalOpen}
+      onClose={closeRecommendModal}
+      title="Recommend"
+      subtitle="Put your taste on the line"
+      maxWidth="max-w-2xl"
+      noPadding={true}
+    >
 
         {/* Success State */}
         {success ? (
@@ -216,8 +204,19 @@ export default function RecommendModal() {
                     </button>
                   </div>
 
+                  <div className="mb-4 relative">
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+                    <input 
+                      type="text"
+                      placeholder={isGroup ? "Search crews..." : "Search friends..."}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-ink border border-border rounded-xl py-2 pl-9 pr-3 text-sm text-bone placeholder:text-muted/60 focus:border-white/20 outline-none transition-colors"
+                    />
+                  </div>
+
                   <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                    {!isGroup ? friends.map(f => f && (
+                    {!isGroup ? friends.filter(f => f && (f.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || f.username.toLowerCase().includes(searchQuery.toLowerCase()))).map(f => f && (
                       <button key={f.id} onClick={() => setRecipientId(f.id)}
                         className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left btn-press transition-all ${
                           recipientId === f.id 
@@ -230,7 +229,7 @@ export default function RecommendModal() {
                           <p className="text-xs text-muted">{f.tasteArchetype}</p>
                         </div>
                       </button>
-                    )) : myGroups.map(g => g && (
+                    )) : myGroups.filter(g => g && g.name.toLowerCase().includes(searchQuery.toLowerCase())).map(g => g && (
                       <button key={g.id} onClick={() => setGroupId(g.id)}
                         className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left btn-press transition-all ${
                           groupId === g.id 
@@ -371,8 +370,6 @@ export default function RecommendModal() {
             </div>
           </div>
         )}
-
-      </div>
-    </div>
+    </ModalBase>
   );
 }

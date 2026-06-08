@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '@/lib/context';
 import type { WatchlistList, Title } from '@/lib/types';
 import { ensureTitleExistsInDb } from '@/lib/supabase/actions';
+import ModalBase from '@/components/ModalBase';
 
 interface CreateListModalProps {
   isOpen: boolean;
@@ -151,10 +152,14 @@ export default function CreateListModal({ isOpen, onClose, list, preselectedTitl
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-ink/80 backdrop-blur-md" onClick={onClose} />
-      
-      <div className="relative z-10 w-full max-w-2xl h-[85vh] max-h-[90vh] bg-surface border border-border rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 flex flex-col">
+    <ModalBase
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+      hideHeader={true}
+      noPadding={true}
+    >
+      <div className="flex flex-col h-full">
         {/* Step Indicator (Only for creation) */}
         {!list && (
           <div className="flex-none flex px-10 pt-10 pb-4 gap-2">
@@ -449,6 +454,6 @@ export default function CreateListModal({ isOpen, onClose, list, preselectedTitl
           )}
         </div>
       </div>
-    </div>
+    </ModalBase>
   );
 }

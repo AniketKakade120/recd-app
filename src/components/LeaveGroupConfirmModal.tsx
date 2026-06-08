@@ -4,6 +4,7 @@ import { useApp } from '@/lib/context';
 import type { Group } from '@/lib/types';
 import { useRouter, usePathname } from 'next/navigation';
 import { LogOut } from 'lucide-react';
+import ModalBase from './ModalBase';
 
 interface LeaveGroupConfirmModalProps {
   isOpen: boolean;
@@ -30,15 +31,13 @@ export default function LeaveGroupConfirmModal({ isOpen, onClose, group }: Leave
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
-      <div 
-        className="absolute inset-0 bg-ink/80 backdrop-blur-md" 
-        onClick={onClose} 
-      />
-      
-      <div 
-        className="relative z-10 w-full max-w-sm bg-surface border border-border rounded-3xl overflow-hidden shadow-[0_8px_40px_rgb(0,0,0,0.6)] p-8 text-center animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
-      >
+    <ModalBase
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-sm"
+      hideHeader={true}
+    >
+      <div className="text-center pt-4">
         <div className="w-16 h-16 bg-cinema-red/10 text-cinema-red rounded-full flex items-center justify-center mx-auto mb-6">
           <LogOut size={28} />
         </div>
@@ -63,6 +62,6 @@ export default function LeaveGroupConfirmModal({ isOpen, onClose, group }: Leave
           </button>
         </div>
       </div>
-    </div>
+    </ModalBase>
   );
 }

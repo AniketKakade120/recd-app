@@ -5,6 +5,7 @@ import { useApp } from '@/lib/context';
 import type { Group, GroupVibe } from '@/lib/types';
 import { GROUP_VIBES } from '@/lib/types';
 import UserAvatar from './UserAvatar';
+import ModalBase from './ModalBase';
 
 interface GroupModalProps {
   isOpen: boolean;
@@ -88,14 +89,14 @@ export default function GroupModal({ isOpen, onClose, group, initialStep }: Grou
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
-      <div 
-        className="absolute inset-0 bg-ink/80 backdrop-blur-md" 
-        onClick={onClose} 
-      />
-      
-      <div className="relative z-10 w-full max-w-lg h-[85vh] max-h-[90vh] bg-surface border border-border rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 flex flex-col">
-        
+    <ModalBase
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-lg"
+      hideHeader={true}
+      noPadding={true}
+    >
+      <div className="flex flex-col h-full">
         {/* Progress Bar - Fixed at top */}
         <div className="flex-none w-full h-1 bg-white/5">
           <div 
@@ -105,9 +106,9 @@ export default function GroupModal({ isOpen, onClose, group, initialStep }: Grou
         </div>
 
         {/* Header - Fixed */}
-        <div className="flex-none p-8 pb-4 flex items-center justify-between">
+        <div className="flex-none p-4 sm:p-8 sm:pb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold font-editorial text-bone">
+            <h2 className="text-xl sm:text-2xl font-bold font-editorial text-bone">
               {isEdit ? 'Edit group' : 'Create a crew'}
             </h2>
             <p className="text-[10px] text-muted mt-1 uppercase tracking-widest font-bold">
@@ -275,6 +276,6 @@ export default function GroupModal({ isOpen, onClose, group, initialStep }: Grou
           </div>
         </div>
       </div>
-    </div>
+    </ModalBase>
   );
 }

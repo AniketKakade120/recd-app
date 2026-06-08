@@ -6,6 +6,7 @@ import { TASTE_ARCHETYPES, TasteArchetype, GENRES, MOODS, PLATFORMS, LANGUAGES, 
 import { TasteProfilePoster } from '@/components/onboarding/TasteProfilePoster';
 import { usePosterExport } from '@/hooks/usePosterExport';
 import { Download, Loader2, Film, Zap, Rocket, Cat, Drama, Laugh, Ghost, Heart, Video, Search, Sword } from 'lucide-react';
+import ModalBase from './ModalBase';
 
 function generateHeadline(archetype: string, topGenre: string, topVibe?: string): string {
   const base: Record<string, string> = {
@@ -156,20 +157,14 @@ export default function EditPreferencesModal({ isOpen, onClose }: EditPreference
   const currentTabData = tabs.find(t => t.id === activeTab)!;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-ink/80 backdrop-blur-md" onClick={onClose} />
-      
-      <div className="relative z-10 w-full md:max-w-2xl bg-surface border border-border rounded-t-3xl md:rounded-3xl p-6 md:p-8 animate-in slide-in-from-bottom-8 duration-300 max-h-[90vh] flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between mb-6 shrink-0">
-          <div>
-            <h2 className="text-2xl font-bold text-bone font-editorial">Taste Profile</h2>
-            <p className="text-sm text-muted mt-1">Select all categories that define your taste.</p>
-          </div>
-          <button onClick={onClose} className="p-2 text-muted hover:text-bone transition-colors">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-
+    <ModalBase
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Taste Profile"
+      subtitle="Select all categories that define your taste."
+      maxWidth="max-w-2xl"
+    >
+      <div className="flex flex-col h-full">
         {/* Tab Navigation */}
         <div className="flex gap-4 border-b border-border mb-6 shrink-0 overflow-x-auto hide-scrollbar">
           {tabs.map(tab => (
@@ -308,6 +303,6 @@ export default function EditPreferencesModal({ isOpen, onClose }: EditPreference
           )}
         </div>
       </div>
-    </div>
+    </ModalBase>
   );
 }

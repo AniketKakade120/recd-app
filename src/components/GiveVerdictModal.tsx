@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/context';
 import { REC_ACCURACY_OPTIONS, type RecAccuracy, type StampType } from '@/lib/types';
 import StampBadge from '@/components/StampBadge';
+import ModalBase from '@/components/ModalBase';
 
 export default function GiveVerdictModal() {
   const { 
@@ -92,33 +93,13 @@ export default function GiveVerdictModal() {
   const isSaved = watchlist.some(w => w.titleId === title.id);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-ink/80 backdrop-blur-md"
-        onClick={closeGiveVerdictModal}
-      />
-
-      {/* Modal Container */}
-      <div className="relative z-10 w-full max-w-lg bg-surface border border-border shadow-2xl rounded-3xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
-        
-        {/* Header */}
-        <div className="flex justify-between items-center p-5 border-b border-border bg-ink/50">
-          <div>
-            <h1 className="text-xl font-bold text-bone font-editorial leading-none">
-              {isEdit ? 'Edit Verdict' : 'Give Verdict'}
-            </h1>
-            <p className="text-[10px] text-muted uppercase tracking-widest font-semibold mt-1">
-              {title.title}
-            </p>
-          </div>
-          <button 
-            onClick={closeGiveVerdictModal}
-            className="w-8 h-8 rounded-full bg-surface hover:bg-surface-hover border border-border flex items-center justify-center text-muted hover:text-bone transition-colors"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
+    <ModalBase
+      isOpen={giveVerdictModalOpen}
+      onClose={closeGiveVerdictModal}
+      title={isEdit ? 'Edit Verdict' : 'Give Verdict'}
+      subtitle={title.title}
+      noPadding={true}
+    >
 
         {/* Success State */}
         {success ? (
@@ -277,8 +258,6 @@ export default function GiveVerdictModal() {
               </div>
           </div>
         )}
-
-      </div>
-    </div>
+    </ModalBase>
   );
 }
