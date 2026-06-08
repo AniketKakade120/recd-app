@@ -112,19 +112,7 @@ export default function SettingsPage() {
 
       {/* Account */}
       <SettingsSection title="Account">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-2 border-b border-border">
-            <div>
-              <p className="text-xs font-medium text-bone">Email</p>
-              <p className="text-xs text-muted">{currentUser?.username}@demo.recd.app</p>
-            </div>
-            <span className="text-sm text-muted px-2 py-0.5 border border-border rounded">Demo mode</span>
-          </div>
-          <button disabled className="w-full text-left py-2 text-xs text-muted/40 cursor-not-allowed hidden">
-            Change password (coming soon)
-          </button>
-          
-          <div className="pt-2">
+          <div className="pt-0">
             <h3 className="text-xs font-semibold text-cinema-red uppercase tracking-wider mb-2">Delete Account</h3>
             <p className="text-xs text-muted leading-relaxed">
               To permanently delete your account and all associated data, please email <a href={`mailto:${process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'recdclub0@gmail.com'}`} className="text-bone hover:underline">{process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'recdclub0@gmail.com'}</a> from the email connected to your Rec'd Club account.
