@@ -127,7 +127,7 @@ export default function SettingsPage() {
           <div className="pt-2">
             <h3 className="text-xs font-semibold text-cinema-red uppercase tracking-wider mb-2">Delete Account</h3>
             <p className="text-xs text-muted leading-relaxed">
-              To permanently delete your account and all associated data, please email <a href={`mailto:${process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'privacy@recdclub.com'}`} className="text-bone hover:underline">{process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'privacy@recdclub.com'}</a> from the email connected to your Rec'd Club account.
+              To permanently delete your account and all associated data, please email <a href={`mailto:${process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'recdclub0@gmail.com'}`} className="text-bone hover:underline">{process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'recdclub0@gmail.com'}</a> from the email connected to your Rec'd Club account.
             </p>
           </div>
         </div>

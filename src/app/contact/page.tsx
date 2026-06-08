@@ -6,8 +6,8 @@ export const metadata = {
 };
 
 export default function ContactPage() {
-  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'hello@recdclub.com';
-  const privacyEmail = process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'privacy@recdclub.com';
+  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'recdclub0@gmail.com';
+  const privacyEmail = process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'recdclub0@gmail.com';
 
   return (
     <div className="min-h-screen bg-background text-bone pb-32">

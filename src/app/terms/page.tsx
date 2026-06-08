@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function TermsPage() {
   const lastUpdated = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'hello@recdclub.com';
+  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'recdclub0@gmail.com';
 
   return (
     <div className="min-h-screen bg-background text-bone pb-32">
