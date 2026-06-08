@@ -211,7 +211,8 @@ export default function RecommendModal() {
                       placeholder={isGroup ? "Search crews..." : "Search friends..."}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-ink border border-border rounded-xl py-2 pl-9 pr-3 text-sm text-bone placeholder:text-muted/60 focus:border-white/20 outline-none transition-colors"
+                      className="w-full bg-ink border border-border rounded-xl py-2 pr-3 text-sm text-bone placeholder:text-muted/60 focus:border-white/20 outline-none transition-colors"
+                      style={{ paddingLeft: '2.5rem' }}
                     />
                   </div>
 
