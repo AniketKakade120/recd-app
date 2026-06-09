@@ -155,6 +155,7 @@ export default function GroupCard({ group, showJoin }: GroupCardProps) {
       isOpen={showInviteModal} 
       onClose={() => setShowInviteModal(false)} 
       groupName={group.name}
+      inviteCode={group.inviteCode}
     />
     <LeaveGroupConfirmModal
       isOpen={showLeaveModal}

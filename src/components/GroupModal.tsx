@@ -210,6 +210,12 @@ export default function GroupModal({ isOpen, onClose, group, initialStep }: Grou
               </div>
 
               <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-hide space-y-2">
+                {filteredUsers.length === 0 && (
+                  <div className="text-center py-10 px-4">
+                    <p className="text-sm text-muted mb-2">No connected friends found.</p>
+                    <p className="text-[10px] text-bone/40 uppercase tracking-widest">Share the group invite link instead to add people who aren't in your crew yet.</p>
+                  </div>
+                )}
                 {filteredUsers.map(user => (
                   <button 
                     key={user.id}
