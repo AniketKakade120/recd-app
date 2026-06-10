@@ -7,16 +7,14 @@ import GroupRecommendationEmail from '@/emails/GroupRecommendationEmail';
 
 import { createClient } from '@supabase/supabase-js';
 
-// We initialize Resend here. It will automatically pick up process.env.RESEND_API_KEY
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-// Initialize a generic Supabase client to call the RPC
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export async function POST(request: Request) {
+  // Initialize clients inside the request handler so Vercel doesn't crash during build step
+  const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key_for_build');
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   try {
     const body = await request.json();
     const { type, emailData, toUserId } = body;
