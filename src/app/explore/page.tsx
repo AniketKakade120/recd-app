@@ -389,7 +389,7 @@ export default function ExplorePage() {
               <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Trending in <span className="text-cinema-red">India</span></h2>
               <Link href="/explore" className="text-xs font-bold text-cinema-red uppercase tracking-widest hover:opacity-80 transition-opacity">View All</Link>
             </div>
-            <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x">
               {trendingTitles.length > 0 ? trendingTitles.map(t => {
                 const rec = recommendations.find(r => r.titleId === t.id);
                 return (
@@ -447,7 +447,7 @@ export default function ExplorePage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Top on <span className="text-cinema-red">{topPlatform}</span></h2>
               </div>
-              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x">
                 {curatedPlatformTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
@@ -466,7 +466,7 @@ export default function ExplorePage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Trending in <span className="text-cinema-red">{topLanguage}</span></h2>
               </div>
-              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x">
                 {curatedLanguageTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
@@ -485,7 +485,7 @@ export default function ExplorePage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Because you love <span className="text-cinema-red">{topGenre}</span></h2>
               </div>
-              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x">
                 {curatedGenreTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
@@ -504,7 +504,7 @@ export default function ExplorePage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Now in <span className="text-cinema-red">Theatres</span></h2>
               </div>
-              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x">
                 {theatricalTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
@@ -523,7 +523,7 @@ export default function ExplorePage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Upcoming <span className="text-cinema-red">Cinema</span></h2>
               </div>
-              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x">
                 {upcomingTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
@@ -542,7 +542,7 @@ export default function ExplorePage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Bollywood <span className="text-cinema-red">Hits</span></h2>
               </div>
-              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x">
                 {bollywoodTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
@@ -561,7 +561,7 @@ export default function ExplorePage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">{regionalLabel} <span className="text-cinema-red">Gems</span></h2>
               </div>
-              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-5 overflow-x-auto pb-6 hide-scrollbar snap-x">
                 {regionalTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (

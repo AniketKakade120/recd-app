@@ -262,7 +262,7 @@ export default function HomePage() {
                     <h2 className="text-base font-bold text-bone">Because you like {section.id}</h2>
                     <Link href="/explore" className="text-xs text-muted hover:text-bone transition-colors font-medium">Explore all</Link>
                   </div>
-                  <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+                  <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x">
                     {movies.map(movie => (
                       <div key={movie.id} className="w-[180px] shrink-0 snap-start">
                         <MovieCard title={movie} />
@@ -282,7 +282,7 @@ export default function HomePage() {
                     </h2>
                     <Link href="/explore" className="text-xs text-muted hover:text-bone transition-colors font-medium">Explore all</Link>
                   </div>
-                  <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+                  <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x">
                     {movies.map(movie => (
                       <div key={movie.id} className="w-[180px] shrink-0 snap-start">
                         <MovieCard title={movie} />
@@ -301,7 +301,7 @@ export default function HomePage() {
                 <h2 className="text-base font-bold text-bone">From Your Crew</h2>
                 <Link href="/explore" className="text-xs text-muted hover:text-bone transition-colors font-medium">Explore all</Link>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x">
                 {crewRecommendations.map(rec => {
                   const title = getTitle(rec.titleId);
                   if (!title) return null;
@@ -322,7 +322,7 @@ export default function HomePage() {
                 <h2 className="text-base font-bold text-bone">Continue your watchlist</h2>
                 <Link href="/watchlist" className="text-xs text-muted hover:text-bone transition-colors font-medium">View all</Link>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x">
                 {watchlist.slice(0, 8).map(item => {
                   const title = getTitle(item.titleId);
                   if (!title) return null;

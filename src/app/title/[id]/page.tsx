@@ -489,7 +489,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
           {title.cast && title.cast.length > 0 && (
             <div className="space-y-6">
               <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted/60">Cast</h2>
-              <div className="flex overflow-x-auto pb-8 -mx-4 px-4 sm:mx-0 sm:px-0 gap-5 snap-x scrollbar-hide">
+              <div className="flex overflow-x-auto pb-8 gap-5 snap-x scrollbar-hide">
                 {title.cast.map((actor) => (
                   <div key={actor.id} className="shrink-0 w-36 sm:w-40 rounded-[32px] bg-surface border border-white/5 p-4 snap-start group hover:border-white/10 transition-all shadow-lg hover:shadow-cinema-red/5">
                     <div className="aspect-square w-full rounded-full overflow-hidden mb-4 bg-ink border border-white/10 shadow-inner">
@@ -829,7 +829,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
           return (
             <div className="space-y-4">
               <h2 className="text-sm font-bold uppercase tracking-widest text-muted">More from your crew</h2>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x">
                 {crewRecs.slice(0, 6).map(rec => {
                   const recTitle = getTitle(rec.titleId);
                   if (!recTitle) return null;
@@ -847,7 +847,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
         {/* SECTION 10: SIMILAR PICKS */}
         <div className="space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-widest text-muted">More like this</h2>
-          <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x">
              {similarLoading ? (
                Array.from({ length: 6 }).map((_, i) => (
                  <div key={i} className="w-[200px] shrink-0 snap-start animate-pulse">
