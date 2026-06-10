@@ -1146,6 +1146,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from('profiles').update(data).eq('id', state.currentUser.id);
       if (error) {
         console.error('Error updating profile in Supabase:', error);
+      } else if (data.onboarding_completed) {
+        // Send Welcome Email
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (token) {
+          fetch('/api/email/send', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              type: 'welcome',
+              toUserId: state.currentUser.id,
+              emailData: {
+                userName: state.currentUser.displayName || state.currentUser.username
+              }
+            })
+          }).catch(console.error);
+        }
       }
     }
   }, [state.currentUser]);

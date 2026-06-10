@@ -4,6 +4,7 @@ import RecommendationEmail from '@/emails/RecommendationEmail';
 import VerdictEmail from '@/emails/VerdictEmail';
 import CrewRequestEmail from '@/emails/CrewRequestEmail';
 import GroupRecommendationEmail from '@/emails/GroupRecommendationEmail';
+import WelcomeEmail from '@/emails/WelcomeEmail';
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -68,6 +69,10 @@ export async function POST(request: Request) {
       case 'crew_request':
         subject = `${emailData.senderName} sent you a Crew Request!`;
         reactComponent = CrewRequestEmail(emailData);
+        break;
+      case 'welcome':
+        subject = `Welcome to Rec'd Club! 🍿`;
+        reactComponent = WelcomeEmail(emailData);
         break;
       default:
         return NextResponse.json({ error: 'Invalid email type' }, { status: 400 });
