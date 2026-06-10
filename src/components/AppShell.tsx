@@ -216,7 +216,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   <span className="absolute top-1 right-1.5 w-2 h-2 bg-cinema-red rounded-full shadow-[0_0_8px_rgba(234,51,51,0.8)]" />
                 )}
               </button>
-              <NotificationDropdown isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+              <div className="hidden sm:block">
+                <NotificationDropdown isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+              </div>
             </div>
 
             <button onClick={() => setInviteOpen(true)}
@@ -284,7 +286,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-cinema-red rounded-full shadow-[0_0_8px_rgba(234,51,51,0.8)]" />
               )}
             </button>
-            <NotificationDropdown isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
           </div>
         </div>
         <Link href="/home" className="flex items-center shrink-0">
@@ -328,6 +329,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <RecommendModal />
       <GiveVerdictModal />
       <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} />
+      
+      {/* Mobile Notification Panel */}
+      <div className="sm:hidden">
+        <NotificationDropdown isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+      </div>
+
       <ToastOverlay />
     </div>
   );
