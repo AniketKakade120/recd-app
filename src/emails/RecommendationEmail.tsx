@@ -38,14 +38,10 @@ export const RecommendationEmail = ({
         <Body className="bg-[#0f0f0f] font-sans my-auto mx-auto p-4">
           <Container className="border border-solid border-[#ffffff1a] rounded-[24px] overflow-hidden my-[40px] mx-auto w-[465px] max-w-full bg-[#1a1a1a]">
             {/* Header / Brand */}
-            <Section className="bg-[#ea3333] px-8 py-6 text-center">
-              <Img 
-                src={`${appUrl}/icon.png`} 
-                alt="Rec'd Club" 
-                width="40" 
-                height="40" 
-                className="mx-auto rounded-[8px]" 
-              />
+            <Section className="bg-[#0a0a0a] px-8 py-6 text-center border-b border-[#ffffff1a]">
+              <Heading className="text-white text-[24px] font-serif font-bold tracking-tight m-0">
+                Rec<span className="text-[#ea3333]">'</span>d Club
+              </Heading>
             </Section>
 
             {/* Content */}
