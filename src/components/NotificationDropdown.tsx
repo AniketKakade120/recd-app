@@ -41,24 +41,33 @@ export default function NotificationDropdown({ isOpen, onClose }: NotificationDr
     <>
       {/* Backdrop for mobile closing */}
       <div 
-        className="fixed inset-0 z-40 sm:hidden"
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm sm:hidden animate-in fade-in"
         onClick={onClose}
       />
       
-      <div className="absolute right-[-140px] sm:right-0 top-full mt-2 w-[340px] z-50 overflow-hidden rounded-lg border border-white/10 bg-[#0a0a0a] shadow-[0_24px_70px_rgba(2,0,0,0.42)] origin-top sm:origin-top-right animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#111111]">
+      <div className="
+        fixed bottom-0 left-0 right-0 z-50 flex flex-col bg-[#0a0a0a] rounded-t-2xl max-h-[85vh] overflow-hidden shadow-[0_-10px_40px_rgba(0,0,0,0.5)]
+        sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[340px] sm:max-h-none sm:rounded-lg sm:border sm:border-white/10 sm:shadow-[0_24px_70px_rgba(2,0,0,0.42)]
+        origin-bottom sm:origin-top-right animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 duration-200
+      ">
+        <div className="flex items-center justify-between px-4 py-4 sm:py-3 border-b border-white/5 bg-[#111111]">
           <h3 className="text-sm font-medium text-bone tracking-wide">NOTIFICATIONS</h3>
-          {unreadCount > 0 && (
-            <button 
-              onClick={() => markAllNotificationsAsRead()}
-              className="text-xs text-bone/50 hover:text-bone transition-colors"
-            >
-              Mark all read
+          <div className="flex items-center gap-4">
+            {unreadCount > 0 && (
+              <button 
+                onClick={() => markAllNotificationsAsRead()}
+                className="text-xs text-bone/50 hover:text-bone transition-colors"
+              >
+                Mark all read
+              </button>
+            )}
+            <button onClick={onClose} className="sm:hidden text-bone/50 hover:text-bone p-1 rounded-full hover:bg-white/10 transition-colors">
+              <X className="w-5 h-5" />
             </button>
-          )}
+          </div>
         </div>
 
-        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-y-auto custom-scrollbar sm:max-h-[400px]">
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center flex flex-col items-center">
               <Bell className="w-8 h-8 text-white/10 mb-2" />
