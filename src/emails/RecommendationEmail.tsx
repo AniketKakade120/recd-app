@@ -39,9 +39,13 @@ export const RecommendationEmail = ({
           <Container className="border border-solid border-[#ffffff1a] rounded-[24px] overflow-hidden my-[40px] mx-auto w-[465px] max-w-full bg-[#1a1a1a]">
             {/* Header / Brand */}
             <Section className="bg-[#ea3333] px-8 py-6 text-center">
-              <Text className="text-white text-[12px] font-black tracking-[0.3em] uppercase m-0">
-                Rec'd Club
-              </Text>
+              <Img 
+                src={`${appUrl}/icon.png`} 
+                alt="Rec'd Club" 
+                width="40" 
+                height="40" 
+                className="mx-auto rounded-[8px]" 
+              />
             </Section>
 
             {/* Content */}
@@ -57,7 +61,7 @@ export const RecommendationEmail = ({
               {posterUrl && (
                 <Section className="text-center mb-8">
                   <Img 
-                    src={posterUrl} 
+                    src={posterUrl.startsWith('/') ? `https://image.tmdb.org/t/p/w500${posterUrl}` : posterUrl} 
                     alt={titleName} 
                     width="140" 
                     className="mx-auto rounded-xl shadow-2xl border-2 border-[#ffffff1a]" 

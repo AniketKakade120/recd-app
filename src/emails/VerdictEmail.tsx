@@ -41,9 +41,13 @@ export const VerdictEmail = ({
           <Container className="border border-solid border-[#ffffff1a] rounded-[24px] overflow-hidden my-[40px] mx-auto w-[465px] max-w-full bg-[#1a1a1a]">
             {/* Header / Brand */}
             <Section className="bg-[#ea3333] px-8 py-6 text-center">
-              <Text className="text-white text-[12px] font-black tracking-[0.3em] uppercase m-0">
-                Rec'd Club
-              </Text>
+              <Img 
+                src={`${appUrl}/icon.png`} 
+                alt="Rec'd Club" 
+                width="40" 
+                height="40" 
+                className="mx-auto rounded-[8px]" 
+              />
             </Section>
 
             {/* Content */}
