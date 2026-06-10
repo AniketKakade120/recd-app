@@ -1263,6 +1263,66 @@ export function AppProvider({ children }: { children: ReactNode }) {
           await supabase.from('notifications').insert(notifications);
         }
 
+        // Email Notification Logic
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+
+        if (token) {
+          // Send email to direct targets
+          if (targetUserIds.length > 0) {
+            for (const userId of targetUserIds) {
+              const title = state.titles.find(t => t.id === rec.titleId);
+              fetch('/api/email/send', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  type: 'recommendation',
+                  toUserId: userId,
+                  emailData: {
+                    senderName: state.currentUser!.displayName,
+                    titleName: title?.title || 'a movie',
+                    posterUrl: title?.posterUrl,
+                    message: rec.reason
+                  }
+                })
+              }).catch(console.error);
+            }
+          }
+
+          // Send email to group
+          if (rec.recommendedToGroup && rec.groupId) {
+            const groupMembers = state.groupMembers.filter(gm => gm.groupId === rec.groupId && gm.userId !== state.currentUser?.id);
+            const group = state.groups.find(g => g.id === rec.groupId);
+            const title = state.titles.find(t => t.id === rec.titleId);
+            
+            for (const gm of groupMembers) {
+              if (group) {
+                fetch('/api/email/send', {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({
+                    type: 'group_recommendation',
+                    toUserId: gm.userId,
+                    emailData: {
+                      senderName: state.currentUser!.displayName,
+                      titleName: title?.title || 'a movie',
+                      groupName: group.name,
+                      posterUrl: title?.posterUrl,
+                      message: rec.reason
+                    }
+                  })
+                }).catch(console.error);
+              }
+            }
+          }
+        }
+
         refreshData();
         return;
       } catch (err: any) {
@@ -1331,6 +1391,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
             body: `${state.currentUser.displayName} rated your recommendation!`,
             resource_id: rating.recommendationId
           });
+
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData.session?.access_token;
+          const title = state.titles.find(t => t.id === rec.titleId);
+
+          if (token) {
+            fetch('/api/email/send', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                type: 'verdict',
+                toUserId: rec.recommendedBy,
+                emailData: {
+                  reviewerName: state.currentUser.displayName,
+                  titleName: title?.title || 'a movie',
+                  verdictLabel: rating.stamp,
+                  verdictScore: rating.recommendationResult
+                }
+              })
+            }).catch(console.error);
+          }
         }
 
         refreshData();
@@ -1632,6 +1716,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         body: `${state.currentUser.displayName} wants to join your crew.`,
         resource_id: data.id
       });
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (token) {
+        fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            type: 'crew_request',
+            toUserId: receiverId,
+            emailData: {
+              senderName: state.currentUser.displayName,
+              message: "I'd like to add you to my Crew!"
+            }
+          })
+        }).catch(console.error);
+      }
     }
 
     addToast('Request sent.', { type: 'success' });
