@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     }
 
     const data = await resend.emails.send({
-      from: 'Rec\'d Club <onboarding@resend.dev>',
+      from: 'Rec\'d Club <notifications@recdclub.in>',
       to: [toEmail],
       subject,
       react: reactComponent,
