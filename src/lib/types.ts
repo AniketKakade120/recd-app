@@ -351,6 +351,7 @@ export interface Recommendation {
   primaryStamp?: StampType;
   verdictState: VerdictState;
   createdAt: string;
+  cancelledAt?: string | null;
 }
 
 export interface ReceiverRecommendationState {

@@ -23,7 +23,7 @@ export default function ProfilePage() {
   const { 
     currentUser, tasteScore, getUserBadges, watchlist, recommendations, 
     ratings, groups, groupMembers, getTitle, getUser, getViewerContext, getActions,
-    userPreferences, openGiveVerdictModal, logout
+    userPreferences, openGiveVerdictModal, logout, cancelRecommendation
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -289,10 +289,20 @@ export default function ProfilePage() {
                                  View Verdict
                                </button>
                              ) : (
-                               <div className="w-full flex">
+                               <div className="w-full flex items-center justify-between">
                                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border border-white/5 bg-white/5 text-muted">
                                    Verdict Pending
                                  </span>
+                                 <button 
+                                   onClick={() => {
+                                     if(confirm('Are you sure you want to revoke this recommendation?')) {
+                                       cancelRecommendation(rec.id);
+                                     }
+                                   }}
+                                   className="text-[10px] font-bold uppercase tracking-wider text-cinema-red hover:text-cinema-red/80 hover:underline px-2 py-1 transition-all"
+                                 >
+                                   Revoke
+                                 </button>
                                </div>
                              )}
                          </div>

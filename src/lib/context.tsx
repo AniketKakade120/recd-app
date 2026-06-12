@@ -81,6 +81,7 @@ interface AppContextType extends AppState {
   openGiveVerdictModal: (recommendationId: string, edit?: boolean) => void;
   closeGiveVerdictModal: () => void;
   addRecommendation: (rec: Recommendation) => void;
+  cancelRecommendation: (recId: string) => Promise<void>;
   updateVerdictState: (recId: string, state: VerdictState) => void;
   addRating: (rating: Rating) => void;
   createGroup: (group: Group, memberIds?: string[]) => void;
@@ -439,7 +440,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const isMissingCurrentUser = !state.currentUser;
 
       // Map independent records
-      const dbRecs: Recommendation[] = recsResult.data ? recsResult.data.map(r => ({
+      const dbRecs: Recommendation[] = recsResult.data ? recsResult.data
+        .filter((r: any) => !r.cancelled_at)
+        .map((r: any) => ({
         id: r.id,
         titleId: r.title_id,
         groupId: r.group_id,
@@ -451,7 +454,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         moodTags: r.mood_tags,
         primaryStamp: r.primary_stamp,
         verdictState: r.status,
-        createdAt: r.created_at
+        createdAt: r.created_at,
+        cancelledAt: r.cancelled_at
       })) : [];
 
       const dbRatings: Rating[] = ratingsResult.data ? ratingsResult.data.map(r => ({
@@ -1364,6 +1368,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }, ...prev.activity],
     }));
   }, [state.titles, refreshData]);
+  const cancelRecommendation = useCallback(async (recId: string) => {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from('recommendations')
+        .update({ cancelled_at: new Date().toISOString() })
+        .eq('id', recId);
+      if (error) {
+        console.error('Failed to cancel recommendation:', error);
+        addToast('Failed to revoke recommendation.', { type: 'error' });
+        return;
+      }
+      addToast('Recommendation revoked.', { type: 'success' });
+      refreshData();
+      return;
+    }
+    
+    // Mock fallback
+    setState(prev => ({
+      ...prev,
+      recommendations: prev.recommendations.filter(r => r.id !== recId),
+    }));
+  }, [refreshData, addToast]);
 
    const updateVerdictState = useCallback(async (recId: string, state: VerdictState) => {
     if (isSupabaseConfigured && supabase) {
@@ -2490,6 +2516,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value: AppContextType = {
     addRecommendation,
+    cancelRecommendation,
     ...state,
     tasteScore: computedTasteScore, login, logout, completeOnboarding,
     openRecommendModal, closeRecommendModal,
