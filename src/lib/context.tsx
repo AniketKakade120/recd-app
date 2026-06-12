@@ -1369,26 +1369,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, [state.titles, refreshData]);
   const cancelRecommendation = useCallback(async (recId: string) => {
+    // Optimistic UI update for instant feedback
+    setState(prev => ({
+      ...prev,
+      recommendations: prev.recommendations.filter(r => r.id !== recId),
+    }));
+
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('recommendations')
         .update({ cancelled_at: new Date().toISOString() })
         .eq('id', recId);
+        
       if (error) {
         console.error('Failed to cancel recommendation:', error);
         addToast('Failed to revoke recommendation.', { type: 'error' });
+        // Revert optimistic update
+        refreshData();
         return;
       }
       addToast('Recommendation revoked.', { type: 'success' });
+      // Background refresh to sync other state if needed
       refreshData();
       return;
     }
-    
-    // Mock fallback
-    setState(prev => ({
-      ...prev,
-      recommendations: prev.recommendations.filter(r => r.id !== recId),
-    }));
   }, [refreshData, addToast]);
 
    const updateVerdictState = useCallback(async (recId: string, state: VerdictState) => {
