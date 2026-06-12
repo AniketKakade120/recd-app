@@ -32,6 +32,8 @@ export default function ProfilePage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [verdictModalOpen, setVerdictModalOpen] = useState(false);
   const [selectedRecId, setSelectedRecId] = useState<string | null>(null);
+  const [revokeModalOpen, setRevokeModalOpen] = useState(false);
+  const [recToRevoke, setRecToRevoke] = useState<string | null>(null);
   const router = useRouter();
 
   if (!currentUser) return null;
@@ -295,9 +297,8 @@ export default function ProfilePage() {
                                  </span>
                                  <button 
                                    onClick={() => {
-                                     if(confirm('Are you sure you want to revoke this recommendation?')) {
-                                       cancelRecommendation(rec.id);
-                                     }
+                                     setRecToRevoke(rec.id);
+                                     setRevokeModalOpen(true);
                                    }}
                                    className="text-[10px] font-bold uppercase tracking-wider text-cinema-red hover:text-cinema-red/80 hover:underline px-2 py-1 transition-all"
                                  >
@@ -627,6 +628,37 @@ export default function ProfilePage() {
            onClose={() => setVerdictModalOpen(false)}
          />
        )}
+
+      {/* REVOKE MODAL */}
+      {revokeModalOpen && recToRevoke && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-surface border border-border rounded-2xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200 shadow-2xl">
+            <h3 className="text-xl font-bold text-bone mb-2 font-editorial tracking-tight">Revoke Recommendation?</h3>
+            <p className="text-sm text-muted mb-6">Are you sure you want to revoke this recommendation? It will be permanently removed from their pending queue.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setRevokeModalOpen(false);
+                  setRecToRevoke(null);
+                }}
+                className="flex-1 px-4 py-2 bg-ink border border-border text-bone font-bold rounded-xl hover:bg-surface-hover transition-colors text-sm btn-press"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  cancelRecommendation(recToRevoke);
+                  setRevokeModalOpen(false);
+                  setRecToRevoke(null);
+                }}
+                className="flex-1 px-4 py-2 bg-cinema-red text-bone font-bold rounded-xl hover:bg-cinema-red/90 transition-colors text-sm shadow-lg shadow-cinema-red/20 btn-press"
+              >
+                Revoke
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
