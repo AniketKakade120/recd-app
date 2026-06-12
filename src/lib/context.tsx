@@ -1378,7 +1378,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('recommendations')
-        .update({ cancelled_at: new Date().toISOString() })
+        .delete()
         .eq('id', recId);
         
       if (error) {
