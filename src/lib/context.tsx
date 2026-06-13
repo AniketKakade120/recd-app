@@ -1383,7 +1383,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         
       if (error) {
         console.error('Failed to cancel recommendation:', error);
-        addToast('Failed to revoke recommendation.', { type: 'error' });
+        addToast(`Failed to revoke: ${error.message || 'Unknown database error'}`, { type: 'error' });
         // Revert optimistic update
         refreshData();
         return;
