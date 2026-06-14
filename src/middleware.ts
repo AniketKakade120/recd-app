@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from 'next/server'
  * 1. Refreshes expired access tokens using the refresh token cookie
  * 2. Writes the updated session back to cookies so client components can read it
  */
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -40,13 +40,29 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: Avoid writing any logic between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to
-  // debug issues with users being randomly logged out.
-
   // Refreshes the session — this is the critical step.
-  // Do NOT remove this. The session is needed by Server Components.
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const url = request.nextUrl.clone()
+  const path = url.pathname
+
+  // Protected routes
+  const protectedRoutes = ['/home', '/profile', '/settings', '/crew', '/watchlist', '/list', '/discover', '/explore', '/title']
+  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
+  
+  if (!user && isProtectedRoute) {
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // Auth routes (redirect logged in users to home)
+  const authRoutes = ['/login', '/signup']
+  const isAuthRoute = authRoutes.includes(path)
+
+  if (user && isAuthRoute) {
+    url.pathname = '/home'
+    return NextResponse.redirect(url)
+  }
 
   return supabaseResponse
 }
@@ -65,4 +81,3 @@ export const config = {
     '/((?!api/auth|auth/callback|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
-
