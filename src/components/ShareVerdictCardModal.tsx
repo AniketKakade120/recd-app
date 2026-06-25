@@ -79,7 +79,7 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
           </div>
 
           {/* Poster */}
-          <div className="relative w-[860px] h-[1050px] rounded-[40px] overflow-hidden shadow-[0_0_80px_rgba(234,51,51,0.25)] border-[3px] border-cinema-red/20 z-10 mt-8 mb-8">
+          <div className="relative w-[720px] h-[1080px] rounded-[40px] overflow-hidden shadow-[0_0_80px_rgba(234,51,51,0.25)] border-[3px] border-cinema-red/20 z-10 mt-6 mb-6 shrink-0">
             {(entry.posterPath || entry.backdropPath) ? (
               <img 
                 crossOrigin="anonymous"
@@ -96,8 +96,8 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
           </div>
 
           {/* Title & Stars */}
-          <div className="flex flex-col items-center z-10 w-full px-10 mb-8">
-            <h1 className="text-[75px] font-bold text-white leading-tight font-editorial text-center line-clamp-1 mb-6 drop-shadow-lg">
+          <div className="flex flex-col items-center z-10 w-full px-10 mb-6">
+            <h1 className="text-[70px] font-bold text-white leading-tight font-editorial text-center line-clamp-1 mb-4 drop-shadow-lg">
               {entry.title.toUpperCase()}
             </h1>
             <div className="flex items-center gap-8">
@@ -107,7 +107,7 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
                    return (
                      <span 
                        key={star} 
-                       className={`text-[55px] leading-none ${isFilled ? 'text-cinema-red drop-shadow-[0_0_15px_rgba(234,51,51,0.6)]' : 'text-white/10'}`}
+                       className={`text-[50px] leading-none ${isFilled ? 'text-cinema-red drop-shadow-[0_0_15px_rgba(234,51,51,0.6)]' : 'text-white/10'}`}
                      >
                        ★
                      </span>
@@ -115,7 +115,7 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
                  })}
               </div>
               {entry.rating && (
-                <span className="text-[45px] text-white/80 font-light tracking-wide leading-none mt-2">
+                <span className="text-[40px] text-white/80 font-light tracking-wide leading-none mt-2">
                   {entry.rating.toFixed(1)} <span className="text-white/30">/ 5</span>
                 </span>
               )}
@@ -124,18 +124,18 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
 
           {/* Glass Box for Verdict (Only if Stamp or Verdict exists) */}
           {(entry.stamp || entry.shortVerdict) && (
-            <div className="w-[900px] bg-white/[0.04] backdrop-blur-2xl border border-white/10 rounded-[40px] p-10 flex flex-col items-center relative z-10 mb-8 shadow-2xl">
+            <div className="w-[900px] bg-white/[0.04] backdrop-blur-2xl border border-white/10 rounded-[40px] p-8 flex flex-col items-center relative z-10 mb-6 shadow-2xl shrink-0">
                {/* Stamp text pill */}
                {entry.stamp && (
-                 <div className="px-8 py-3 rounded-full border border-cinema-red/30 bg-cinema-red/10 text-cinema-red text-[22px] font-black uppercase tracking-[0.15em] mb-8 shadow-[0_0_30px_rgba(234,51,51,0.15)] flex items-center gap-3">
-                   <span className="text-2xl">🎭</span> {entry.stamp}
+                 <div className="px-8 py-3 rounded-full border border-cinema-red/30 bg-cinema-red/10 text-cinema-red text-[22px] font-black uppercase tracking-[0.15em] mb-6 shadow-[0_0_30px_rgba(234,51,51,0.15)] flex items-center justify-center">
+                   {entry.stamp}
                  </div>
                )}
                
                {/* Verdict text */}
                {entry.shortVerdict && (
-                 <div className="text-center px-12 mb-10 w-full">
-                   <p className="text-[42px] text-white/90 font-editorial italic leading-snug">
+                 <div className="text-center px-12 mb-8 w-full">
+                   <p className="text-[40px] text-white/90 font-editorial italic leading-snug">
                      <span className="text-cinema-red text-[48px] mr-2">“</span>
                      {entry.shortVerdict}
                      <span className="text-cinema-red text-[48px] ml-2">”</span>
@@ -144,8 +144,8 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
                )}
                
                {/* Divider & Logged in */}
-               <div className="w-full h-px bg-white/10 mb-6" />
-               <div className="flex items-center gap-4 text-white/40 text-[24px]">
+               <div className="w-full h-px bg-white/10 mb-5" />
+               <div className="flex items-center gap-4 text-white/40 text-[20px]">
                  <span>📱</span>
                  <span>Logged in Verdict Journal</span>
                </div>
