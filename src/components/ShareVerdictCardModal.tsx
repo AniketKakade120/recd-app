@@ -32,7 +32,7 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
       const url = await toPng(cardRef.current, {
         quality: 1,
         pixelRatio: 2, // High res for IG
-        cacheBust: true,
+        // cacheBust is removed because TMDB CDN sometimes blocks or fails on random query params
       });
       setDataUrl(url);
     } catch (err) {
@@ -63,6 +63,7 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
           {/* Background image */}
           {(entry.posterPath || entry.backdropPath) && (
             <img 
+              crossOrigin="anonymous"
               src={entry.posterPath || entry.backdropPath} 
               alt=""
               className="absolute inset-0 w-full h-full object-cover opacity-80"
