@@ -54,8 +54,6 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
     }
   }, [isOpen, initialTitle]);
 
-  if (!isOpen) return null;
-
   const [searchResults, setSearchResults] = useState<Title[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -86,6 +84,8 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
+
+  if (!isOpen) return null;
 
   const handleTitleSelect = (t: Title) => {
     setSelectedTitle(t);
