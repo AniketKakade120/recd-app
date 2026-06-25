@@ -17,6 +17,7 @@ import PlatformLogo from '@/components/PlatformLogo';
 import InviteModal from '@/components/InviteModal';
 import RecommendationCard from '@/components/RecommendationCard';
 import MovieCard from '@/components/MovieCard';
+import LogMovieFlow from '@/components/LogMovieFlow';
 
 export default function TitleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -241,6 +242,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [heroImageError, setHeroImageError] = useState(false);
   const [posterImageError, setPosterImageError] = useState(false);
+  const [logMovieOpen, setLogMovieOpen] = useState(false);
 
   if (tmdbLoading) {
     return (
@@ -432,6 +434,12 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
                     }`}
                   >
                     {isSaved ? '✓ In Watchlist' : 'Add to Watchlist'}
+                  </button>
+                  <button 
+                    onClick={() => setLogMovieOpen(true)}
+                    className="px-6 py-3.5 bg-surface text-bone rounded-xl font-bold btn-press border border-border hover:bg-surface-hover transition-colors"
+                  >
+                    Log to Journal
                   </button>
                 </>
               )}
@@ -893,12 +901,10 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* VERDICT MODAL */}
       {recommendation && (
-        <VerdictModal recommendationId={recommendation.id} isOpen={verdictModalOpen} onClose={() => setVerdictModalOpen(false)} />
+        <VerdictModal recommendationId={recId || ''} isOpen={verdictModalOpen} onClose={() => setVerdictModalOpen(false)} />
       )}
-
-      {/* INVITE MODAL */}
       <InviteModal isOpen={inviteModalOpen} onClose={() => setInviteModalOpen(false)} />
-
+      <LogMovieFlow isOpen={logMovieOpen} onClose={() => setLogMovieOpen(false)} initialTitle={title} />
     </div>
   );
 }

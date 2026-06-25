@@ -96,23 +96,30 @@ export default function ProfilePage() {
           </div>
           
           <div className="flex flex-row md:flex-col gap-3 w-full md:w-auto">
-            <button 
-              onClick={() => setShowEditProfileModal(true)}
-              className="flex-1 md:flex-none px-6 py-2.5 bg-surface border border-border text-bone font-bold rounded-xl btn-press hover:bg-surface-hover text-sm"
+            <Link 
+              href="/journal"
+              className="flex-1 md:flex-none px-6 py-2.5 bg-cinema-red text-bone font-bold rounded-xl btn-press hover:bg-cinema-red/90 text-sm flex items-center justify-center gap-2 shadow-lg shadow-cinema-red/20"
             >
-              Edit Profile
-            </button>
-            <button 
-              onClick={() => {
-                logout();
-                router.push('/');
-              }}
-              className="flex-1 md:flex-none px-6 py-2.5 bg-ink border border-border text-muted hover:text-cinema-red transition-colors font-bold rounded-xl btn-press text-sm flex items-center justify-center gap-2"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              Logout
-            </button>
-
+              Verdict Journal
+            </Link>
+            <div className="flex gap-3 w-full">
+              <button 
+                onClick={() => setShowEditProfileModal(true)}
+                className="flex-1 md:flex-none px-6 py-2.5 bg-surface border border-border text-bone font-bold rounded-xl btn-press hover:bg-surface-hover text-sm"
+              >
+                Edit
+              </button>
+              <button 
+                onClick={() => {
+                  logout();
+                  router.push('/');
+                }}
+                className="flex-1 md:flex-none px-6 py-2.5 bg-ink border border-border text-muted hover:text-cinema-red transition-colors font-bold rounded-xl btn-press text-sm flex items-center justify-center"
+                title="Logout"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>

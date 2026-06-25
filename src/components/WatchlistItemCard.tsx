@@ -11,6 +11,7 @@ import { useState } from 'react';
 import AddToListModal from './AddToListModal';
 import VerdictModal from './VerdictModal';
 import { useRouter } from 'next/navigation';
+import LogMovieFlow from './LogMovieFlow';
 
 interface WatchlistItemCardProps {
   item: WatchlistItem;
@@ -21,6 +22,7 @@ export default function WatchlistItemCard({ item }: WatchlistItemCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAddToList, setShowAddToList] = useState(false);
   const [showVerdictModal, setShowVerdictModal] = useState(false);
+  const [showLogMovie, setShowLogMovie] = useState(false);
   const [imageError, setImageError] = useState(false);
   const router = useRouter();
   
@@ -109,6 +111,13 @@ export default function WatchlistItemCard({ item }: WatchlistItemCardProps) {
                   Edit Verdict
                 </button>
               )}
+              <button 
+                onClick={() => { setShowLogMovie(true); setShowMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-ink text-xs font-bold hover:bg-ink/5 transition-colors text-left"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                Log to Journal
+              </button>
               <div className="h-px bg-ink/5 my-1" />
               <button 
                 onClick={() => { removeFromWatchlist(item.id); addToast('Removed from Watchlist'); setShowMenu(false); }}
@@ -149,6 +158,7 @@ export default function WatchlistItemCard({ item }: WatchlistItemCardProps) {
       </div>
 
       <AddToListModal isOpen={showAddToList} onClose={() => setShowAddToList(false)} titleId={title.id} />
+      <LogMovieFlow isOpen={showLogMovie} onClose={() => setShowLogMovie(false)} initialTitle={title} onSuccess={() => { removeFromWatchlist(item.id); addToast('Logged & Removed from Watchlist'); }} />
       {item.addedFromRecommendationId && (
         <VerdictModal 
           recommendationId={item.addedFromRecommendationId} 

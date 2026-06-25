@@ -651,6 +651,59 @@ export type StreamingPlatform = 'Netflix' | 'Prime Video' | 'JioHotstar' | 'Sony
 export const PLATFORMS: StreamingPlatform[] = ['Netflix', 'Prime Video', 'JioHotstar', 'SonyLIV', 'ZEE5', 'AHA', 'Apple TV', 'YouTube', 'MUBI', 'Theatre'];
 
 // ============================================
+// JOURNAL
+// ============================================
+
+export interface JournalEntry {
+  id: string;
+  userId: string;
+  tmdbId: number;
+  mediaType: 'movie' | 'tv';
+  title: string;
+  posterPath?: string;
+  backdropPath?: string;
+  releaseYear?: number;
+  genres: string[];
+  watchedDate: string;
+  rating?: number;
+  stamp?: string;
+  shortVerdict?: string;
+  sourceType: 'self' | 'recommended';
+  recommendedByUserId?: string;
+  recommendationId?: string;
+  visibility: 'private' | 'crew' | 'public';
+  platform?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JournalEntryInsert {
+  tmdbId: number;
+  mediaType: 'movie' | 'tv';
+  title: string;
+  posterPath?: string;
+  backdropPath?: string;
+  releaseYear?: number;
+  genres?: string[];
+  watchedDate?: string;
+  rating?: number;
+  stamp?: string;
+  shortVerdict?: string;
+  sourceType?: 'self' | 'recommended';
+  recommendedByUserId?: string;
+  recommendationId?: string;
+  visibility?: 'private' | 'crew' | 'public';
+  platform?: string;
+}
+
+export interface JournalStats {
+  loggedCount: number;
+  avgRating: number;
+  topGenre: string;
+  topStamp: string;
+}
+
+// ============================================
 // HELPERS
 // ============================================
 

@@ -4,7 +4,8 @@ import React, { createContext, useContext, useState, useCallback, ReactNode, use
 import type {
   User, Recommendation, Rating, VerdictState, TasteScore, Title,
   Badge, Comment, Group, GroupMember, ActivityItem, WatchlistItem, WatchlistList, UserPreferences, RecAccuracy,
-  StampType, CrewConnection, CrewRequest, Notification, TitleComment, RecommendationImpact
+  StampType, CrewConnection, CrewRequest, Notification, TitleComment, RecommendationImpact,
+  JournalEntry, JournalEntryInsert, JournalStats
 } from '@/lib/types';
 import {
   mockUsers, mockRecommendations, mockRatings, mockBadges, mockGroups,
@@ -69,6 +70,7 @@ interface AppState {
   giveVerdictModalOpen: boolean;
   giveVerdictModalData: { recommendationId: string; edit?: boolean } | null;
   titleComments: TitleComment[];
+  journalEntries: JournalEntry[];
 }
 
 interface AppContextType extends AppState {
@@ -142,6 +144,10 @@ interface AppContextType extends AppState {
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
+  createJournalEntry: (entry: JournalEntryInsert) => Promise<{ id: string | null; error?: string }>;
+  updateJournalEntry: (id: string, updates: Partial<JournalEntryInsert>) => Promise<{ success: boolean; error?: string }>;
+  deleteJournalEntry: (id: string) => Promise<{ success: boolean; error?: string }>;
+  getJournalStats: (userId: string) => JournalStats;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -176,6 +182,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     giveVerdictModalOpen: false,
     giveVerdictModalData: null,
     titleComments: [],
+    journalEntries: [],
   });
 
   // Fix stale closure for refreshData
@@ -407,7 +414,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         activityResult,
         listsResult,
         commentsResult,
-        profilesResult
+        profilesResult,
+        journalResult
       ] = await Promise.all([
         supabase.from('recommendations').select('*, targets:recommendation_targets(user_id)').order('created_at', { ascending: false }),
         supabase.from('ratings').select('*'),
@@ -419,7 +427,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         supabase.from('activity').select('*').order('created_at', { ascending: false }).limit(20),
         supabase.from('watchlist_lists').select('*').eq('user_id', userId),
         supabase.from('comments').select('*').order('created_at', { ascending: true }),
-        supabase.from('profiles').select('*, taste_archetypes, prefs:user_preferences(genres, moods)')
+        supabase.from('profiles').select('*, taste_archetypes, prefs:user_preferences(genres, moods)'),
+        supabase.from('journal_entries').select('*').eq('user_id', userId).order('watched_date', { ascending: false })
       ]);
 
       // Check primary independent query errors
@@ -434,6 +443,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (listsResult.error) console.error('[Rec\'d Hydrate] Custom lists fetch error:', listsResult.error.message);
       if (commentsResult.error) console.error('[Rec\'d Hydrate] Comments fetch error:', commentsResult.error.message);
       if (profilesResult.error) console.error('[Rec\'d Hydrate] Profiles fetch error:', profilesResult.error.message);
+      if (journalResult.error) console.error('[Rec\'d Hydrate] Journal fetch error:', journalResult.error.message);
 
       // Recovery: If we recovered the session but currentUser is null in state, try to set it from the profilesResult
       const myProfileRecord = profilesResult.data?.find((p: any) => p.id === userId);
@@ -483,10 +493,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updatedAt: w.updated_at
       })) : [];
 
+      const dbJournalEntries: JournalEntry[] = journalResult.data ? journalResult.data.map(j => ({
+        id: j.id,
+        userId: j.user_id,
+        tmdbId: j.tmdb_id,
+        mediaType: j.media_type,
+        title: j.title,
+        posterPath: j.poster_path,
+        backdropPath: j.backdrop_path,
+        releaseYear: j.release_year,
+        genres: j.genres || [],
+        watchedDate: j.watched_date,
+        rating: j.rating,
+        stamp: j.stamp,
+        shortVerdict: j.short_verdict,
+        sourceType: j.source_type,
+        recommendedByUserId: j.recommended_by_user_id,
+        recommendationId: j.recommendation_id,
+        visibility: j.visibility,
+        platform: j.platform,
+        createdAt: j.created_at,
+        updatedAt: j.updated_at
+      })) : [];
+
       // Gather involved title IDs for Stage 2 fetching
       const relevantTitleIds = [...new Set([
         ...dbRecs.map(r => r.titleId),
-        ...dbWatchlist.map(w => w.titleId)
+        ...dbWatchlist.map(w => w.titleId),
+        ...dbJournalEntries.map(j => j.tmdbId.toString())
       ])];
 
       // Stage 2 (Parallel - Dependent): Fetch related groups, list items, group members and title metadata concurrently
@@ -762,6 +796,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           notifications: dbNotifs,
           activity: dbActivity.length > 0 ? dbActivity : prev.activity,
           users: dbUsers,
+          journalEntries: dbJournalEntries,
         };
       });
 
@@ -2425,6 +2460,162 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const createJournalEntry = useCallback(async (entry: JournalEntryInsert) => {
+    if (!state.currentUser) return { id: null, error: 'Not authenticated' };
+    
+    // Optimistically update
+    const tempId = `temp-${Date.now()}`;
+    const newEntry: JournalEntry = {
+      ...entry,
+      id: tempId,
+      userId: state.currentUser.id,
+      mediaType: entry.mediaType,
+      sourceType: entry.sourceType || 'self',
+      visibility: entry.visibility || 'private',
+      genres: entry.genres || [],
+      watchedDate: entry.watchedDate || new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setState(prev => ({
+      ...prev,
+      journalEntries: [newEntry, ...prev.journalEntries]
+    }));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('journal_entries').insert({
+          user_id: state.currentUser.id,
+          tmdb_id: entry.tmdbId,
+          media_type: entry.mediaType,
+          title: entry.title,
+          poster_path: entry.posterPath,
+          backdrop_path: entry.backdropPath,
+          release_year: entry.releaseYear,
+          genres: entry.genres,
+          watched_date: entry.watchedDate || new Date().toISOString().split('T')[0],
+          rating: entry.rating,
+          stamp: entry.stamp,
+          short_verdict: entry.shortVerdict,
+          source_type: entry.sourceType || 'self',
+          recommended_by_user_id: entry.recommendedByUserId,
+          recommendation_id: entry.recommendationId,
+          visibility: entry.visibility || 'private',
+          platform: entry.platform
+        }).select().single();
+
+        if (error) throw error;
+
+        setState(prev => ({
+          ...prev,
+          journalEntries: prev.journalEntries.map(e => e.id === tempId ? { ...e, id: data.id } : e)
+        }));
+        
+        return { id: data.id };
+      } catch (err: any) {
+        // Rollback
+        setState(prev => ({
+          ...prev,
+          journalEntries: prev.journalEntries.filter(e => e.id !== tempId)
+        }));
+        return { id: null, error: err.message };
+      }
+    }
+    return { id: tempId };
+  }, [state.currentUser]);
+
+  const updateJournalEntry = useCallback(async (id: string, updates: Partial<JournalEntryInsert>) => {
+    if (!state.currentUser) return { success: false, error: 'Not authenticated' };
+
+    setState(prev => ({
+      ...prev,
+      journalEntries: prev.journalEntries.map(e => e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e)
+    }));
+
+    if (isSupabaseConfigured && supabase && !id.startsWith('temp-')) {
+      try {
+        const dbUpdates: any = { ...updates, updated_at: new Date().toISOString() };
+        // Map camelCase to snake_case for DB
+        if (updates.tmdbId !== undefined) dbUpdates.tmdb_id = updates.tmdbId;
+        if (updates.mediaType !== undefined) dbUpdates.media_type = updates.mediaType;
+        if (updates.posterPath !== undefined) dbUpdates.poster_path = updates.posterPath;
+        if (updates.backdropPath !== undefined) dbUpdates.backdrop_path = updates.backdropPath;
+        if (updates.releaseYear !== undefined) dbUpdates.release_year = updates.releaseYear;
+        if (updates.watchedDate !== undefined) dbUpdates.watched_date = updates.watchedDate;
+        if (updates.shortVerdict !== undefined) dbUpdates.short_verdict = updates.shortVerdict;
+        if (updates.sourceType !== undefined) dbUpdates.source_type = updates.sourceType;
+        if (updates.recommendedByUserId !== undefined) dbUpdates.recommended_by_user_id = updates.recommendedByUserId;
+        if (updates.recommendationId !== undefined) dbUpdates.recommendation_id = updates.recommendationId;
+
+        const { error } = await supabase.from('journal_entries').update(dbUpdates).eq('id', id);
+        if (error) throw error;
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    }
+    return { success: true };
+  }, [state.currentUser]);
+
+  const deleteJournalEntry = useCallback(async (id: string) => {
+    if (!state.currentUser) return { success: false, error: 'Not authenticated' };
+
+    setState(prev => ({
+      ...prev,
+      journalEntries: prev.journalEntries.filter(e => e.id !== id)
+    }));
+
+    if (isSupabaseConfigured && supabase && !id.startsWith('temp-')) {
+      try {
+        const { error } = await supabase.from('journal_entries').delete().eq('id', id);
+        if (error) throw error;
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    }
+    return { success: true };
+  }, [state.currentUser]);
+
+  const getJournalStats = useCallback((userId: string): JournalStats => {
+    const userEntries = state.journalEntries.filter(e => e.userId === userId);
+    
+    if (userEntries.length === 0) {
+      return { loggedCount: 0, avgRating: 0, topGenre: '-', topStamp: '-' };
+    }
+
+    const ratedEntries = userEntries.filter(e => e.rating !== undefined);
+    const avgRating = ratedEntries.length > 0 
+      ? ratedEntries.reduce((acc, e) => acc + e.rating!, 0) / ratedEntries.length 
+      : 0;
+
+    const genreCounts: Record<string, number> = {};
+    userEntries.forEach(e => {
+      e.genres?.forEach(g => {
+        genreCounts[g] = (genreCounts[g] || 0) + 1;
+      });
+    });
+    const topGenre = Object.keys(genreCounts).length > 0 
+      ? Object.keys(genreCounts).reduce((a, b) => genreCounts[a] > genreCounts[b] ? a : b) 
+      : '-';
+
+    const stampCounts: Record<string, number> = {};
+    userEntries.filter(e => e.stamp).forEach(e => {
+      stampCounts[e.stamp!] = (stampCounts[e.stamp!] || 0) + 1;
+    });
+    const topStamp = Object.keys(stampCounts).length > 0
+      ? Object.keys(stampCounts).reduce((a, b) => stampCounts[a] > stampCounts[b] ? a : b)
+      : '-';
+
+    return {
+      loggedCount: userEntries.length,
+      avgRating: Math.round(avgRating * 10) / 10,
+      topGenre,
+      topStamp
+    };
+  }, [state.journalEntries]);
+
   const getUserByUsername = useCallback((username: string) => state.users.find(u => u.username === username), [state.users]);
   const getGroup = useCallback((id: string) => state.groups.find(g => g.id === id), [state.groups]);
 
@@ -2564,7 +2755,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     joinGroupByCode,
     markNotificationAsRead,
     markAllNotificationsAsRead,
-    deleteNotification
+    deleteNotification,
+    createJournalEntry,
+    updateJournalEntry,
+    deleteJournalEntry,
+    getJournalStats
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

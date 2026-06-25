@@ -13,6 +13,7 @@ import { formatRelativeTime } from '@/lib/utils';
 import { Search, ChevronDown } from 'lucide-react';
 import MovieCard from '@/components/MovieCard';
 import type { Title } from '@/lib/types';
+import LogMovieFlow from '@/components/LogMovieFlow';
 
 /* ─── Icons ────────────────────────────────────────────────── */
 const IconCrew = () => (
@@ -34,6 +35,7 @@ export default function HomePage() {
   const [layoutOrder, setLayoutOrder] = useState<{type: 'genre'|'platform', id: string}[]>([]);
   const [crewCollapsed, setCrewCollapsed] = useState(false);
   const [activityCollapsed, setActivityCollapsed] = useState(false);
+  const [logMovieOpen, setLogMovieOpen] = useState(false);
 
   useEffect(() => {
     async function fetchPopular() {
@@ -139,6 +141,15 @@ export default function HomePage() {
           <Link href="/profile" className="inline-block mt-4 text-xs font-semibold text-cinema-red hover:text-cinema-red/80 transition-colors">View score breakdown →</Link>
         </div>
       )}
+
+      {/* Log Movie Card */}
+      <div className="rounded-2xl bg-surface border border-border p-6 text-center">
+        <h3 className="text-sm font-bold text-bone mb-2">Watched something?</h3>
+        <p className="text-xs text-muted leading-relaxed mb-4">Log it in your Journal to build your Taste Profile.</p>
+        <button onClick={() => setLogMovieOpen(true)} className="w-full py-2.5 bg-bone text-ink text-sm font-bold rounded-xl hover:bg-white btn-press transition-colors shadow-lg">
+          Log to Journal
+        </button>
+      </div>
 
       {/* Expand Crew Card */}
       <div className="rounded-2xl bg-gradient-to-br from-cinema-red/8 via-surface to-surface border border-cinema-red/15 p-5 relative overflow-hidden">
@@ -395,6 +406,8 @@ export default function HomePage() {
           Toggle View: {isFirstTimeUser ? 'Starter' : 'Active'}
         </button>
       </div>
+
+      <LogMovieFlow isOpen={logMovieOpen} onClose={() => setLogMovieOpen(false)} />
     </div>
   );
 }
