@@ -53,7 +53,7 @@ export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
           )}
 
           {/* Top Actions: Share & 3-dot Menu */}
-          <div className="absolute top-3 left-3 right-3 z-30 flex justify-between items-start">
+          <div className="absolute top-3 left-3 right-3 z-50 flex justify-between items-start">
             <button 
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowShare(true); }}
               className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:bg-cinema-red transition-colors shadow-lg"
@@ -69,12 +69,15 @@ export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
                  <MoreHorizontal size={16} />
                </button>
                {showMenu && (
-                 <div className="absolute top-full right-0 mt-2 w-36 bg-[#1A1A1A] border border-border rounded-xl shadow-2xl overflow-hidden py-1 z-50">
-                    <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-bone hover:bg-white/5 transition-colors" onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowEdit(true); }}>Edit Log</button>
-                    <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-bone hover:bg-white/5 transition-colors" onClick={(e) => { e.stopPropagation(); setShowMenu(false); openRecommendModal({ titleId: entry.tmdbId.toString() }); }}>Recommend</button>
-                    <div className="h-px bg-white/10 w-full my-1"></div>
-                    <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-cinema-red hover:bg-cinema-red/10 transition-colors" onClick={(e) => { e.stopPropagation(); setShowMenu(false); handleDelete(); }}>Delete</button>
-                 </div>
+                 <>
+                   <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
+                   <div className="absolute top-full right-0 mt-2 w-36 bg-[#1A1A1A] border border-border rounded-xl shadow-2xl overflow-hidden py-1 z-50">
+                      <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-bone hover:bg-white/5 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowEdit(true); }}>Edit Log</button>
+                      <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-bone hover:bg-white/5 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); openRecommendModal({ titleId: entry.tmdbId.toString() }); }}>Recommend</button>
+                      <div className="h-px bg-white/10 w-full my-1 relative z-50"></div>
+                      <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-cinema-red hover:bg-cinema-red/10 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); handleDelete(); }}>Delete</button>
+                   </div>
+                 </>
                )}
             </div>
           </div>
@@ -117,10 +120,6 @@ export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
         )}
       </div>
 
-      {showMenu && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-      )}
-
       <LogMovieFlow 
         isOpen={showEdit} 
         onClose={() => setShowEdit(false)} 
@@ -139,6 +138,7 @@ export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
           cast: [],
           directorOrCreatorProfile: { id: '', name: '', role: 'Director' }
         }} 
+        existingEntry={entry}
       />
 
       <ShareVerdictCardModal 

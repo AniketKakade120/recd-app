@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/context';
-import { Title, CORE_STAMPS, StampType } from '@/lib/types';
+import { Title, CORE_STAMPS, StampType, JournalEntry } from '@/lib/types';
 import ModalBase from '@/components/ModalBase';
 import StampBadge from '@/components/StampBadge';
 
@@ -11,10 +11,11 @@ interface LogMovieFlowProps {
   onClose: () => void;
   initialTitle?: Title | null;
   onSuccess?: () => void;
+  existingEntry?: JournalEntry;
 }
 
-export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess }: LogMovieFlowProps) {
-  const { createJournalEntry, currentUser, titles } = useApp();
+export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess, existingEntry }: LogMovieFlowProps) {
+  const { createJournalEntry, updateJournalEntry, currentUser, titles } = useApp();
   
   const TOTAL_STEPS = 3;
   const [step, setStep] = useState(1);
@@ -41,15 +42,15 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
         setSelectedTitle(null);
         setStep(1);
       }
-      setRating(0);
-      setSelectedStamp(null);
-      setShortVerdict('');
-      setVisibility('public');
+      setRating(existingEntry?.rating || 0);
+      setSelectedStamp(existingEntry?.stamp as StampType || null);
+      setShortVerdict(existingEntry?.shortVerdict || '');
+      setVisibility(existingEntry?.visibility || 'public');
       setSubmitting(false);
       setSuccess(false);
       setSearchQuery('');
     }
-  }, [isOpen, initialTitle]);
+  }, [isOpen, initialTitle, existingEntry]);
 
   const [searchResults, setSearchResults] = useState<Title[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -93,26 +94,40 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
     if (!currentUser || !selectedTitle || rating === 0) return;
     setSubmitting(true);
     
-    const { id, error } = await createJournalEntry({
-      tmdbId: selectedTitle.tmdbId || parseInt(selectedTitle.id), // Fallback
-      mediaType: selectedTitle.type === 'movie' ? 'movie' : 'tv',
-      title: selectedTitle.title,
-      posterPath: selectedTitle.posterUrl,
-      backdropPath: selectedTitle.backdropUrl,
-      releaseYear: selectedTitle.releaseYear,
-      genres: selectedTitle.genres,
-      watchedDate: new Date().toISOString().split('T')[0],
-      rating,
-      stamp: selectedStamp || undefined,
-      shortVerdict: shortVerdict.trim() || undefined,
-      sourceType: 'self',
-      visibility
-    });
+    if (existingEntry) {
+      const { success, error } = await updateJournalEntry(existingEntry.id, {
+        rating,
+        stamp: selectedStamp || undefined,
+        shortVerdict: shortVerdict.trim() || undefined,
+        visibility
+      });
+      setSubmitting(false);
+      if (success) {
+        setSuccess(true);
+        if (onSuccess) onSuccess();
+      }
+    } else {
+      const { id, error } = await createJournalEntry({
+        tmdbId: selectedTitle.tmdbId || parseInt(selectedTitle.id), // Fallback
+        mediaType: selectedTitle.type === 'movie' ? 'movie' : 'tv',
+        title: selectedTitle.title,
+        posterPath: selectedTitle.posterUrl,
+        backdropPath: selectedTitle.backdropUrl,
+        releaseYear: selectedTitle.releaseYear,
+        genres: selectedTitle.genres,
+        watchedDate: new Date().toISOString().split('T')[0],
+        rating,
+        stamp: selectedStamp || undefined,
+        shortVerdict: shortVerdict.trim() || undefined,
+        sourceType: 'self',
+        visibility
+      });
 
-    setSubmitting(false);
-    if (!error) {
-      setSuccess(true);
-      if (onSuccess) onSuccess();
+      setSubmitting(false);
+      if (!error) {
+        setSuccess(true);
+        if (onSuccess) onSuccess();
+      }
     }
   };
 
