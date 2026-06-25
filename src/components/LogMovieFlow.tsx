@@ -16,19 +16,18 @@ interface LogMovieFlowProps {
 export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess }: LogMovieFlowProps) {
   const { createJournalEntry, currentUser, titles } = useApp();
   
-  const TOTAL_STEPS = 4;
+  const TOTAL_STEPS = 3;
   const [step, setStep] = useState(1);
   const [selectedTitle, setSelectedTitle] = useState<Title | null>(initialTitle || null);
   const [searchQuery, setSearchQuery] = useState('');
   
   const [rating, setRating] = useState<number>(0);
-  const [watchedDate, setWatchedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
+  const LOG_STAMPS: StampType[] = ['Certified Good Call', 'Worth It', 'Crew Pick', 'Risky But Worth It', 'Not For Everyone'];
   const [selectedStamp, setSelectedStamp] = useState<StampType | null>(null);
   const [shortVerdict, setShortVerdict] = useState('');
   
-  const [sourceType, setSourceType] = useState<'self' | 'recommended'>('self');
-  const [recommendedByUserId, setRecommendedByUserId] = useState<string>('');
+  const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -43,11 +42,9 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
         setStep(1);
       }
       setRating(0);
-      setWatchedDate(new Date().toISOString().split('T')[0]);
       setSelectedStamp(null);
       setShortVerdict('');
-      setSourceType('self');
-      setRecommendedByUserId('');
+      setVisibility('public');
       setSubmitting(false);
       setSuccess(false);
       setSearchQuery('');
@@ -104,13 +101,12 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
       backdropPath: selectedTitle.backdropUrl,
       releaseYear: selectedTitle.releaseYear,
       genres: selectedTitle.genres,
-      watchedDate,
+      watchedDate: new Date().toISOString().split('T')[0],
       rating,
       stamp: selectedStamp || undefined,
       shortVerdict: shortVerdict.trim() || undefined,
-      sourceType,
-      recommendedByUserId: sourceType === 'recommended' && recommendedByUserId ? recommendedByUserId : undefined,
-      visibility: 'public' // Default to public for now
+      sourceType: 'self',
+      visibility
     });
 
     setSubmitting(false);
@@ -213,7 +209,7 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
               </div>
             )}
 
-            {/* STEP 2: Rating & Date */}
+            {/* STEP 2: Rating */}
             {step === 2 && selectedTitle && (
               <div className="space-y-8 animate-in slide-in-from-right-4">
                 <div className="text-center">
@@ -234,16 +230,6 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
                     {rating > 0 ? `${rating} / 5 Stars` : 'Tap to rate'}
                   </span>
                 </div>
-
-                <div className="pt-6 border-t border-border">
-                  <label className="block text-xs font-black text-bone mb-2 uppercase tracking-widest">Date Watched</label>
-                  <input
-                    type="date"
-                    value={watchedDate}
-                    onChange={(e) => setWatchedDate(e.target.value)}
-                    className="w-full bg-ink border border-border rounded-xl px-4 py-3 text-bone focus:outline-none focus:border-cinema-red"
-                  />
-                </div>
               </div>
             )}
 
@@ -254,7 +240,7 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
                   <h3 className="font-bold text-bone mb-1 text-sm">Stamp your log</h3>
                   <p className="text-[10px] text-muted mb-4 uppercase tracking-widest">Optional. Summarize your thoughts.</p>
                   <div className="flex flex-wrap gap-2">
-                    {CORE_STAMPS.map(stamp => (
+                    {LOG_STAMPS.map(stamp => (
                       <button key={stamp} onClick={() => setSelectedStamp(selectedStamp === stamp ? null : stamp)}
                         className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 ${
                           selectedStamp === stamp
@@ -273,33 +259,18 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
                     placeholder="Write a quick thought for your journal..." 
                     className="w-full h-28 p-4 bg-ink border border-border rounded-xl text-sm text-bone placeholder:text-muted/40 focus:outline-none focus:border-cinema-red/50 resize-none transition-colors" />
                 </div>
-              </div>
-            )}
-
-            {/* STEP 4: Context (Recommended?) */}
-            {step === 4 && (
-              <div className="space-y-6 animate-in slide-in-from-right-4">
-                <div className="text-center">
-                  <h3 className="text-2xl font-bold text-bone font-editorial mb-2">Context</h3>
-                  <p className="text-sm text-muted">Why did you watch this?</p>
-                </div>
-
-                <div className="flex gap-3">
-                  <button onClick={() => setSourceType('self')}
-                    className={`flex-1 py-4 rounded-xl border font-bold text-sm transition-all btn-press ${
-                      sourceType === 'self' 
-                        ? 'bg-cinema-red/10 border-cinema-red/50 text-bone shadow-[0_0_20px_rgba(234,51,51,0.15)] ring-1 ring-cinema-red/30' 
-                        : 'bg-ink border-border text-muted hover:border-bone/30 hover:text-bone'
-                    }`}>
-                    Found it myself
-                  </button>
-                  <button onClick={() => setSourceType('recommended')}
-                    className={`flex-1 py-4 rounded-xl border font-bold text-sm transition-all btn-press ${
-                      sourceType === 'recommended' 
-                        ? 'bg-cinema-red/10 border-cinema-red/50 text-bone shadow-[0_0_20px_rgba(234,51,51,0.15)] ring-1 ring-cinema-red/30' 
-                        : 'bg-ink border-border text-muted hover:border-bone/30 hover:text-bone'
-                    }`}>
-                    Crew Rec
+                
+                {/* Share Toggle */}
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-border mt-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-bone">Share to Crew</h4>
+                    <p className="text-xs text-muted">Let others see your verdict</p>
+                  </div>
+                  <button 
+                    onClick={() => setVisibility(v => v === 'public' ? 'private' : 'public')}
+                    className={`relative w-12 h-6 rounded-full p-1 transition-colors btn-press ${visibility === 'public' ? 'bg-cinema-red' : 'bg-white/10'}`}
+                  >
+                     <div className={`w-4 h-4 rounded-full bg-white transition-transform ${visibility === 'public' ? 'translate-x-6' : 'translate-x-0'}`} />
                   </button>
                 </div>
               </div>
