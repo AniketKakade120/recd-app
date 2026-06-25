@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { Download, X } from 'lucide-react';
 import type { JournalEntry } from '@/lib/types';
-import StampBadge from '@/components/StampBadge';
+import { useApp } from '@/lib/context';
 
 interface ShareVerdictCardModalProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ interface ShareVerdictCardModalProps {
 }
 
 export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareVerdictCardModalProps) {
+  const { currentUser } = useApp();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
@@ -52,69 +53,112 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
 
   if (!isOpen) return null;
 
+  const firstName = currentUser?.displayName?.split(' ')[0] || 'YOU';
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4">
       {/* Hidden Card Template (9:16 aspect ratio - 1080x1920 logical size) */}
       <div className="absolute top-[-9999px] left-[-9999px]">
         <div 
           ref={cardRef}
-          className="w-[1080px] h-[1920px] bg-ink relative overflow-hidden flex flex-col justify-end p-16 font-sans"
+          className="w-[1080px] h-[1920px] bg-[#0a0a0a] relative overflow-hidden flex flex-col items-center justify-between p-[80px] font-sans"
         >
-          {/* Background image */}
-          {(entry.posterPath || entry.backdropPath) && (
-            <img 
-              crossOrigin="anonymous"
-              src={`/api/proxy-image?url=${encodeURIComponent(entry.posterPath || entry.backdropPath)}`}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover opacity-80"
-            />
-          )}
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
+          {/* Ambient red glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cinema-red/15 blur-[150px] rounded-full pointer-events-none" />
 
-          {/* Content */}
-          <div className="relative z-10 w-full max-w-[800px] mx-auto bg-black/40 backdrop-blur-3xl rounded-[60px] p-16 border-[3px] border-white/20 shadow-2xl">
-            <h1 className="text-[90px] font-bold text-white leading-tight font-editorial mb-4">
-              {entry.title}
-            </h1>
-            
-            <div className="flex items-center gap-6 mb-12">
-              <div className="px-6 py-2 bg-white/10 rounded-full text-3xl font-bold text-white/80 uppercase tracking-widest">
-                {entry.releaseYear}
-              </div>
-              {entry.rating && (
-                <div className="px-6 py-2 bg-cinema-red rounded-full text-3xl font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                  ★ {entry.rating.toFixed(1)}
-                </div>
-              )}
+          {/* Header */}
+          <div className="flex flex-col items-center w-full relative z-10">
+            <div className="flex items-center gap-6 mb-6 text-white">
+              <span className="text-cinema-red text-3xl">✦</span>
+              <span className="text-[50px] font-bold font-editorial tracking-tight">Rec'd Club</span>
+              <span className="text-cinema-red text-3xl">✦</span>
             </div>
-
-            {entry.stamp && (
-              <div className="mb-12">
-                 <div className="inline-block px-10 py-5 rounded-full border-[4px] border-cinema-red bg-cinema-red/20 text-cinema-red text-[40px] font-black uppercase tracking-[0.2em] shadow-[0_0_40px_rgba(234,51,51,0.5)]">
-                   {entry.stamp}
-                 </div>
-              </div>
-            )}
-
-            {entry.shortVerdict && (
-              <div className="mb-16">
-                <p className="text-[50px] text-white/90 italic font-medium leading-relaxed border-l-[8px] border-cinema-red pl-10">
-                  "{entry.shortVerdict}"
-                </p>
-              </div>
-            )}
-
-            <div className="mt-16 flex items-center gap-6">
-              <div className="w-24 h-24 bg-cinema-red rounded-full flex items-center justify-center text-white text-5xl font-bold font-editorial">
-                R
-              </div>
-              <div>
-                <p className="text-[30px] font-bold text-white uppercase tracking-widest">Rec'd Club</p>
-                <p className="text-[24px] text-white/50 uppercase tracking-widest">My Verdict Journal</p>
-              </div>
+            <div className="flex items-center gap-4 text-[22px] tracking-[0.3em] uppercase font-bold text-white/50">
+              <span className="text-cinema-red">{firstName}</span> WATCHED
             </div>
           </div>
+
+          {/* Poster */}
+          <div className="relative w-[860px] h-[1050px] rounded-[40px] overflow-hidden shadow-[0_0_80px_rgba(234,51,51,0.25)] border-[3px] border-cinema-red/20 z-10 mt-8 mb-8">
+            {(entry.posterPath || entry.backdropPath) ? (
+              <img 
+                crossOrigin="anonymous"
+                src={`/api/proxy-image?url=${encodeURIComponent(entry.posterPath || entry.backdropPath)}`}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center text-white/20 text-4xl font-editorial">
+                {entry.title}
+              </div>
+            )}
+            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-[40px] pointer-events-none" />
+          </div>
+
+          {/* Title & Stars */}
+          <div className="flex flex-col items-center z-10 w-full px-10 mb-8">
+            <h1 className="text-[75px] font-bold text-white leading-tight font-editorial text-center line-clamp-1 mb-6 drop-shadow-lg">
+              {entry.title.toUpperCase()}
+            </h1>
+            <div className="flex items-center gap-8">
+              <div className="flex gap-4">
+                 {[1, 2, 3, 4, 5].map(star => {
+                   const isFilled = entry.rating && star <= entry.rating;
+                   return (
+                     <span 
+                       key={star} 
+                       className={`text-[55px] leading-none ${isFilled ? 'text-cinema-red drop-shadow-[0_0_15px_rgba(234,51,51,0.6)]' : 'text-white/10'}`}
+                     >
+                       ★
+                     </span>
+                   );
+                 })}
+              </div>
+              {entry.rating && (
+                <span className="text-[45px] text-white/80 font-light tracking-wide leading-none mt-2">
+                  {entry.rating.toFixed(1)} <span className="text-white/30">/ 5</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Glass Box for Verdict (Only if Stamp or Verdict exists) */}
+          {(entry.stamp || entry.shortVerdict) && (
+            <div className="w-[900px] bg-white/[0.04] backdrop-blur-2xl border border-white/10 rounded-[40px] p-10 flex flex-col items-center relative z-10 mb-8 shadow-2xl">
+               {/* Stamp text pill */}
+               {entry.stamp && (
+                 <div className="px-8 py-3 rounded-full border border-cinema-red/30 bg-cinema-red/10 text-cinema-red text-[22px] font-black uppercase tracking-[0.15em] mb-8 shadow-[0_0_30px_rgba(234,51,51,0.15)] flex items-center gap-3">
+                   <span className="text-2xl">🎭</span> {entry.stamp}
+                 </div>
+               )}
+               
+               {/* Verdict text */}
+               {entry.shortVerdict && (
+                 <div className="text-center px-12 mb-10 w-full">
+                   <p className="text-[42px] text-white/90 font-editorial italic leading-snug">
+                     <span className="text-cinema-red text-[48px] mr-2">“</span>
+                     {entry.shortVerdict}
+                     <span className="text-cinema-red text-[48px] ml-2">”</span>
+                   </p>
+                 </div>
+               )}
+               
+               {/* Divider & Logged in */}
+               <div className="w-full h-px bg-white/10 mb-6" />
+               <div className="flex items-center gap-4 text-white/40 text-[24px]">
+                 <span>📱</span>
+                 <span>Logged in Verdict Journal</span>
+               </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex items-center gap-8 text-white/20 text-[22px] tracking-[0.5em] mt-auto z-10 pb-6 font-semibold">
+            <span className="text-cinema-red">✦</span>
+            RECDCLUB.IN
+            <span className="text-cinema-red">✦</span>
+          </div>
+
         </div>
       </div>
 
