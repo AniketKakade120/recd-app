@@ -56,9 +56,36 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
 
   if (!isOpen) return null;
 
-  const searchResults = searchQuery 
-    ? titles.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    : [];
+  const [searchResults, setSearchResults] = useState<Title[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/tmdb/search?q=${encodeURIComponent(searchQuery)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data || []);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (e) {
+        console.error('Search error:', e);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   const handleTitleSelect = (t: Title) => {
     setSelectedTitle(t);
@@ -158,24 +185,28 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess 
                 
                 {searchQuery && (
                   <div className="space-y-2 mt-4">
-                    {searchResults.length > 0 ? searchResults.map(t => (
-                      <button
-                        key={t.id}
-                        onClick={() => handleTitleSelect(t)}
-                        className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 text-left"
-                      >
-                        {t.posterUrl ? (
-                          <img src={t.posterUrl} alt="" className="w-10 h-14 rounded bg-ink object-cover" />
-                        ) : (
-                          <div className="w-10 h-14 rounded bg-ink" />
-                        )}
-                        <div>
-                          <div className="font-bold text-bone">{t.title}</div>
-                          <div className="text-xs text-muted">{t.releaseYear} • {t.type}</div>
-                        </div>
-                      </button>
-                    )) : (
-                      <div className="text-center py-8 text-muted">No results found in DB.</div>
+                    {isSearching ? (
+                      <div className="text-center py-8 text-muted animate-pulse">Searching TMDB...</div>
+                    ) : searchResults.length > 0 ? (
+                      searchResults.map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => handleTitleSelect(t)}
+                          className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 text-left transition-colors"
+                        >
+                          {t.posterUrl ? (
+                            <img src={t.posterUrl} alt="" className="w-10 h-14 rounded bg-ink object-cover" />
+                          ) : (
+                            <div className="w-10 h-14 rounded bg-ink flex items-center justify-center text-[10px] text-muted text-center leading-tight p-1">No<br/>Poster</div>
+                          )}
+                          <div>
+                            <div className="font-bold text-bone">{t.title}</div>
+                            <div className="text-xs text-muted">{t.releaseYear} • {t.type}</div>
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted">No results found.</div>
                     )}
                   </div>
                 )}
