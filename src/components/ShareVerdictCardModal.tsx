@@ -64,7 +64,7 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
           {(entry.posterPath || entry.backdropPath) && (
             <img 
               crossOrigin="anonymous"
-              src={entry.posterPath || entry.backdropPath} 
+              src={`/api/proxy-image?url=${encodeURIComponent(entry.posterPath || entry.backdropPath)}`}
               alt=""
               className="absolute inset-0 w-full h-full object-cover opacity-80"
             />

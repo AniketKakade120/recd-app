@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Star } from 'lucide-react';
+import { Star, Share2, MoreHorizontal } from 'lucide-react';
 import type { JournalEntry } from '@/lib/types';
 import StampBadge from '@/components/StampBadge';
 import { useApp } from '@/lib/context';
@@ -14,10 +14,22 @@ interface JournalEntryCardProps {
 }
 
 export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
-  const { openRecommendModal } = useApp();
+  const { openRecommendModal, deleteJournalEntry, addToast } = useApp();
   const [showEdit, setShowEdit] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  const handleDelete = async () => {
+    if (confirm('Are you sure you want to delete this journal entry?')) {
+      const res = await deleteJournalEntry(entry.id);
+      if (res.success) {
+         addToast('Journal entry deleted', { type: 'success' });
+      } else {
+         addToast('Failed to delete', { type: 'error' });
+      }
+    }
+  };
 
   return (
     <>
@@ -25,33 +37,61 @@ export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
         {/* Click Overlay */}
         <Link href={`/title/${entry.tmdbId}`} className="absolute inset-0 z-0" aria-label={`View details for ${entry.title}`} />
         
-        {/* Header Image Area */}
-        <div className="relative aspect-[16/9] overflow-hidden bg-ink">
-          <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/60 to-transparent z-10" />
+        {/* Header Image Area (Poster Oriented) */}
+        <div className="relative aspect-[2/3] overflow-hidden bg-ink w-full">
+          <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-black/40 z-10" />
           
-          {(entry.backdropPath || entry.posterPath) && !imageError ? (
+          {(entry.posterPath || entry.backdropPath) && !imageError ? (
             <img 
-              src={entry.backdropPath || entry.posterPath} 
+              src={entry.posterPath || entry.backdropPath} 
               alt={entry.title} 
-              className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+              className="absolute inset-0 w-full h-full object-cover opacity-80 transition-transform duration-700 group-hover:scale-105"
               onError={() => setImageError(true)}
             />
           ) : (
             <div className="absolute inset-0 poster-gradient-1 opacity-50" />
           )}
 
+          {/* Top Actions: Share & 3-dot Menu */}
+          <div className="absolute top-3 left-3 right-3 z-30 flex justify-between items-start">
+            <button 
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowShare(true); }}
+              className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:bg-cinema-red transition-colors shadow-lg"
+            >
+              <Share2 size={14} />
+            </button>
+            
+            <div className="relative" onClick={(e) => e.preventDefault()}>
+               <button 
+                 onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+                 className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors shadow-lg"
+               >
+                 <MoreHorizontal size={16} />
+               </button>
+               {showMenu && (
+                 <div className="absolute top-full right-0 mt-2 w-36 bg-[#1A1A1A] border border-border rounded-xl shadow-2xl overflow-hidden py-1 z-50">
+                    <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-bone hover:bg-white/5 transition-colors" onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowEdit(true); }}>Edit Log</button>
+                    <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-bone hover:bg-white/5 transition-colors" onClick={(e) => { e.stopPropagation(); setShowMenu(false); openRecommendModal({ titleId: entry.tmdbId.toString() }); }}>Recommend</button>
+                    <div className="h-px bg-white/10 w-full my-1"></div>
+                    <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-cinema-red hover:bg-cinema-red/10 transition-colors" onClick={(e) => { e.stopPropagation(); setShowMenu(false); handleDelete(); }}>Delete</button>
+                 </div>
+               )}
+            </div>
+          </div>
+
+          {/* Title & Rating (Bottom of image) */}
           <div className="absolute bottom-4 left-4 right-4 z-20 flex justify-between items-end">
-            <div>
-              <h3 className="text-xl font-bold text-bone leading-tight font-editorial shadow-black drop-shadow-md">
+            <div className="pr-2">
+              <h3 className="text-xl font-bold text-bone leading-tight font-editorial shadow-black drop-shadow-md line-clamp-2">
                 {entry.title}
               </h3>
               <p className="text-[10px] text-muted uppercase tracking-wider font-semibold mt-1 shadow-black drop-shadow-md">
-                {entry.releaseYear} • {new Date(entry.watchedDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                {entry.releaseYear} • {entry.mediaType === 'movie' ? 'Movie' : 'TV'}
               </p>
             </div>
             
             {entry.rating && (
-              <div className="bg-black/60 backdrop-blur-2xl px-3 py-1.5 rounded-xl text-sm font-black text-bone border border-white/10 flex items-center gap-1.5 shadow-2xl">
+              <div className="bg-black/60 backdrop-blur-2xl px-3 py-1.5 rounded-xl text-sm font-black text-bone border border-white/10 flex items-center gap-1.5 shadow-2xl shrink-0">
                 <Star size={14} fill="currentColor" className="text-cinema-red" />
                 <span className="tracking-tighter">{entry.rating.toFixed(1)}</span>
               </div>
@@ -59,43 +99,27 @@ export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="p-5 flex-1 flex flex-col z-10">
-          {entry.stamp && (
-            <div className="mb-4">
-              <StampBadge stamp={entry.stamp as any} size="sm" variant="filled" />
-            </div>
-          )}
-          
-          {entry.shortVerdict && (
-            <p className="text-sm text-bone/90 italic border-l-2 border-cinema-red/50 pl-3 py-1 mb-6 line-clamp-4">
-              "{entry.shortVerdict}"
-            </p>
-          )}
-
-          {/* Action Row */}
-          <div className="grid grid-cols-3 gap-2 mt-auto pt-2">
-            <button 
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowShare(true); }}
-              className="py-2.5 bg-cinema-red/10 text-cinema-red border border-cinema-red/20 hover:bg-cinema-red hover:text-bone text-[10px] font-black uppercase tracking-widest rounded-xl transition-all btn-press flex items-center justify-center gap-1.5"
-            >
-              Share
-            </button>
-            <button 
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openRecommendModal({ titleId: entry.tmdbId.toString() }); }}
-              className="py-2.5 bg-white/5 border border-white/10 text-bone hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all btn-press flex items-center justify-center gap-1.5"
-            >
-              Recommend
-            </button>
-            <button 
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowEdit(true); }}
-              className="py-2.5 bg-white/5 border border-white/10 text-bone/70 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all btn-press flex items-center justify-center gap-1.5"
-            >
-              Edit
-            </button>
+        {/* Content Area (Stamp & Verdict) */}
+        {(entry.stamp || entry.shortVerdict) && (
+          <div className="p-5 flex-1 flex flex-col z-10 bg-surface">
+            {entry.stamp && (
+              <div className="mb-3">
+                <StampBadge stamp={entry.stamp as any} size="sm" variant="filled" />
+              </div>
+            )}
+            
+            {entry.shortVerdict && (
+              <p className="text-sm text-bone/90 italic border-l-2 border-cinema-red/50 pl-3 py-1 line-clamp-4">
+                "{entry.shortVerdict}"
+              </p>
+            )}
           </div>
-        </div>
+        )}
       </div>
+
+      {showMenu && (
+        <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+      )}
 
       <LogMovieFlow 
         isOpen={showEdit} 
