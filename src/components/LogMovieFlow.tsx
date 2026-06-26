@@ -28,7 +28,7 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess,
   const [selectedStamp, setSelectedStamp] = useState<StampType | null>(null);
   const [shortVerdict, setShortVerdict] = useState('');
   
-  const [visibility, setVisibility] = useState<'public' | 'private'>('public');
+  const [visibility, setVisibility] = useState<'public' | 'private' | 'crew'>('public');
   
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
