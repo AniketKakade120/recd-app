@@ -113,7 +113,7 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
                        
                        {/* Foreground filled star */}
                        {isActive && (
-                         <span className={`absolute top-0 left-0 text-cinema-red drop-shadow-[0_0_15px_rgba(234,51,51,0.6)] overflow-hidden ${isHalf ? 'w-1/2' : 'w-full'}`}>
+                         <span className={`absolute top-0 left-0 text-cinema-red drop-shadow-[0_0_15px_rgba(234,51,51,0.6)] overflow-hidden whitespace-nowrap ${isHalf ? 'w-1/2' : 'w-full'}`}>
                            ★
                          </span>
                        )}

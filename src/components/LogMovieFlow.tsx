@@ -253,7 +253,7 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess,
                         
                         {/* Foreground filled star */}
                         {isActive && (
-                          <span className={`absolute top-0 left-0 text-cinema-red overflow-hidden pointer-events-none ${isHalf ? 'w-1/2' : 'w-full'}`}>
+                          <span className={`absolute top-0 left-0 text-cinema-red overflow-hidden pointer-events-none whitespace-nowrap ${isHalf ? 'w-1/2' : 'w-full'}`}>
                             ★
                           </span>
                         )}
