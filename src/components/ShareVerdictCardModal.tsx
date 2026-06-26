@@ -103,14 +103,21 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
             <div className="flex items-center gap-8">
               <div className="flex gap-4">
                  {[1, 2, 3, 4, 5].map(star => {
-                   const isFilled = entry.rating && star <= entry.rating;
+                   const isFull = entry.rating && entry.rating >= star;
+                   const isHalf = entry.rating && entry.rating === star - 0.5;
+                   const isActive = isFull || isHalf;
                    return (
-                     <span 
-                       key={star} 
-                       className={`text-[50px] leading-none ${isFilled ? 'text-cinema-red drop-shadow-[0_0_15px_rgba(234,51,51,0.6)]' : 'text-white/10'}`}
-                     >
-                       ★
-                     </span>
+                     <div key={star} className="relative text-[50px] leading-none">
+                       {/* Background empty star */}
+                       <span className="text-white/10">★</span>
+                       
+                       {/* Foreground filled star */}
+                       {isActive && (
+                         <span className={`absolute top-0 left-0 text-cinema-red drop-shadow-[0_0_15px_rgba(234,51,51,0.6)] overflow-hidden ${isHalf ? 'w-1/2' : 'w-full'}`}>
+                           ★
+                         </span>
+                       )}
+                     </div>
                    );
                  })}
               </div>

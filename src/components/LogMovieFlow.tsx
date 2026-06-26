@@ -239,12 +239,41 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess,
                 </div>
                 
                 <div className="flex justify-center gap-2">
-                  {[1,2,3,4,5].map(star => (
-                    <button key={star} onClick={() => setRating(star)}
-                      className={`text-5xl transition-all btn-press ${star <= rating ? 'text-cinema-red scale-110 drop-shadow-[0_0_8px_rgba(234,51,51,0.3)]' : 'text-muted/20 hover:text-muted/40'}`}>
-                      ★
-                    </button>
-                  ))}
+                  {[1, 2, 3, 4, 5].map(star => {
+                    const isFull = rating >= star;
+                    const isHalf = rating === star - 0.5;
+                    const isActive = isFull || isHalf;
+                    return (
+                      <div 
+                        key={star} 
+                        className={`relative text-5xl transition-all ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(234,51,51,0.3)]' : ''}`}
+                      >
+                        {/* Background empty star */}
+                        <span className="text-muted/20">★</span>
+                        
+                        {/* Foreground filled star */}
+                        {isActive && (
+                          <span className={`absolute top-0 left-0 text-cinema-red overflow-hidden pointer-events-none ${isHalf ? 'w-1/2' : 'w-full'}`}>
+                            ★
+                          </span>
+                        )}
+                        
+                        {/* Invisible clickable halves */}
+                        <div className="absolute inset-0 flex">
+                          <button 
+                            className="w-1/2 h-full z-10 outline-none" 
+                            onClick={() => setRating(star - 0.5)}
+                            aria-label={`Rate ${star - 0.5} stars`}
+                          />
+                          <button 
+                            className="w-1/2 h-full z-10 outline-none" 
+                            onClick={() => setRating(star)}
+                            aria-label={`Rate ${star} stars`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="flex justify-center">
                   <span className="text-xs font-black uppercase tracking-widest text-muted/60">
