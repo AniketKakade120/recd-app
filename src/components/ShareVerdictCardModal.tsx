@@ -122,9 +122,9 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
             </div>
           </div>
 
-          {/* Glass Box for Verdict (Only if Stamp or Verdict exists) */}
+          {/* Verdict Section (Only if Stamp or Verdict exists) */}
           {(entry.stamp || entry.shortVerdict) && (
-            <div className="w-[900px] bg-white/[0.04] backdrop-blur-2xl border border-white/10 rounded-[40px] p-8 flex flex-col items-center relative z-10 mb-6 shadow-2xl shrink-0">
+            <div className="w-[900px] p-4 flex flex-col items-center relative z-10 mb-6 shrink-0">
                {/* Stamp text pill */}
                {entry.stamp && (
                  <div className="px-8 py-3 rounded-full border border-cinema-red/30 bg-cinema-red/10 text-cinema-red text-[22px] font-black uppercase tracking-[0.15em] mb-6 shadow-[0_0_30px_rgba(234,51,51,0.15)] flex items-center justify-center">
