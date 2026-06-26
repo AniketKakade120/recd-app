@@ -8,6 +8,7 @@ import StampBadge from '@/components/StampBadge';
 import { useApp } from '@/lib/context';
 import LogMovieFlow from './LogMovieFlow';
 import ShareVerdictCardModal from './ShareVerdictCardModal';
+import ModalBase from '@/components/ModalBase';
 
 interface JournalEntryCardProps {
   entry: JournalEntry;
@@ -18,16 +19,19 @@ export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
   const [showEdit, setShowEdit] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this journal entry?')) {
-      const res = await deleteJournalEntry(entry.id);
-      if (res.success) {
-         addToast('Journal entry deleted', { type: 'success' });
-      } else {
-         addToast('Failed to delete', { type: 'error' });
-      }
+    setIsDeleting(true);
+    const res = await deleteJournalEntry(entry.id);
+    setIsDeleting(false);
+    setShowDeleteConfirm(false);
+    if (res.success) {
+       addToast('Journal entry deleted', { type: 'success' });
+    } else {
+       addToast('Failed to delete', { type: 'error' });
     }
   };
 
@@ -75,7 +79,7 @@ export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
                       <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-bone hover:bg-white/5 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowEdit(true); }}>Edit Log</button>
                       <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-bone hover:bg-white/5 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); openRecommendModal({ titleId: entry.tmdbId.toString() }); }}>Recommend</button>
                       <div className="h-px bg-white/10 w-full my-1 relative z-50"></div>
-                      <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-cinema-red hover:bg-cinema-red/10 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); handleDelete(); }}>Delete</button>
+                      <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-cinema-red hover:bg-cinema-red/10 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowDeleteConfirm(true); }}>Delete</button>
                    </div>
                  </>
                )}
@@ -146,6 +150,32 @@ export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
         onClose={() => setShowShare(false)} 
         entry={entry} 
       />
+
+      <ModalBase isOpen={showDeleteConfirm} onClose={() => !isDeleting && setShowDeleteConfirm(false)} title="Delete Journal Entry" subtitle={entry.title} noPadding>
+        <div className="p-8 text-center flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-cinema-red/10 border border-cinema-red/30 flex items-center justify-center mb-6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cinema-red"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+          </div>
+          <h2 className="text-2xl font-bold text-bone font-editorial mb-2">Delete this entry?</h2>
+          <p className="text-muted mb-8">This will remove it from your Taste Profile and it cannot be undone.</p>
+          <div className="flex w-full gap-4">
+            <button 
+              onClick={() => setShowDeleteConfirm(false)} 
+              disabled={isDeleting}
+              className="flex-1 py-3 px-4 bg-ink border border-border text-bone rounded-xl font-bold hover:bg-white/5 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleDelete} 
+              disabled={isDeleting}
+              className="flex-1 py-3 px-4 bg-cinema-red text-bone rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-cinema-red/90 transition-colors shadow-[0_0_15px_rgba(234,51,51,0.4)]"
+            >
+              {isDeleting ? <div className="w-4 h-4 rounded-full border-2 border-bone/30 border-t-bone animate-spin" /> : 'Delete'}
+            </button>
+          </div>
+        </div>
+      </ModalBase>
     </>
   );
 }
