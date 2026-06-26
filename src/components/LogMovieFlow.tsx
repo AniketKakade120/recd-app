@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/context';
 import { Title, CORE_STAMPS, StampType, JournalEntry } from '@/lib/types';
 import ModalBase from '@/components/ModalBase';
@@ -33,8 +33,11 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess,
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const wasOpenRef = useRef(false);
+
   useEffect(() => {
-    if (isOpen) {
+    const justOpened = isOpen && !wasOpenRef.current;
+    if (justOpened) {
       if (initialTitle) {
         setSelectedTitle(initialTitle);
         setStep(2);
@@ -50,6 +53,7 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess,
       setSuccess(false);
       setSearchQuery('');
     }
+    wasOpenRef.current = isOpen;
   }, [isOpen, initialTitle, existingEntry]);
 
   const [searchResults, setSearchResults] = useState<Title[]>([]);
