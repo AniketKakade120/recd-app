@@ -2535,7 +2535,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     if (isSupabaseConfigured && supabase && !id.startsWith('temp-')) {
       try {
-        const dbUpdates: any = { ...updates, updated_at: new Date().toISOString() };
+        const dbUpdates: any = { updated_at: new Date().toISOString() };
+          if (updates.rating !== undefined) dbUpdates.rating = updates.rating;
+          if (updates.stamp !== undefined) dbUpdates.stamp = updates.stamp;
+          if (updates.visibility !== undefined) dbUpdates.visibility = updates.visibility;
         // Map camelCase to snake_case for DB
         if (updates.tmdbId !== undefined) dbUpdates.tmdb_id = updates.tmdbId;
         if (updates.mediaType !== undefined) dbUpdates.media_type = updates.mediaType;

@@ -15,7 +15,7 @@ interface LogMovieFlowProps {
 }
 
 export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess, existingEntry }: LogMovieFlowProps) {
-  const { createJournalEntry, updateJournalEntry, currentUser, titles } = useApp();
+  const { createJournalEntry, updateJournalEntry, currentUser, titles, addToast } = useApp();
   
   const TOTAL_STEPS = 3;
   const [step, setStep] = useState(1);
@@ -107,8 +107,9 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess,
       });
       setSubmitting(false);
       if (success) {
-        setSuccess(true);
+        addToast('Log updated successfully!', { type: 'success' });
         if (onSuccess) onSuccess();
+        onClose();
       }
     } else {
       const { id, error } = await createJournalEntry({
@@ -129,6 +130,7 @@ export default function LogMovieFlow({ isOpen, onClose, initialTitle, onSuccess,
 
       setSubmitting(false);
       if (!error) {
+        addToast('Logged to journal!', { type: 'success' });
         setSuccess(true);
         if (onSuccess) onSuccess();
       }
