@@ -66,7 +66,7 @@ interface AppState {
   comments: Comment[];
   toasts: { id: string; message: string; type?: 'success' | 'error' | 'info'; onUndo?: () => void }[];
   recommendModalOpen: boolean;
-  recommendModalData: { titleId?: string; groupId?: string; recipientId?: string } | null;
+  recommendModalData: { titleId?: string; groupId?: string; recipientId?: string; initialTitle?: any } | null;
   giveVerdictModalOpen: boolean;
   giveVerdictModalData: { recommendationId: string; edit?: boolean } | null;
   titleComments: TitleComment[];
@@ -78,7 +78,7 @@ interface AppContextType extends AppState {
   enterDemoMode: () => void;
   logout: () => Promise<void>;
   completeOnboarding: (data?: any) => Promise<void>;
-  openRecommendModal: (data?: { titleId?: string; groupId?: string; recipientId?: string }) => void;
+  openRecommendModal: (data?: { titleId?: string; groupId?: string; recipientId?: string; initialTitle?: any }) => void;
   closeRecommendModal: () => void;
   openGiveVerdictModal: (recommendationId: string, edit?: boolean) => void;
   closeGiveVerdictModal: () => void;
@@ -1069,7 +1069,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const openRecommendModal = useCallback((data?: { titleId?: string; groupId?: string; recipientId?: string }) => {
+  const openRecommendModal = useCallback((data?: { titleId?: string; groupId?: string; recipientId?: string; initialTitle?: any }) => {
     setState(prev => ({ ...prev, recommendModalOpen: true, recommendModalData: data || null }));
   }, []);
 

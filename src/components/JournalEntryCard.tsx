@@ -124,7 +124,28 @@ export default function JournalEntryCard({ entry, isReadOnly }: JournalEntryCard
               Share Verdict
             </button>
             <button 
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openRecommendModal({ titleId: entry.tmdbId.toString() }); }}
+              onClick={(e) => { 
+                e.preventDefault(); 
+                e.stopPropagation(); 
+                openRecommendModal({ 
+                  titleId: entry.tmdbId.toString(),
+                  initialTitle: {
+                    id: entry.tmdbId.toString(),
+                    tmdbId: entry.tmdbId,
+                    title: entry.title,
+                    type: entry.mediaType === 'movie' ? 'movie' : 'series',
+                    posterUrl: entry.posterPath,
+                    backdropUrl: entry.backdropPath,
+                    releaseYear: entry.releaseYear || new Date().getFullYear(),
+                    genres: entry.genres,
+                    overview: '',
+                    externalRating: 0,
+                    posterGradient: 1,
+                    cast: [],
+                    directorOrCreatorProfile: { id: '', name: '', role: 'Director' }
+                  }
+                }); 
+              }}
               className="w-full py-2.5 rounded-xl bg-ink border border-border text-bone font-bold text-sm hover:bg-white/5 transition-colors"
             >
               Recommend

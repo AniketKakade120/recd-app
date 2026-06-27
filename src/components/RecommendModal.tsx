@@ -40,7 +40,7 @@ export default function RecommendModal() {
   useEffect(() => {
     if (recommendModalOpen) {
       setTitleId(initTitleId);
-      setSelectedTitleState(initTitleId ? getTitle(initTitleId) || null : null);
+      setSelectedTitleState(recommendModalData?.initialTitle || (initTitleId ? getTitle(initTitleId) || null : null));
       setRecipientId(initRecipientId);
       setGroupId(initGroupId);
       setIsGroup(!!initGroupId);
