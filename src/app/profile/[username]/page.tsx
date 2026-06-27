@@ -2,16 +2,18 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useApp } from '@/lib/context';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import UserAvatar from '@/components/UserAvatar';
 import AddToCrewButton from '@/components/AddToCrewButton';
 import StampBadge from '@/components/StampBadge';
-import { getTasteLabel, ACHIEVEMENT_BADGE_DESCRIPTIONS } from '@/lib/types';
+import { getTasteLabel, ACHIEVEMENT_BADGE_DESCRIPTIONS, JournalEntry } from '@/lib/types';
 import Link from 'next/link';
 import TasteScoreRing from '@/components/TasteScoreRing';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import MobileBackLink from '@/components/MobileBackLink';
 import TasteProfileCard from '@/components/profile/TasteProfileCard';
+import { supabase } from '@/lib/supabase/client';
+import JournalEntryCard from '@/components/JournalEntryCard';
 
 export default function PublicProfilePage() {
   const { username } = useParams();
@@ -21,8 +23,45 @@ export default function PublicProfilePage() {
     getUser, getMutualGroups, watchlistLists, getUserBadges, openRecommendModal
   } = useApp();
 
-
   const profileUser = useMemo(() => getUserByUsername(username as string), [username, getUserByUsername]);
+
+  const [publicJournal, setPublicJournal] = useState<JournalEntry[]>([]);
+  const [isLoadingJournal, setIsLoadingJournal] = useState(true);
+
+  useEffect(() => {
+    if (profileUser) {
+      const fetchJournal = async () => {
+        setIsLoadingJournal(true);
+        const { data, error } = await supabase
+          .from('journal_entries')
+          .select('*')
+          .eq('user_id', profileUser.id)
+          .order('watched_date', { ascending: false });
+        
+        if (data) {
+          const mapped = data.map(j => ({
+            id: j.id,
+            userId: j.user_id,
+            tmdbId: j.tmdb_id,
+            mediaType: j.media_type,
+            title: j.title,
+            posterPath: j.poster_path,
+            backdropPath: j.backdrop_path,
+            releaseYear: j.release_year,
+            genres: j.genres || [],
+            watchedDate: j.watched_date,
+            rating: j.rating,
+            stamp: j.stamp,
+            shortVerdict: j.short_verdict,
+            visibility: j.visibility,
+          })) as JournalEntry[];
+          setPublicJournal(mapped);
+        }
+        setIsLoadingJournal(false);
+      };
+      fetchJournal();
+    }
+  }, [profileUser]);
 
   if (!profileUser) {
     return (
@@ -103,6 +142,28 @@ export default function PublicProfilePage() {
         {/* MAIN COLUMN */}
         <div className="lg:col-span-8 space-y-16">
           
+          {/* Verdict Journal */}
+          <section>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-bone font-editorial tracking-tight">Verdict Journal</h2>
+            </div>
+            {isLoadingJournal ? (
+              <div className="py-12 flex justify-center">
+                <div className="w-8 h-8 rounded-full border-2 border-cinema-red/30 border-t-cinema-red animate-spin" />
+              </div>
+            ) : publicJournal.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {publicJournal.map(entry => (
+                  <JournalEntryCard key={entry.id} entry={entry} isReadOnly={true} />
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 px-8 bg-surface border border-border border-dashed rounded-[32px] text-center">
+                <p className="text-muted text-sm italic">This user hasn't logged any verdicts yet.</p>
+              </div>
+            )}
+          </section>
+
           {/* Public Lists */}
           <section>
             <div className="flex items-center justify-between mb-8">

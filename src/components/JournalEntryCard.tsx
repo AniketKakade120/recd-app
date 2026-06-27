@@ -12,9 +12,10 @@ import ModalBase from '@/components/ModalBase';
 
 interface JournalEntryCardProps {
   entry: JournalEntry;
+  isReadOnly?: boolean;
 }
 
-export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
+export default function JournalEntryCard({ entry, isReadOnly }: JournalEntryCardProps) {
   const { openRecommendModal, deleteJournalEntry, addToast } = useApp();
   const [showEdit, setShowEdit] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -56,35 +57,29 @@ export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
             <div className="absolute inset-0 poster-gradient-1 opacity-50" />
           )}
 
-          {/* Top Actions: Share & 3-dot Menu */}
-          <div className="absolute top-3 left-3 right-3 z-50 flex justify-between items-start">
-            <button 
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowShare(true); }}
-              className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:bg-cinema-red transition-colors shadow-lg"
-            >
-              <Share2 size={14} />
-            </button>
-            
-            <div className="relative" onClick={(e) => e.preventDefault()}>
-               <button 
-                 onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                 className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors shadow-lg"
-               >
-                 <MoreHorizontal size={16} />
-               </button>
-               {showMenu && (
-                 <>
-                   <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
-                   <div className="absolute top-full right-0 mt-2 w-36 bg-[#1A1A1A] border border-border rounded-xl shadow-2xl overflow-hidden py-1 z-50">
-                      <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-bone hover:bg-white/5 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowEdit(true); }}>Edit Log</button>
-                      <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-bone hover:bg-white/5 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); openRecommendModal({ titleId: entry.tmdbId.toString() }); }}>Recommend</button>
-                      <div className="h-px bg-white/10 w-full my-1 relative z-50"></div>
-                      <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-cinema-red hover:bg-cinema-red/10 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowDeleteConfirm(true); }}>Delete</button>
-                   </div>
-                 </>
-               )}
+          {/* Top Actions: 3-dot Menu (Only if not read only) */}
+          {!isReadOnly && (
+            <div className="absolute top-3 right-3 z-50">
+              <div className="relative" onClick={(e) => e.preventDefault()}>
+                 <button 
+                   onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+                   className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors shadow-lg"
+                 >
+                   <MoreHorizontal size={16} />
+                 </button>
+                 {showMenu && (
+                   <>
+                     <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
+                     <div className="absolute top-full right-0 mt-2 w-36 bg-[#1A1A1A] border border-border rounded-xl shadow-2xl overflow-hidden py-1 z-50">
+                        <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-bone hover:bg-white/5 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowEdit(true); }}>Edit Log</button>
+                        <div className="h-px bg-white/10 w-full my-1 relative z-50"></div>
+                        <button className="w-full px-4 py-2.5 text-left text-xs font-bold text-cinema-red hover:bg-cinema-red/10 transition-colors relative z-50" onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowDeleteConfirm(true); }}>Delete</button>
+                     </div>
+                   </>
+                 )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Title & Rating (Bottom of image) */}
           <div className="absolute bottom-4 left-4 right-4 z-20 flex justify-between items-end">
@@ -106,22 +101,36 @@ export default function JournalEntryCard({ entry }: JournalEntryCardProps) {
           </div>
         </div>
 
-        {/* Content Area (Stamp & Verdict) */}
-        {(entry.stamp || entry.shortVerdict) && (
-          <div className="p-5 flex-1 flex flex-col z-10 bg-surface">
-            {entry.stamp && (
-              <div className="mb-3">
-                <StampBadge stamp={entry.stamp as any} size="sm" variant="filled" />
-              </div>
-            )}
-            
-            {entry.shortVerdict && (
-              <p className="text-sm text-bone/90 italic border-l-2 border-cinema-red/50 pl-3 py-1 line-clamp-4">
-                "{entry.shortVerdict}"
-              </p>
-            )}
+        {/* Content Area (Stamp, Verdict & CTAs) */}
+        <div className="p-5 flex-1 flex flex-col z-10 bg-surface border-t border-border/50">
+          {entry.stamp && (
+            <div className="mb-3">
+              <StampBadge stamp={entry.stamp as any} size="sm" variant="filled" />
+            </div>
+          )}
+          
+          {entry.shortVerdict && (
+            <p className="text-sm text-bone/90 italic border-l-2 border-cinema-red/50 pl-3 py-1 line-clamp-4">
+              "{entry.shortVerdict}"
+            </p>
+          )}
+
+          <div className="mt-auto pt-5 flex flex-col gap-2">
+            <button 
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowShare(true); }}
+              className="w-full py-2.5 rounded-xl bg-cinema-red text-bone font-bold text-sm hover:bg-cinema-red/90 transition-colors flex items-center justify-center gap-2"
+            >
+              <Share2 size={16} />
+              Share Verdict
+            </button>
+            <button 
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openRecommendModal({ titleId: entry.tmdbId.toString() }); }}
+              className="w-full py-2.5 rounded-xl bg-ink border border-border text-bone font-bold text-sm hover:bg-white/5 transition-colors"
+            >
+              Recommend
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
       <LogMovieFlow 
