@@ -67,14 +67,11 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cinema-red/15 blur-[150px] rounded-full pointer-events-none" />
 
           {/* Header */}
-          <div className="flex flex-col items-center w-full relative z-10">
-            <div className="flex items-center gap-6 mb-6 text-white">
+          <div className="flex flex-col items-center w-full relative z-10 mb-8">
+            <div className="flex items-center gap-6 text-white">
               <span className="text-cinema-red text-3xl">✦</span>
               <span className="text-[50px] font-bold font-editorial tracking-tight">Rec'd Club</span>
               <span className="text-cinema-red text-3xl">✦</span>
-            </div>
-            <div className="flex items-center gap-4 text-[22px] tracking-[0.3em] uppercase font-bold text-white/50">
-              <span className="text-cinema-red">{firstName}</span> WATCHED
             </div>
           </div>
 
@@ -159,12 +156,7 @@ export default function ShareVerdictCardModal({ isOpen, onClose, entry }: ShareV
             </div>
           )}
 
-          {/* Footer */}
-          <div className="flex items-center gap-8 text-white/20 text-[22px] tracking-[0.5em] mt-auto z-10 pb-6 font-semibold">
-            <span className="text-cinema-red">✦</span>
-            RECDCLUB.IN
-            <span className="text-cinema-red">✦</span>
-          </div>
+
 
         </div>
       </div>
