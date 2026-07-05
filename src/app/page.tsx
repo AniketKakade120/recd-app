@@ -277,7 +277,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-                className="text-5xl sm:text-6xl md:text-7xl lg:text-[88px] font-bold font-editorial leading-[0.95] tracking-tight mb-6"
+                className="text-4xl sm:text-6xl md:text-7xl lg:text-[88px] font-bold font-editorial leading-[0.95] tracking-tight mb-6 break-words"
               >
                 Every movie rec{' '}
                 <br className="hidden sm:block" />
@@ -634,7 +634,7 @@ export default function LandingPage() {
           <div className="absolute bottom-10 right-10 opacity-20 hidden lg:block scale-75 pointer-events-none"><MovieCard title={MOCK_TITLES.spiderman} /></div>
           
           <div className="relative z-10 max-w-3xl mx-auto">
-            <h2 className="text-5xl md:text-7xl font-bold font-editorial text-bone leading-[1.1] tracking-tight mb-6 max-w-4xl mx-auto">
+            <h2 className="text-4xl sm:text-5xl md:text-7xl font-bold font-editorial text-bone leading-[1.1] tracking-tight mb-6 max-w-4xl mx-auto break-words">
               Send your first recommendation.
             </h2>
             <button 

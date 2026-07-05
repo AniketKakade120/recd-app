@@ -59,7 +59,7 @@ export default function GroupsPage() {
   return (
     <div className="space-y-16 pb-20 page-enter">
       {/* Header Section */}
-      <div className="relative rounded-[40px] overflow-hidden bg-surface border border-white/5 p-12 text-center shadow-2xl">
+      <div className="relative rounded-[40px] overflow-hidden bg-surface border border-white/5 p-6 sm:p-8 md:p-12 text-center shadow-2xl">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-transparent via-cinema-red to-transparent opacity-50" />
         
         <p className="text-[10px] font-black text-cinema-red uppercase tracking-[0.3em] mb-4">Find Your Crew</p>

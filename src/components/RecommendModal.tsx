@@ -61,7 +61,7 @@ export default function RecommendModal() {
   const groupFriendIds = groupMembers.filter(gm => myGroupIds.includes(gm.groupId) && gm.userId !== currentUser?.id).map(gm => gm.userId);
   const crewIds = crewConnections.map(c => c.crewMemberId);
   
-  const friendIds = [...new Set([...groupFriendIds, ...crewIds])];
+  const friendIds = [...new Set([...crewIds])];
   const friends = friendIds.map(id => getUser(id)).filter(Boolean);
   const myGroups = myGroupIds.map(id => groups.find(g => g.id === id)).filter(Boolean);
 

@@ -41,12 +41,12 @@ export default function NotificationDropdown({ isOpen, onClose }: NotificationDr
     <>
       {/* Backdrop for mobile closing */}
       <div 
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm sm:hidden animate-in fade-in"
+        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm sm:hidden animate-in fade-in"
         onClick={onClose}
       />
       
       <div className="
-        fixed bottom-0 left-0 right-0 z-50 flex flex-col bg-[#0a0a0a] rounded-t-2xl max-h-[85vh] overflow-hidden shadow-[0_-10px_40px_rgba(0,0,0,0.5)]
+        fixed bottom-0 left-0 right-0 z-[70] flex flex-col bg-[#0a0a0a] rounded-t-2xl max-h-[85vh] overflow-hidden shadow-[0_-10px_40px_rgba(0,0,0,0.5)]
         sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[340px] sm:max-h-none sm:rounded-lg sm:border sm:border-white/10 sm:shadow-[0_24px_70px_rgba(2,0,0,0.42)]
         origin-bottom sm:origin-top-right animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 duration-200
       ">

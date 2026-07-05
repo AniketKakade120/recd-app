@@ -212,7 +212,7 @@ export default function VerdictCarousel({ recommendations: recs }: VerdictCarous
                         </div>
     
                         {/* Match Tooltip */}
-                        <div className="absolute bottom-full left-0 mb-4 w-64 p-4 bg-surface/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50 invisible group-hover/match:visible opacity-0 group-hover/match:opacity-100 transition-all duration-200 translate-y-2 group-hover/match:translate-y-0 origin-bottom-left">
+                        <div className="absolute bottom-full left-0 mb-4 w-64 p-4 bg-surface/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-30 invisible group-hover/match:visible opacity-0 group-hover/match:opacity-100 transition-all duration-200 translate-y-2 group-hover/match:translate-y-0 origin-bottom-left">
                           <p className="text-[10px] font-black uppercase tracking-widest text-cinema-red mb-2">Taste Match Breakdown</p>
                           <p className="text-xs font-bold text-bone mb-3">Why {currentRec.tasteMatchScore}% match?</p>
                           <ul className="space-y-2.5">
@@ -258,7 +258,7 @@ export default function VerdictCarousel({ recommendations: recs }: VerdictCarous
           </div>
 
           {/* Navigation Arrows */}
-          <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 pointer-events-none z-50">
+          <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 pointer-events-none z-30">
             <button 
               onClick={prevSlide}
               className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-bone/80 hover:text-bone hover:bg-cinema-red hover:border-cinema-red transition-all pointer-events-auto active:scale-90 shadow-lg"

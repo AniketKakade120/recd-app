@@ -174,7 +174,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Desktop Top Nav */}
-      <header className="hidden md:flex flex-col border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-40 px-6 pt-3 pb-0">
+      <header className="hidden md:flex flex-col border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-[60] px-6 pt-3 pb-0">
         {/* Logo Centered on Top */}
         <div className="flex justify-center mb-1">
           <Link href="/home" className="flex items-center shrink-0">
@@ -274,7 +274,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Mobile Top Nav */}
-      <header className="md:hidden flex items-center justify-between border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-40 py-3 px-4 h-14">
+      <header className="md:hidden flex items-center justify-between border-b border-border bg-ink/95 backdrop-blur-xl sticky top-0 z-[60] py-3 px-4 h-14">
         {/* Left Side: Bell */}
         <div className="w-12 shrink-0">
           <div className="relative flex items-center">

@@ -243,7 +243,7 @@ export default function HomePage() {
       <HomeSearchModule />
 
       {/* ═══════════════════ HOME PAGE ═══════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_320px] gap-10 items-start">
 
         {/* ── Main Column ── */}
         <div className="space-y-12 min-w-0">
@@ -275,7 +275,7 @@ export default function HomePage() {
                   </div>
                   <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x">
                     {movies.map(movie => (
-                      <div key={movie.id} className="w-[180px] shrink-0 snap-start">
+                      <div key={movie.id} className="w-[140px] sm:w-[160px] md:w-[180px] shrink-0 snap-start">
                         <MovieCard title={movie} />
                       </div>
                     ))}
@@ -295,7 +295,7 @@ export default function HomePage() {
                   </div>
                   <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x">
                     {movies.map(movie => (
-                      <div key={movie.id} className="w-[180px] shrink-0 snap-start">
+                      <div key={movie.id} className="w-[140px] sm:w-[160px] md:w-[180px] shrink-0 snap-start">
                         <MovieCard title={movie} />
                       </div>
                     ))}
@@ -317,7 +317,7 @@ export default function HomePage() {
                   const title = getTitle(rec.titleId);
                   if (!title) return null;
                   return (
-                    <div key={rec.id} className="w-[220px] shrink-0 snap-start">
+                    <div key={rec.id} className="w-[160px] sm:w-[180px] md:w-[220px] shrink-0 snap-start">
                       <MovieCard title={title} stamp={rec.primaryStamp} recommendedBy={rec.recommendedBy} />
                     </div>
                   );
@@ -338,7 +338,7 @@ export default function HomePage() {
                   const title = getTitle(item.titleId);
                   if (!title) return null;
                   return (
-                    <div key={item.id} className="w-[180px] shrink-0 snap-start">
+                    <div key={item.id} className="w-[140px] sm:w-[160px] md:w-[180px] shrink-0 snap-start">
                       <MovieCard title={title} />
                     </div>
                   );

@@ -393,13 +393,13 @@ export default function ExplorePage() {
               {trendingTitles.length > 0 ? trendingTitles.map(t => {
                 const rec = recommendations.find(r => r.titleId === t.id);
                 return (
-                  <div key={t.id} className="w-[220px] shrink-0 snap-start">
+                  <div key={t.id} className="w-[160px] sm:w-[180px] md:w-[220px] shrink-0 snap-start">
                     <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                   </div>
                 );
               }) : (
                 [1,2,3,4,5,6].map(i => (
-                  <div key={i} className="w-[220px] shrink-0 snap-start">
+                  <div key={i} className="w-[160px] sm:w-[180px] md:w-[220px] shrink-0 snap-start">
                     <div className="aspect-[2/3] rounded-[24px] bg-surface border border-border/20 animate-pulse relative overflow-hidden">
                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
                     </div>
@@ -429,7 +429,7 @@ export default function ExplorePage() {
                       {shelf.titles.map(t => {
                         const rec = recommendations.find(r => r.titleId === t.id);
                         return (
-                          <div key={t.id} className="w-[220px] shrink-0 snap-start">
+                          <div key={t.id} className="w-[160px] sm:w-[180px] md:w-[220px] shrink-0 snap-start">
                             <MovieCard title={t} stamp={rec?.primaryStamp || 'Crew Pick'} showRecommendAction />
                           </div>
                         );
@@ -451,7 +451,7 @@ export default function ExplorePage() {
                 {curatedPlatformTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[160px] sm:w-[180px] md:w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -470,7 +470,7 @@ export default function ExplorePage() {
                 {curatedLanguageTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[160px] sm:w-[180px] md:w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -489,7 +489,7 @@ export default function ExplorePage() {
                 {curatedGenreTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[160px] sm:w-[180px] md:w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -508,7 +508,7 @@ export default function ExplorePage() {
                 {theatricalTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[160px] sm:w-[180px] md:w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -527,7 +527,7 @@ export default function ExplorePage() {
                 {upcomingTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[160px] sm:w-[180px] md:w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -546,7 +546,7 @@ export default function ExplorePage() {
                 {bollywoodTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[160px] sm:w-[180px] md:w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );
@@ -565,7 +565,7 @@ export default function ExplorePage() {
                 {regionalTitles.map(t => {
                   const rec = recommendations.find(r => r.titleId === t.id);
                   return (
-                    <div key={t.id} className="w-[220px] shrink-0 snap-start">
+                    <div key={t.id} className="w-[160px] sm:w-[180px] md:w-[220px] shrink-0 snap-start">
                       <MovieCard title={t} stamp={rec?.primaryStamp} showRecommendAction />
                     </div>
                   );

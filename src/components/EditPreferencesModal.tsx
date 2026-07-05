@@ -214,8 +214,8 @@ export default function EditPreferencesModal({ isOpen, onClose }: EditPreference
                       const percentage = ((val - 1) / 4) * 100;
 
                       return (
-                        <div key={genre} className="bg-ink border border-border p-4 rounded-2xl flex items-center gap-6">
-                          <div className="flex items-center gap-3 w-[120px] shrink-0">
+                        <div key={genre} className="bg-ink border border-border p-3 sm:p-4 rounded-2xl flex items-center gap-3 sm:gap-6">
+                          <div className="flex items-center gap-2 sm:gap-3 w-[80px] sm:w-[120px] shrink-0">
                             <GenreIcon genre={genre} size={20} />
                             <span className="text-sm font-bold text-bone">{genre}</span>
                           </div>

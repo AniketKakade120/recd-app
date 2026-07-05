@@ -336,7 +336,7 @@ export default function TitleDetailPage({ params }: { params: Promise<{ id: stri
         <MobileBackLink label={mobileBackLabel} href={mobileBackHref} />
       </div>
 
-      <div className="relative w-full h-[50vh] min-h-[350px] lg:h-[60vh] flex items-end -mt-6 md:-mt-10 overflow-hidden">
+      <div className="relative w-full h-[50vh] min-h-[280px] sm:min-h-[350px] lg:h-[60vh] flex items-end -mt-6 md:-mt-10 overflow-hidden">
         <div className="absolute inset-0 bg-ink z-0">
           <div className={`absolute inset-0 poster-gradient-${title.posterGradient || '1'} opacity-30`} />
           {title.backdropUrl && !heroImageError && (

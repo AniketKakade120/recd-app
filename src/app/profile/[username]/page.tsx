@@ -20,7 +20,8 @@ export default function PublicProfilePage() {
   const router = useRouter();
   const { 
     getUserByUsername, currentUser, recommendations, ratings, getTitle, 
-    getUser, getMutualGroups, watchlistLists, getUserBadges, openRecommendModal
+    getUser, getMutualGroups, watchlistLists, getUserBadges, openRecommendModal,
+    crewConnections
   } = useApp();
 
   const profileUser = useMemo(() => getUserByUsername(username as string), [username, getUserByUsername]);
@@ -127,12 +128,14 @@ export default function PublicProfilePage() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <AddToCrewButton userId={profileUser.id} username={profileUser.username} className="text-sm px-10 py-4" />
-              <button 
-                onClick={() => openRecommendModal({ recipientId: profileUser.id })}
-                className="px-10 py-4 bg-ink border border-border text-bone font-bold rounded-xl hover:bg-surface transition-all active:scale-95 shadow-xl"
-              >
-                Recommend something
-              </button>
+              {crewConnections.some(c => c.crewMemberId === profileUser.id) && (
+                <button 
+                  onClick={() => openRecommendModal({ recipientId: profileUser.id })}
+                  className="px-10 py-4 bg-ink border border-border text-bone font-bold rounded-xl hover:bg-surface transition-all active:scale-95 shadow-xl"
+                >
+                  Recommend something
+                </button>
+              )}
             </div>
           </div>
         </div>
