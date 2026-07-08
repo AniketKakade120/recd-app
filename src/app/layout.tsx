@@ -19,9 +19,38 @@ const inter = Inter({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://recd.club";
+
 export const metadata: Metadata = {
-  title: "Rec'd Club — Stamped by Taste",
+  metadataBase: new URL(BASE_URL),
+  title: {
+    template: "%s | Rec'd Club",
+    default: "Rec'd Club — Stamped by Taste",
+  },
   description: "Good taste travels person to person. From your crew. For your watchlist. Pass it on.",
+  keywords: ["movies", "recommendations", "social network", "film", "taste", "reviews"],
+  openGraph: {
+    title: "Rec'd Club",
+    description: "Good taste travels person to person. From your crew. For your watchlist. Pass it on.",
+    url: BASE_URL,
+    siteName: "Rec'd Club",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/desktop_mockup.png", // Fallback OG image
+        width: 1200,
+        height: 630,
+        alt: "Rec'd Club Preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Rec'd Club",
+    description: "Good taste travels person to person.",
+    images: ["/desktop_mockup.png"],
+  },
 };
 
 export const viewport: Viewport = {
