@@ -19,7 +19,7 @@ const inter = Inter({
   weight: ["300", "400", "500", "600", "700"],
 });
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://recd.club";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://recdclub.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
